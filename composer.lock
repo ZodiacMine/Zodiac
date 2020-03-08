@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bb9233cea6e62cc28ea22863681e066e",
+    "content-hash": "c55452c3a3228cef5031137f10f056f9",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -443,12 +443,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/NBT.git",
-                "reference": "1cdf6aec3024e2061b8c3e5045c43250df94a740"
+                "reference": "f2517ec187a8306a3d3f594bf06a7c828645b9d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/NBT/zipball/1cdf6aec3024e2061b8c3e5045c43250df94a740",
-                "reference": "1cdf6aec3024e2061b8c3e5045c43250df94a740",
+                "url": "https://api.github.com/repos/pmmp/NBT/zipball/f2517ec187a8306a3d3f594bf06a7c828645b9d7",
+                "reference": "f2517ec187a8306a3d3f594bf06a7c828645b9d7",
                 "shasum": ""
             },
             "require": {
@@ -472,20 +472,20 @@
                 "LGPL-3.0"
             ],
             "description": "PHP library for working with Named Binary Tags",
-            "time": "2020-02-24T21:43:33+00:00"
+            "time": "2020-03-04T18:52:35+00:00"
         },
         {
             "name": "pocketmine/raklib",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/pmmp/RakLib.git",
-                "reference": "8d7e27ca17dda204fbefa084efbbba9e9681cadd"
+                "url": "https://github.com/Minejong/RakLib.git",
+                "reference": "033578ff7af08cd3e26bae6cdd6340b76405002b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/RakLib/zipball/8d7e27ca17dda204fbefa084efbbba9e9681cadd",
-                "reference": "8d7e27ca17dda204fbefa084efbbba9e9681cadd",
+                "url": "https://api.github.com/repos/Minejong/RakLib/zipball/033578ff7af08cd3e26bae6cdd6340b76405002b",
+                "reference": "033578ff7af08cd3e26bae6cdd6340b76405002b",
                 "shasum": ""
             },
             "require": {
@@ -509,12 +509,14 @@
                     "raklib\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "GPL-3.0"
             ],
             "description": "A RakNet server implementation written in PHP",
-            "time": "2020-01-31T15:36:55+00:00"
+            "support": {
+                "source": "https://github.com/Minejong/RakLib/tree/master"
+            },
+            "time": "2020-02-01T19:14:34+00:00"
         },
         {
             "name": "pocketmine/snooze",
@@ -591,7 +593,7 @@
             "source": {
                 "type": "git",
                 "url": "https://gitlab.irstea.fr/pole-is/tools/phpunit-shim.git",
-                "reference": "39b6155954d6caec1110a9e78582c4816ab247bc"
+                "reference": "8ec63f895972681271191821a36f9081c236b993"
             },
             "require": {
                 "ext-dom": "*",
@@ -613,6 +615,11 @@
                 "phpunit"
             ],
             "type": "library",
+            "autoload": {
+                "exclude-from-classmap": [
+                    "phpunit"
+                ]
+            },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "BSD-3-Clause"
@@ -632,20 +639,20 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2020-01-09T03:20:20+00:00"
+            "time": "2020-01-23T13:39:47+00:00"
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.11",
+            "version": "0.12.14",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "ca5f2b7cf81c6d8fba74f9576970399c5817e03b"
+                "reference": "37bdd26a80235d0f9045b49f4151102b7831cbe2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/ca5f2b7cf81c6d8fba74f9576970399c5817e03b",
-                "reference": "ca5f2b7cf81c6d8fba74f9576970399c5817e03b",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/37bdd26a80235d0f9045b49f4151102b7831cbe2",
+                "reference": "37bdd26a80235d0f9045b49f4151102b7831cbe2",
                 "shasum": ""
             },
             "require": {
@@ -671,7 +678,7 @@
                 "MIT"
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
-            "time": "2020-02-16T14:00:29+00:00"
+            "time": "2020-03-02T22:29:43+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",

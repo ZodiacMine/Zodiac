@@ -64,5 +64,11 @@
          "pocketmine\\": "tests/phpunit/",
          "pocketmine\\phpstan\\rules\\": "tests/phpstan/rules"
       }
-   }
+   },
+   "repositories": [
+      {
+         "type": "vcs",
+         "url": "https://github.com/Minejong/RakLib"
+      }
+   ]
 }
