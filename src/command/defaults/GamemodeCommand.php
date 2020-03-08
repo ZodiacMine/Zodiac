@@ -53,14 +53,14 @@ class GamemodeCommand extends VanillaCommand{
 		}
 
 		try{
-			$gameMode = GameMode::fromString($args[0]);
+			$gameMode = GameMode::fromString(array_shift($args));
 		}catch(\InvalidArgumentException $e){
 			$sender->sendMessage("Unknown game mode");
 			return true;
 		}
 
-		if(isset($args[1])){
-			$target = $sender->getServer()->getPlayer($args[1]);
+		if(count($args) > 0){
+			$target = $sender->getServer()->getPlayer($this->readPlayerName($args));
 			if($target === null){
 				$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.player.notFound"));
 

@@ -55,27 +55,27 @@ class GiveCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$player = $sender->getServer()->getPlayer($args[0]);
+		$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
 		if($player === null){
 			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.player.notFound"));
 			return true;
 		}
 
 		try{
-			$item = ItemFactory::fromString($args[1]);
+			$item = ItemFactory::fromString($args[0]);
 		}catch(\InvalidArgumentException $e){
-			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.give.item.notFound", [$args[1]]));
+			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.give.item.notFound", [$args[0]]));
 			return true;
 		}
 
-		if(!isset($args[2])){
+		if(!isset($args[1])){
 			$item->setCount($item->getMaxStackSize());
 		}else{
-			$item->setCount((int) $args[2]);
+			$item->setCount((int) $args[1]);
 		}
 
-		if(isset($args[3])){
-			$data = implode(" ", array_slice($args, 3));
+		if(isset($args[2])){
+			$data = implode(" ", array_slice($args, 2));
 			try{
 				$tags = JsonNbtParser::parseJson($data);
 			}catch(NbtDataException $e){

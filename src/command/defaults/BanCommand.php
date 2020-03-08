@@ -52,7 +52,7 @@ class BanCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$name = array_shift($args);
+		$name = $this->readPlayerName($args);
 		$reason = implode(" ", $args);
 
 		$sender->getServer()->getNameBans()->addBan($name, $reason, null, $sender->getName());

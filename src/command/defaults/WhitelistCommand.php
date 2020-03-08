@@ -92,21 +92,23 @@ class WhitelistCommand extends VanillaCommand{
 					return true;
 			}
 		}elseif(count($args) === 2){
-			if($this->badPerm($sender, strtolower($args[0]))){
+			$subCommand = strtolower(array_shift($args));
+			if($this->badPerm($sender, $subCommand)){
 				return false;
 			}
-			if(!Player::isValidUserName($args[1])){
+			$name = $this->readPlayerName($args);
+			if(!Player::isValidUserName($name)){
 				throw new InvalidCommandSyntaxException();
 			}
-			switch(strtolower($args[0])){
+			switch($subCommand){
 				case "add":
-					$sender->getServer()->getOfflinePlayer($args[1])->setWhitelisted(true);
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.add.success", [$args[1]]));
+					$sender->getServer()->getOfflinePlayer($name)->setWhitelisted(true);
+					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.add.success", [$name]));
 
 					return true;
 				case "remove":
-					$sender->getServer()->getOfflinePlayer($args[1])->setWhitelisted(false);
-					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.remove.success", [$args[1]]));
+					$sender->getServer()->getOfflinePlayer($name)->setWhitelisted(false);
+					Command::broadcastCommandMessage($sender, new TranslationContainer("commands.whitelist.remove.success", [$name]));
 
 					return true;
 			}

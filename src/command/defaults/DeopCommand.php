@@ -52,7 +52,7 @@ class DeopCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$name = array_shift($args);
+		$name = $this->readPlayerName($args);
 		if(!Player::isValidUserName($name)){
 			throw new InvalidCommandSyntaxException();
 		}

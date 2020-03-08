@@ -50,13 +50,13 @@ class TitleCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$player = $sender->getServer()->getPlayer($args[0]);
+		$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
 		if($player === null){
 			$sender->sendMessage(new TranslationContainer("commands.generic.player.notFound"));
 			return true;
 		}
 
-		switch($args[1]){
+		switch(array_shift($args)){
 			case "clear":
 				$player->removeTitles();
 				break;
@@ -68,28 +68,32 @@ class TitleCommand extends VanillaCommand{
 					throw new InvalidCommandSyntaxException();
 				}
 
-				$player->sendTitle(implode(" ", array_slice($args, 2)));
+				$player->sendTitle(implode(" ", $args));
 				break;
 			case "subtitle":
 				if(count($args) < 3){
 					throw new InvalidCommandSyntaxException();
 				}
 
-				$player->sendSubTitle(implode(" ", array_slice($args, 2)));
+				$player->sendSubTitle(implode(" ", $args));
 				break;
 			case "actionbar":
 				if(count($args) < 3){
 					throw new InvalidCommandSyntaxException();
 				}
 
-				$player->sendActionBarMessage(implode(" ", array_slice($args, 2)));
+				$player->sendActionBarMessage(implode(" ", $args));
 				break;
 			case "times":
 				if(count($args) < 5){
 					throw new InvalidCommandSyntaxException();
 				}
 
-				$player->setTitleDuration($this->getInteger($sender, $args[2]), $this->getInteger($sender, $args[3]), $this->getInteger($sender, $args[4]));
+				$fadeIn = array_shift($args);
+				$stay = array_shift($args);
+				$fadeOut = array_shift($args);
+
+				$player->setTitleDuration($this->getInteger($sender, $fadeIn), $this->getInteger($sender, $stay), $this->getInteger($sender, $fadeOut));
 				break;
 			default:
 				throw new InvalidCommandSyntaxException();

@@ -54,7 +54,7 @@ class KickCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$name = array_shift($args);
+		$name = $this->readPlayerName($args);
 		$reason = trim(implode(" ", $args));
 
 		if(($player = $sender->getServer()->getPlayer($name)) instanceof Player){

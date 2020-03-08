@@ -49,18 +49,14 @@ class KillCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) >= 2){
-			throw new InvalidCommandSyntaxException();
-		}
-
-		if(count($args) === 1){
+		if(count($args) > 0){
 			if(!$sender->hasPermission("pocketmine.command.kill.other")){
 				$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 				return true;
 			}
 
-			$player = $sender->getServer()->getPlayer($args[0]);
+			$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
 
 			if($player instanceof Player){
 				$player->attack(new EntityDamageEvent($player, EntityDamageEvent::CAUSE_SUICIDE, 1000));
