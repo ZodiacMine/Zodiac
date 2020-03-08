@@ -81,7 +81,6 @@ use pocketmine\snooze\SleeperHandler;
 use pocketmine\snooze\SleeperNotifier;
 use pocketmine\timings\Timings;
 use pocketmine\timings\TimingsHandler;
-use pocketmine\updater\AutoUpdater;
 use pocketmine\utils\Config;
 use pocketmine\utils\Filesystem;
 use pocketmine\utils\Internet;
@@ -188,9 +187,6 @@ class Server{
 
 	/** @var float */
 	private $profilingTickRate = 20;
-
-	/** @var AutoUpdater */
-	private $updater;
 
 	/** @var AsyncPool */
 	private $asyncPool;
@@ -408,13 +404,6 @@ class Server{
 	 */
 	public function getLogger(){
 		return $this->logger;
-	}
-
-	/**
-	 * @return AutoUpdater
-	 */
-	public function getUpdater(){
-		return $this->updater;
 	}
 
 	/**
@@ -1023,8 +1012,6 @@ class Server{
 
 			GeneratorManager::registerDefaultGenerators();
 			$this->worldManager = new WorldManager($this);
-
-			$this->updater = new AutoUpdater($this, $this->getProperty("auto-updater.host", "update.pmmp.io"));
 
 			$this->queryRegenerateTask = new QueryRegenerateEvent($this);
 
