@@ -53,6 +53,8 @@ class PluginDescription{
 	private $api;
 	/** @var int[] */
 	private $compatibleMcpeProtocols = [];
+	/** @var string[] */
+	private $compatibleOperatingSystems = [];
 	/**
 	 * @var string[][]
 	 * @phpstan-var array<string, list<mixed>>
@@ -87,7 +89,6 @@ class PluginDescription{
 
 	/**
 	 * @param string|mixed[] $yamlString
-	 * @phpstan-param string|array<string, mixed> $yamlString
 	 */
 	public function __construct($yamlString){
 		$this->loadMap(!is_array($yamlString) ? yaml_parse($yamlString) : $yamlString);
@@ -95,7 +96,6 @@ class PluginDescription{
 
 	/**
 	 * @param mixed[] $plugin
-	 * @phpstan-param array<string, mixed> $plugin
 	 * @throws PluginException
 	 */
 	private function loadMap(array $plugin) : void{
@@ -114,6 +114,7 @@ class PluginDescription{
 
 		$this->api = array_map("\strval", (array) ($plugin["api"] ?? []));
 		$this->compatibleMcpeProtocols = array_map("\intval", (array) ($plugin["mcpe-protocol"] ?? []));
+		$this->compatibleOperatingSystems = array_map("\strval", (array) ($plugin["os"] ?? []));
 
 		if(isset($plugin["commands"]) and is_array($plugin["commands"])){
 			$this->commands = $plugin["commands"];
@@ -185,6 +186,13 @@ class PluginDescription{
 	 */
 	public function getCompatibleMcpeProtocols() : array{
 		return $this->compatibleMcpeProtocols;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getCompatibleOperatingSystems() : array{
+		return $this->compatibleOperatingSystems;
 	}
 
 	/**
