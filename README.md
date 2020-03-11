@@ -1,35 +1,22 @@
 <p align="center">
-	<a href="https://pmmp.io"><img src="http://cdn.pocketmine.net/img/PocketMine-MP-h.png"></img></a><br>
-	<b>A highly customisable, open source server software for Minecraft: Bedrock Edition written in PHP</b>
+	<img src="https://user-images.githubusercontent.com/25742996/76456007-61f0fd00-63e7-11ea-9e30-260ceb5f9820.png"></img><br>
 </p>
 
-[![Build Status](https://travis-ci.org/pmmp/PocketMine-MP.svg?branch=master)](https://travis-ci.org/pmmp/PocketMine-MP)
+[![Build Status](https://travis-ci.com/yosoftteam/Zodiac.svg?branch=master)](https://travis-ci.org/ZodiacMine/Zodiac)
 
-## Getting started
-- [Documentation](http://pmmp.readthedocs.org/)
-- [Installation instructions](https://pmmp.readthedocs.io/en/rtfd/installation.html)
-- [Docker image](https://hub.docker.com/r/pmmp/pocketmine-mp)
-- [Plugin repository](https://poggit.pmmp.io/plugins)
+## What is this?
+- This is a open-source version of **YoRaze\`s** private software, which is also a fork of pmmp.
+- This repository was created for quick and not very difficult transfer of changes from pmmp to YoRaze`s fork.
+- Zodiac has a small number of features, that make it difficult to transfer changes with pmmp - that it is not easy to transfer files from one software weekly and then remake them so that they work on another.
 
-## Discussion/Help
-- [Forums](https://forums.pmmp.io/)
-- [Discord](https://discord.gg/bmSAZBG)
-- [StackOverflow](https://stackoverflow.com/tags/pocketmine)
+## Communication
+- This software has not community on Discord or other social sites.
+- If you have questions - you can create issues with it.
+- If you could help this software - you can create Pull Requests.
 
-## For developers
- * [Building and running from source](BUILDING.md)
- * [Latest API documentation](https://jenkins.pmmp.io/job/PocketMine-MP-doc/doxygen/) - Doxygen documentation generated from development
- * [DevTools](https://github.com/pmmp/PocketMine-DevTools/) - Development tools plugin for creating plugins
- * [ExamplePlugin](https://github.com/pmmp/ExamplePlugin/) - Example plugin demonstrating some basic API features
- * [Contributing Guidelines](CONTRIBUTING.md)
-
-## Donate
-- Bitcoin Cash (BCH): `qq3r46hn6ljnhnqnfwxt5pg3g447eq9jhvw5ddfear`
-- Bitcoin (BTC): `171u8K9e4FtU6j3e5sqNoxKUgEw9qWQdRV`
-- Stellar Lumens (XLM): `GAAC5WZ33HCTE3BFJFZJXONMEIBNHFLBXM2HJVAZHXXPYA3HP5XPPS7T`
-- [Patreon](https://www.patreon.com/pocketminemp)
+## Developers
+- Main developer: [YoRaze](https://github.com/yoraze)
+- Main developer 2: [Minejong](https://github.com/Minejong)
 
 ## Licensing information
 This project is licensed under LGPL-3.0. Please see the [LICENSE](/LICENSE) file for details.
-
-pmmp/PocketMine are not affiliated with Mojang. All brands and trademarks belong to their respective owners. PocketMine-MP is not a Mojang-approved software, nor is it associated with Mojang.
