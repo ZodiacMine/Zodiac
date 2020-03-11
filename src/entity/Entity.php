@@ -1681,6 +1681,7 @@ abstract class Entity{
 		$this->networkProperties->setGenericFlag(EntityMetadataFlags::AFFECTED_BY_GRAVITY, true);
 		$this->networkProperties->setGenericFlag(EntityMetadataFlags::CAN_CLIMB, $this->canClimb);
 		$this->networkProperties->setGenericFlag(EntityMetadataFlags::CAN_SHOW_NAMETAG, $this->nameTagVisible);
+		$this->networkProperties->setGenericFlag(EntityMetadataFlags::ALWAYS_SHOW_NAMETAG, $this->alwaysShowNameTag);
 		$this->networkProperties->setGenericFlag(EntityMetadataFlags::HAS_COLLISION, true);
 		$this->networkProperties->setGenericFlag(EntityMetadataFlags::IMMOBILE, $this->immobile);
 		$this->networkProperties->setGenericFlag(EntityMetadataFlags::INVISIBLE, $this->invisible);

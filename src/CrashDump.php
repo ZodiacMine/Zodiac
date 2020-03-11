@@ -307,7 +307,7 @@ class CrashDump{
 		$this->data["general"]["base_version"] = \pocketmine\BASE_VERSION;
 		$this->data["general"]["build"] = \pocketmine\BUILD_NUMBER;
 		$this->data["general"]["is_dev"] = \pocketmine\IS_DEVELOPMENT_BUILD;
-		$this->data["general"]["protocol"] = ProtocolInfo::CURRENT_PROTOCOL;
+		$this->data["general"]["protocol"] = implode(", ", ProtocolInfo::ACCEPTED_PROTOCOLS);
 		$this->data["general"]["git"] = \pocketmine\GIT_COMMIT;
 		$this->data["general"]["raklib"] = RakLib::VERSION;
 		$this->data["general"]["uname"] = php_uname("a");
@@ -315,7 +315,7 @@ class CrashDump{
 		$this->data["general"]["zend"] = zend_version();
 		$this->data["general"]["php_os"] = PHP_OS;
 		$this->data["general"]["os"] = Utils::getOS();
-		$this->addLine($this->server->getName() . " version: " . $version->getFullVersion(true) . " [Protocol " . ProtocolInfo::CURRENT_PROTOCOL . "]");
+		$this->addLine($this->server->getName() . " version: " . $version->getFullVersion(true) . " [Protocol " . implode(", ", ProtocolInfo::ACCEPTED_PROTOCOLS) . "]");
 		$this->addLine("Git commit: " . \pocketmine\GIT_COMMIT);
 		$this->addLine("uname -a: " . php_uname("a"));
 		$this->addLine("PHP Version: " . phpversion());

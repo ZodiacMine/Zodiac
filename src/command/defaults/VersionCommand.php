@@ -55,7 +55,7 @@ class VersionCommand extends VanillaCommand{
 				$sender->getServer()->getName(),
 				$sender->getServer()->getPocketMineVersion(),
 				$sender->getServer()->getVersion(),
-				ProtocolInfo::CURRENT_PROTOCOL
+				implode(", ", ProtocolInfo::ACCEPTED_PROTOCOLS)
 			]));
 		}else{
 			$pluginName = implode(" ", $args);

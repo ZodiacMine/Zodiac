@@ -39,6 +39,7 @@ use pocketmine\player\PlayerInfo;
 use pocketmine\Server;
 use pocketmine\utils\UUID;
 use function base64_decode;
+use function in_array;
 
 /**
  * Handles the initial login phase of the session. This handler is used as the initial state.
@@ -158,6 +159,6 @@ class LoginPacketHandler extends PacketHandler{
 	}
 
 	protected function isCompatibleProtocol(int $protocolVersion) : bool{
-		return $protocolVersion === ProtocolInfo::CURRENT_PROTOCOL;
+		return in_array($protocolVersion, ProtocolInfo::ACCEPTED_PROTOCOLS, true);
 	}
 }
