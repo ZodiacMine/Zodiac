@@ -784,12 +784,13 @@ class NetworkSession{
 
 	/**
 	 * TODO: expand this to more than just humans
-	 * TODO: offhand
 	 */
 	public function onMobEquipmentChange(Human $mob) : void{
 		//TODO: we could send zero for slot here because remote players don't need to know which slot was selected
 		$inv = $mob->getInventory();
 		$this->sendDataPacket(MobEquipmentPacket::create($mob->getId(), $inv->getItemInHand(), $inv->getHeldItemIndex(), ContainerIds::INVENTORY));
+		$inv = $mob->getOffHandInventory();
+		$this->sendDataPacket(MobEquipmentPacket::create($mob->getId(), $inv->getItemInHand(), $inv->getHeldItemIndex(), ContainerIds::OFFHAND));
 	}
 
 	public function onMobArmorChange(Living $mob) : void{

@@ -383,6 +383,10 @@ class InGamePacketHandler extends PacketHandler{
 	}
 
 	public function handleMobEquipment(MobEquipmentPacket $packet) : bool{
+		if($packet->windowId === ContainerIds::OFFHAND){
+			return true; // Useless offhand noises...
+		}
+
 		if(!$this->player->selectHotbarSlot($packet->hotbarSlot)){
 			$this->session->getInvManager()->syncSelectedHotbarSlot();
 		}

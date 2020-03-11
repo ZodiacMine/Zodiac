@@ -31,6 +31,7 @@ use pocketmine\event\player\PlayerExhaustEvent;
 use pocketmine\inventory\EnderChestInventory;
 use pocketmine\inventory\InventoryHolder;
 use pocketmine\inventory\PlayerInventory;
+use pocketmine\inventory\PlayerOffHandInventory;
 use pocketmine\item\Consumable;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\FoodSource;
@@ -67,6 +68,9 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 
 	/** @var PlayerInventory */
 	protected $inventory;
+
+	/** @var PlayerOffHandInventory */
+	protected $offHandInventory;
 
 	/** @var EnderChestInventory */
 	protected $enderChestInventory;
@@ -193,6 +197,10 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		return $this->inventory;
 	}
 
+	public function getOffHandInventory() : PlayerOffHandInventory{
+		return $this->offHandInventory;
+	}
+
 	public function getEnderChestInventory() : EnderChestInventory{
 		return $this->enderChestInventory;
 	}
@@ -215,6 +223,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		$this->xpManager = new ExperienceManager($this);
 
 		$this->inventory = new PlayerInventory($this);
+		$this->offHandInventory = new PlayerOffHandInventory($this);
 		$this->enderChestInventory = new EnderChestInventory();
 		$this->initHumanData($nbt);
 
@@ -244,6 +253,11 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 			foreach($enderChestInventoryTag as $i => $item){
 				$this->enderChestInventory->setItem($item->getByte("Slot"), Item::nbtDeserialize($item));
 			}
+		}
+
+		$offHand = $nbt->getCompoundTag("OffHand");
+		if($offHand !== null){
+			$this->offHandInventory->setItemInHand(Item::nbtDeserialize($offHand));
 		}
 
 		$this->inventory->setHeldItemIndex($nbt->getInt("SelectedInventorySlot", 0), false);
@@ -283,7 +297,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 
 		$type = $source->getCause();
 		if($type !== EntityDamageEvent::CAUSE_SUICIDE and $type !== EntityDamageEvent::CAUSE_VOID
-			and $this->inventory->getItemInHand() instanceof Totem){ //TODO: check offhand as well (when it's implemented)
+			and ($this->offHandInventory->getItemInHand() instanceof Totem or $this->inventory->getItemInHand() instanceof Totem)){
 
 			$compensation = $this->getHealth() - $source->getFinalDamage() - 1;
 			if($compensation < 0){
@@ -305,10 +319,17 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 			$this->broadcastEntityEvent(ActorEventPacket::CONSUME_TOTEM);
 			$this->getWorld()->addSound($this->location->add(0, $this->eyeHeight, 0), new TotemUseSound());
 
-			$hand = $this->inventory->getItemInHand();
+			// By vanilla logic: first checks offhand inventory, then normal inventory
+			$hand = $this->offHandInventory->getItemInHand();
 			if($hand instanceof Totem){
 				$hand->pop(); //Plugins could alter max stack size
-				$this->inventory->setItemInHand($hand);
+				$this->offHandInventory->setItemInHand($hand);
+			}else{
+				$hand = $this->inventory->getItemInHand();
+				if($hand instanceof Totem){
+					$hand->pop();
+					$this->inventory->setItemInHand($hand);
+				}
 			}
 		}
 	}
@@ -316,6 +337,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 	public function getDrops() : array{
 		return array_filter(array_merge(
 			$this->inventory !== null ? array_values($this->inventory->getContents()) : [],
+			$this->offHandInventory !== null ? array_values($this->offHandInventory->getContents()) : [],
 			$this->armorInventory !== null ? array_values($this->armorInventory->getContents()) : []
 		), function(Item $item) : bool{ return !$item->hasEnchantment(Enchantment::VANISHING()); });
 	}
@@ -354,6 +376,10 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 			}
 
 			$nbt->setInt("SelectedInventorySlot", $this->inventory->getHeldItemIndex());
+		}
+
+		if($this->offHandInventory !== null){
+			$nbt->setTag("OffHand", $this->offHandInventory->getItemInHand()->nbtSerialize(0));
 		}
 
 		if($this->enderChestInventory !== null){
@@ -435,12 +461,14 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 
 	protected function onDispose() : void{
 		$this->inventory->removeAllViewers();
+		$this->offHandInventory->removeAllViewers();
 		$this->enderChestInventory->removeAllViewers();
 		parent::onDispose();
 	}
 
 	protected function destroyCycles() : void{
 		$this->inventory = null;
+		$this->offHandInventory = null;
 		$this->enderChestInventory = null;
 		$this->hungerManager = null;
 		$this->xpManager = null;
