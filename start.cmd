@@ -11,6 +11,10 @@ if exist bin\php\php.exe (
 
 if exist PocketMine-MP.phar (
 	set POCKETMINE_FILE=PocketMine-MP.phar
+) else if exist src\PocketMine.php (
+		set POCKETMINE_FILE=src\PocketMine.php
+) else if exist src\pocketmine\PocketMine.php (
+		set POCKETMINE_FILE=src\pocketmine\PocketMine.php
 ) else (
 	echo PocketMine-MP.phar not found
 	echo Downloads can be found at https://github.com/pmmp/PocketMine-MP/releases
