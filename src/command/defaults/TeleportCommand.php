@@ -55,70 +55,70 @@ class TeleportCommand extends VanillaCommand{
 		$args = array_values(array_filter($args, function(string $arg) : bool{
 			return $arg !== "";
 		}));
-		if(count($args) < 1 or count($args) > 6){
+
+		if(count($args) < 1){
 			throw new InvalidCommandSyntaxException();
 		}
 
 		$target = null;
 		$origin = $sender;
 
-		if(count($args) === 1 or count($args) === 3){
-			if($sender instanceof Player){
-				$target = $sender;
+		if($sender instanceof Player){
+			$target = $sender;
+			TELEPORT_AS_PLAYER:
+			if(is_numeric($args[0]) or $args[0][0] === "~"){
+				$targetLocation = $target->getLocation();
+				goto TELEPORT_POSITION;
 			}else{
-				$sender->sendMessage(TextFormat::RED . "Please provide a player!");
-
-				return true;
-			}
-			if(count($args) === 1){
-				$target = $sender->getServer()->getPlayer($args[0]);
+				$playerName = $this->readPlayerName($args);
+				$target = $sender->getServer()->getPlayer($playerName);
 				if($target === null){
-					$sender->sendMessage(TextFormat::RED . "Can't find player " . $args[0]);
+					$sender->sendMessage(TextFormat::RED . "Can't find player " . $playerName);
 
 					return true;
 				}
 			}
 		}else{
-			$target = $sender->getServer()->getPlayer($args[0]);
+			$playerName = $this->readPlayerName($args);
+			$origin = $sender->getServer()->getPlayer($playerName);
 			if($target === null){
-				$sender->sendMessage(TextFormat::RED . "Can't find player " . $args[0]);
+				$sender->sendMessage(TextFormat::RED . "Can't find player " . $playerName);
 
 				return true;
 			}
-			if(count($args) === 2){
-				$origin = $target;
-				$target = $sender->getServer()->getPlayer($args[1]);
-				if($target === null){
-					$sender->sendMessage(TextFormat::RED . "Can't find player " . $args[1]);
 
-					return true;
-				}
+			if(count($args) < 1){
+				throw new InvalidCommandSyntaxException();
 			}
+
+			goto TELEPORT_AS_PLAYER;
 		}
 
 		$targetLocation = $target->getLocation();
 
-		if(count($args) < 3){
+		if(count($args) === 0){
 			$origin->teleport($targetLocation);
 			Command::broadcastCommandMessage($sender, new TranslationContainer("commands.tp.success", [$origin->getName(), $target->getName()]));
 
 			return true;
 		}else{
-			if(count($args) === 4 or count($args) === 6){
-				$pos = 1;
-			}else{
-				$pos = 0;
+			TELEPORT_POSITION:
+
+			if(count($args) < 3){
+				throw new InvalidCommandSyntaxException();
 			}
 
-			$x = $this->getRelativeDouble($targetLocation->x, $sender, $args[$pos++]);
-			$y = $this->getRelativeDouble($targetLocation->y, $sender, $args[$pos++], 0, 256);
-			$z = $this->getRelativeDouble($targetLocation->z, $sender, $args[$pos++]);
+			$x = $this->getRelativeDouble($targetLocation->x, $sender, array_shift($args));
+			$y = $this->getRelativeDouble($targetLocation->y, $sender, array_shift($args), 0, 256);
+			$z = $this->getRelativeDouble($targetLocation->z, $sender, array_shift($args));
 			$yaw = $targetLocation->getYaw();
 			$pitch = $targetLocation->getPitch();
 
-			if(count($args) === 6 or (count($args) === 5 and $pos === 3)){
-				$yaw = (float) $args[$pos++];
-				$pitch = (float) $args[$pos++];
+			if(count($args) > 0){
+				$yaw = (float) array_shift($args);
+				if(count($args) > 0){
+					$pitch = (float) array_shift($args);
+				}
 			}
 
 			$target->teleport(new Vector3($x, $y, $z), $yaw, $pitch);
