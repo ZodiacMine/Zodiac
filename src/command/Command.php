@@ -32,11 +32,8 @@ use pocketmine\permission\PermissionManager;
 use pocketmine\Server;
 use pocketmine\timings\TimingsHandler;
 use pocketmine\utils\TextFormat;
-use function array_shift;
 use function explode;
 use function str_replace;
-use function strlen;
-use function substr;
 
 abstract class Command{
 
@@ -223,27 +220,6 @@ abstract class Command{
 
 	public function setUsage(string $usage) : void{
 		$this->usageMessage = $usage;
-	}
-
-	/**
-	 * @param string[] $args reference parameter
-	 */
-	protected function readPlayerName(array &$args) : string{
-		$name = array_shift($args);
-		if(strlen($name) > 0 and $name[0] === "\""){
-			while(count($args) > 0){
-				$part = array_shift($args);
-
-				$name .= " " . $part;
-				if(substr($part, -1) === "\""){
-					break;
-				}
-			}
-
-			return substr($name, 1, strlen($name) - 2);
-		}
-
-		return $name;
 	}
 
 	/**
