@@ -1,7 +1,16 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Class com does not have a constructor and must be instantiated without any parameters\\.$#"
+			count: 1
+			path: ../../../src/network/upnp/UPnP.php
+		-
 			message: "#^Access to an undefined property COM\\:\\:\\$StaticPortMappingCollection\\.$#"
 			count: 1
 			path: ../../../src/network/upnp/UPnP.php
+		-
+			message: "#^Access to an undefined property com\\:\\:\\$StaticPortMappingCollection\\.$#"
+			count: 1
+			path: ../../../src/network/upnp/UPnP.php
+#			comment: "Resolve warning on Windows"
 
