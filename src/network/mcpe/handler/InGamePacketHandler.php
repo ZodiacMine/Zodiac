@@ -153,6 +153,10 @@ class InGamePacketHandler extends PacketHandler{
 
 		switch($packet->event){
 			case ActorEventPacket::EATING_ITEM: //TODO: ignore this and handle it server-side
+				if($packet->entityRuntimeId !== $this->player->getId()){
+					return true;
+				}
+
 				if($packet->data === 0){
 					return false;
 				}
