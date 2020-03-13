@@ -81,13 +81,13 @@ class TeleportCommand extends VanillaCommand{
 		}else{
 			$playerName = $this->readPlayerName($args);
 			$origin = $sender->getServer()->getPlayer($playerName);
-			if($target === null){
+			if($origin === null){
 				$sender->sendMessage(TextFormat::RED . "Can't find player " . $playerName);
 
 				return true;
 			}
 
-			if(count($args) < 1){
+			if(count($args) === 0){
 				throw new InvalidCommandSyntaxException();
 			}
 
