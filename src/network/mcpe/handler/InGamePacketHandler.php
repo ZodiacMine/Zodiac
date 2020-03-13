@@ -149,14 +149,14 @@ class InGamePacketHandler extends PacketHandler{
 	}
 
 	public function handleActorEvent(ActorEventPacket $packet) : bool{
+		if($packet->entityRuntimeId !== $this->player->getId()){
+			//TODO HACK: EATING_ITEM is sent back to the server when the server sends it for other players (1.14 bug, maybe earlier)
+			return $packet->event === ActorEventPacket::EATING_ITEM;
+		}
 		$this->player->doCloseInventory();
 
 		switch($packet->event){
 			case ActorEventPacket::EATING_ITEM: //TODO: ignore this and handle it server-side
-				if($packet->entityRuntimeId !== $this->player->getId()){
-					return true;
-				}
-
 				if($packet->data === 0){
 					return false;
 				}
