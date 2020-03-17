@@ -52,6 +52,9 @@ abstract class Command{
 	/** @var string[] */
 	private $activeAliases = [];
 
+	/** @var CommandOverload[] */
+	private $overloads = [];
+
 	/** @var CommandMap|null */
 	private $commandMap = null;
 
@@ -72,13 +75,21 @@ abstract class Command{
 
 	/**
 	 * @param string[] $aliases
+	 * @param CommandOverload[] $overloads
 	 */
-	public function __construct(string $name, string $description = "", ?string $usageMessage = null, array $aliases = []){
+	public function __construct(string $name, string $description = "", ?string $usageMessage = null, array $aliases = [], ?array $overloads = null){
 		$this->name = $name;
 		$this->setLabel($name);
 		$this->setDescription($description);
 		$this->usageMessage = $usageMessage ?? ("/" . $name);
 		$this->setAliases($aliases);
+		if($overloads === null){
+			$this->overloads = [
+				(new CommandOverload())->string("args", 0, true)
+			];
+		}else{
+			$this->setOverloads($overloads);
+		}
 	}
 
 	/**
@@ -201,6 +212,13 @@ abstract class Command{
 	}
 
 	/**
+	 * @return CommandOverload[]
+	 */
+	public function getOverloads() : array{
+		return $this->overloads;
+	}
+
+	/**
 	 * @param string[] $aliases
 	 */
 	public function setAliases(array $aliases) : void{
@@ -220,6 +238,16 @@ abstract class Command{
 
 	public function setUsage(string $usage) : void{
 		$this->usageMessage = $usage;
+	}
+
+	/**
+	 * @param CommandOverload[] $overloads
+	 */
+	public function setOverloads(array $overloads) : void{
+		//type checks
+		(static function(CommandOverload ...$overloads) : void{})(...$overloads);
+
+		$this->overloads = $overloads;
 	}
 
 	/**
