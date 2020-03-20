@@ -26,8 +26,98 @@ namespace pocketmine\command;
 use pocketmine\network\mcpe\protocol\AvailableCommandsPacket;
 use pocketmine\network\mcpe\protocol\types\command\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\command\CommandParameter;
+use function array_keys;
+use function array_map;
 
 class CommandOverload{
+	/**
+	 * @param mixed[] $array
+	 */
+	private static function array_require(array $array, string ...$requiredFields) : void{
+		foreach($requiredFields as $field){
+			if(!isset($array[$field])){
+				throw new \InvalidArgumentException("Parameter \"$field\" field required, but not specified");
+			}
+		}
+	}
+
+	/**
+	 * @param mixed[][] $parameters
+	 */
+	public static function fromArray(array $parameters) : CommandOverload{
+		$parameters = array_map(function(string $parameterName, array $parameterData) : CommandParameter{
+			self::array_require($parameterData, "type");
+
+			$parameter = new CommandParameter();
+			$parameter->paramName = $parameterName;
+
+			$parameter->flags = $parameterData["flags"] ?? 0;
+			$parameter->isOptional = $parameterData["optional"] ?? false;
+
+			switch($parameterData["type"]){
+				case "list":
+					self::array_require($parameterData, "enum", "values");
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_ENUM | AvailableCommandsPacket::ARG_FLAG_VALID;
+					$parameter->enum = new CommandEnum($parameterData["enum"], $parameterData["values"]);
+					break;
+				case "postixed":
+					self::array_require($parameterData, "postfix");
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_POSTFIX;
+					$parameter->postfix = $parameterData["postfix"];
+					break;
+				case "network":
+					self::array_require($parameterData, "networkType");
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | $parameterData["networkType"];
+					break;
+				case "int":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_INT;
+					break;
+				case "float":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_FLOAT;
+					break;
+				case "value":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_VALUE;
+					break;
+				case "wildcardint":
+				case "wildcard_int":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_WILDCARD_INT;
+					break;
+				case "operator":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_OPERATOR;
+					break;
+				case "target":
+				case "player":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_TARGET;
+					break;
+				case "filepath":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_FILEPATH;
+					break;
+				case "string":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_STRING;
+					break;
+				case "position":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_POSITION;
+					break;
+				case "message":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_MESSAGE;
+					break;
+				case "rawtext":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_RAWTEXT;
+					break;
+				case "json":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_JSON;
+					break;
+				case "command":
+					$parameter->paramType = AvailableCommandsPacket::ARG_FLAG_VALID | AvailableCommandsPacket::ARG_TYPE_COMMAND;
+					break;
+			}
+
+			return $parameter;
+		}, array_keys($parameters), $parameters);
+
+		return new CommandOverload($parameters);
+	}
+
 	/** @var CommandParameter[] */
 	protected $parameters = [];
 
