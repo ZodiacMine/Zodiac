@@ -69,6 +69,10 @@
       {
          "type": "vcs",
          "url": "https://github.com/Minejong/RakLib"
+      },
+      {
+         "type": "vcs",
+         "url": "https://github.com/Minejong/BinaryUtils"
       }
    ]
 }

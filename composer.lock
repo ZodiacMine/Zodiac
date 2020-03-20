@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "eb5c00f216648065ac33cbdf00af2038",
+    "content-hash": "a148b272806fbeb7ebe278107cad4793",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -258,21 +258,18 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/pmmp/BinaryUtils.git",
-                "reference": "a36705550b42e7e93e2a9748a8b9fa88985780bf"
+                "url": "https://github.com/Minejong/BinaryUtils.git",
+                "reference": "04e1daaf23812f283af72cba06c02227580e531d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/BinaryUtils/zipball/a36705550b42e7e93e2a9748a8b9fa88985780bf",
-                "reference": "a36705550b42e7e93e2a9748a8b9fa88985780bf",
+                "url": "https://api.github.com/repos/Minejong/BinaryUtils/zipball/04e1daaf23812f283af72cba06c02227580e531d",
+                "reference": "04e1daaf23812f283af72cba06c02227580e531d",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.2",
+                "php": ">=7.0.0",
                 "php-64bit": "*"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^0.12.8"
             },
             "type": "library",
             "autoload": {
@@ -280,12 +277,15 @@
                     "pocketmine\\utils\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "LGPL-3.0"
             ],
             "description": "Classes and methods for conveniently handling binary data",
-            "time": "2020-01-28T12:17:38+00:00"
+            "support": {
+                "source": "https://github.com/Minejong/BinaryUtils/tree/master",
+                "issues": "https://github.com/Minejong/BinaryUtils/issues"
+            },
+            "time": "2020-03-20T12:45:43+00:00"
         },
         {
             "name": "pocketmine/callback-validator",
