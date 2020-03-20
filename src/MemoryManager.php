@@ -316,8 +316,6 @@ class MemoryManager{
 
 		$obData = fopen($outputFolder . "/objects.js", "wb+");
 
-		$data = [];
-
 		$objects = [];
 
 		$refCounts = [];

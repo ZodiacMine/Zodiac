@@ -27,7 +27,6 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
-use function strlen;
 
 class ResourcePackChunkDataPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::RESOURCE_PACK_CHUNK_DATA_PACKET;

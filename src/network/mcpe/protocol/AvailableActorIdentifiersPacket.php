@@ -27,7 +27,6 @@ namespace pocketmine\network\mcpe\protocol;
 
 use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
-use function base64_decode;
 use function file_get_contents;
 
 class AvailableActorIdentifiersPacket extends DataPacket implements ClientboundPacket{

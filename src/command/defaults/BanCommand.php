@@ -28,7 +28,6 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
 use pocketmine\player\Player;
-use function array_shift;
 use function count;
 use function implode;
 
