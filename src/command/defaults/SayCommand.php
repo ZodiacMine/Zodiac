@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\ConsoleCommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
@@ -38,7 +39,12 @@ class SayCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.say.description",
-			"%commands.say.usage"
+			"%commands.say.usage",
+			[],
+			[
+				(new CommandOverload())
+					->message("message")
+			]
 		);
 		$this->setPermission("pocketmine.command.say");
 	}

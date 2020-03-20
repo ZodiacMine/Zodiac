@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use function date;
 
@@ -32,7 +33,12 @@ class DumpMemoryCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"Dumps the memory",
-			"/$name [path]"
+			"/$name [path]",
+			[],
+			[
+				(new CommandOverload())
+					->filepath("path")
+			]
 		);
 		$this->setPermission("pocketmine.command.dumpmemory");
 	}

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -39,7 +40,12 @@ class SetWorldSpawnCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.setworldspawn.description",
-			"%commands.setworldspawn.usage"
+			"%commands.setworldspawn.usage",
+			[],
+			[
+				(new CommandOverload())
+					->position("spawnPoint", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.setworldspawn");
 	}

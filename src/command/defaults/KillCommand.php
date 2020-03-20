@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\event\entity\EntityDamageEvent;
@@ -39,7 +40,11 @@ class KillCommand extends VanillaCommand{
 			$name,
 			"%pocketmine.command.kill.description",
 			"%pocketmine.command.kill.usage",
-			["suicide"]
+			["suicide"],
+			[
+				(new CommandOverload())
+					->target("player", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.kill.self;pocketmine.command.kill.other");
 	}

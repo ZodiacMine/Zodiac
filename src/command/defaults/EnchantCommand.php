@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\item\enchantment\Enchantment;
@@ -38,7 +39,18 @@ class EnchantCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.enchant.description",
-			"%commands.enchant.usage"
+			"%commands.enchant.usage",
+			[],
+			[
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("enchantmentName", "Enchant", [])
+					->int("level", 0, true),
+				(new CommandOverload())
+					->target("player")
+					->int("enchantmentId")
+					->int("level", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.enchant");
 	}
@@ -48,15 +60,19 @@ class EnchantCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) < 2){
+		if(count($args) < 1){
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$player = $sender->getServer()->getPlayer($args[0]);
+		$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
 
 		if($player === null){
 			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.player.notFound"));
 			return true;
+		}
+
+		if(count($args) < 1){
+			throw new InvalidCommandSyntaxException();
 		}
 
 		$item = $player->getInventory()->getItemInHand();
@@ -66,20 +82,20 @@ class EnchantCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(is_numeric($args[1])){
-			$enchantment = Enchantment::get((int) $args[1]);
+		if(is_numeric($args[0])){
+			$enchantment = Enchantment::get((int) $args[0]);
 		}else{
-			$enchantment = Enchantment::fromString($args[1]);
+			$enchantment = Enchantment::fromString($args[0]);
 		}
 
 		if(!($enchantment instanceof Enchantment)){
-			$sender->sendMessage(new TranslationContainer("commands.enchant.notFound", [$args[1]]));
+			$sender->sendMessage(new TranslationContainer("commands.enchant.notFound", [$args[0]]));
 			return true;
 		}
 
 		$level = 1;
-		if(isset($args[2])){
-			$level = $this->getBoundedInt($sender, $args[2], 1, $enchantment->getMaxLevel());
+		if(isset($args[1])){
+			$level = $this->getBoundedInt($sender, $args[1], 1, $enchantment->getMaxLevel());
 			if($level === null){
 				return false;
 			}

@@ -69,7 +69,7 @@ class CommandOverload{
 	/**
 	 * @param string[] $enumValues
 	 */
-	public function addListParameter(string $name, string $enumName, array $enumValues, int $flags, bool $optional = false) : self{
+	public function addListParameter(string $name, string $enumName, array $enumValues, int $flags = 0, bool $optional = false) : self{
 		$this->parameters[] = CommandParameter::enum($name, new CommandEnum($enumName, $enumValues), $flags, $optional);
 		return $this;
 	}

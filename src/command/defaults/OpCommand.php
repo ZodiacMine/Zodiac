@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -38,7 +39,14 @@ class OpCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.op.description",
-			"%commands.op.usage"
+			"%commands.op.usage",
+			[],
+			[
+				(new CommandOverload())
+					->target("player"),
+				(new CommandOverload())
+					->rawtext("player")
+			]
 		);
 		$this->setPermission("pocketmine.command.op.give");
 	}

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -38,7 +39,12 @@ class BanListCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.banlist.description",
-			"%commands.banlist.usage"
+			"%commands.banlist.usage",
+			[],
+			[
+				(new CommandOverload())
+					->addListParameter("args", "banlist", ["ips", "players"])
+			]
 		);
 		$this->setPermission("pocketmine.command.ban.list");
 	}

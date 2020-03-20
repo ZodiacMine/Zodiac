@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\block\BlockFactory;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\item\ItemFactory;
@@ -77,7 +78,15 @@ class ParticleCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.particle.description",
-			"%pocketmine.command.particle.usage"
+			"%pocketmine.command.particle.usage",
+			[],
+			[
+				(new CommandOverload())
+					->string("effect")
+					->position("position")
+					->int("count", 0, true)
+					->int("data", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.particle");
 	}

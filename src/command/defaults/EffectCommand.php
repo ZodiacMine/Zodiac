@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\entity\effect\EffectInstance;
@@ -39,7 +40,19 @@ class EffectCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.effect.description",
-			"%commands.effect.usage"
+			"%commands.effect.usage",
+			[],
+			[
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("clear", "ClearEffects", ["clear"]),
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("effect", "Effect", [])
+					->int("seconds")
+					->int("amplifier")
+					->addListParameter("hideParticles", "Boolean", ["true", "false"])
+			]
 		);
 		$this->setPermission("pocketmine.command.effect");
 	}
@@ -49,19 +62,24 @@ class EffectCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) < 2){
+		if(count($args) < 1){
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$player = $sender->getServer()->getPlayer($args[0]);
+		$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
 
 		if($player === null){
 			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.player.notFound"));
 			return true;
 		}
+
+		if(count($args) < 1){
+			throw new InvalidCommandSyntaxException();
+		}
+
 		$effectManager = $player->getEffects();
 
-		if(strtolower($args[1]) === "clear"){
+		if(strtolower($args[0]) === "clear"){
 			$effectManager->clear();
 
 			$sender->sendMessage(new TranslationContainer("commands.effect.success.removed.all", [$player->getDisplayName()]));
@@ -69,16 +87,16 @@ class EffectCommand extends VanillaCommand{
 		}
 
 		try{
-			$effect = VanillaEffects::fromString($args[1]);
+			$effect = VanillaEffects::fromString($args[0]);
 		}catch(\InvalidArgumentException $e){
-			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.effect.notFound", [$args[1]]));
+			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.effect.notFound", [$args[0]]));
 			return true;
 		}
 
 		$amplification = 0;
 
-		if(count($args) >= 3){
-			if(($d = $this->getBoundedInt($sender, $args[2], 0, (int) (Limits::INT32_MAX / 20))) === null){
+		if(count($args) >= 2){
+			if(($d = $this->getBoundedInt($sender, $args[1], 0, (int) (Limits::INT32_MAX / 20))) === null){
 				return false;
 			}
 			$duration = $d * 20; //ticks
@@ -86,16 +104,16 @@ class EffectCommand extends VanillaCommand{
 			$duration = null;
 		}
 
-		if(count($args) >= 4){
-			$amplification = $this->getBoundedInt($sender, $args[3], 0, 255);
+		if(count($args) >= 3){
+			$amplification = $this->getBoundedInt($sender, $args[2], 0, 255);
 			if($amplification === null){
 				return false;
 			}
 		}
 
 		$visible = true;
-		if(count($args) >= 5){
-			$v = strtolower($args[4]);
+		if(count($args) >= 4){
+			$v = strtolower($args[3]);
 			if($v === "on" or $v === "true" or $v === "t" or $v === "1"){
 				$visible = false;
 			}

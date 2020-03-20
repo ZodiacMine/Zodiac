@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -39,7 +40,13 @@ class BanIpCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.ban.ip.description",
-			"%commands.banip.usage"
+			"%commands.banip.usage",
+			[],
+			[
+				(new CommandOverload())
+					->string("ip")
+					->rawtext("reason")
+			]
 		);
 		$this->setPermission("pocketmine.command.ban.ip");
 	}
