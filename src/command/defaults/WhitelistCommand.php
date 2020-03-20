@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -39,7 +40,13 @@ class WhitelistCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.whitelist.description",
-			"%commands.whitelist.usage"
+			"%commands.whitelist.usage",
+			[],
+			[
+				(new CommandOverload())
+					->addListParameter("action", "WhitelistAction", ["list", "reload", "add", "remove", "on", "off"])
+					->rawtext("name", 0, true) // In BDS this is string lol, but player names can contain spaces...
+			]
 		);
 		$this->setPermission("pocketmine.command.whitelist.reload;pocketmine.command.whitelist.enable;pocketmine.command.whitelist.disable;pocketmine.command.whitelist.list;pocketmine.command.whitelist.add;pocketmine.command.whitelist.remove");
 	}
@@ -49,7 +56,7 @@ class WhitelistCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) === 0 or count($args) > 2){
+		if(count($args) === 0){
 			throw new InvalidCommandSyntaxException();
 		}
 

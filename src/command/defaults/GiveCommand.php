@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\item\ItemFactory;
@@ -41,7 +42,16 @@ class GiveCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.give.description",
-			"%pocketmine.command.give.usage"
+			"%pocketmine.command.give.usage",
+			[],
+			[
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("itemName", "Item", [])
+					->int("amount", 0, true)
+					->int("data", 0, true)
+					->rawtext("components", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.give");
 	}

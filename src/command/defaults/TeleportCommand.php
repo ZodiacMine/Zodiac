@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -42,7 +43,56 @@ class TeleportCommand extends VanillaCommand{
 			$name,
 			"%pocketmine.command.tp.description",
 			"%commands.tp.usage",
-			["teleport"]
+			["teleport"],
+			[
+				(new CommandOverload())
+					->position("destination")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->position("destination")
+					->value("yRot", 0, true)
+					->value("xRot", 0, true)
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->position("destination") //TODO: This is ARG_TYPE_DESTIONAL(0x26), not 0x25 and also all the POSTION in this class are destional
+					->addListParameter("facing", "TeleportFacing", ["facing"])
+					->position("lookAtPosition") //TODO: Also destional
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->position("destination")
+					->addListParameter("facing", "TeleportFacing", ["facing"])
+					->target("lookAtEntity")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->target("victim")
+					->position("destination")
+					->value("yRot", 0, true)
+					->value("xRot", 0, true)
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->target("victim")
+					->position("destination")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->target("victim")
+					->position("destination")
+					->addListParameter("facing", "TeleportFacing", ["facing"])
+					->position("lookAtPosition")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->target("victim")
+					->position("destination")
+					->addListParameter("facing", "TeleportFacing", ["facing"])
+					->target("lookAtEntity")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->target("destination")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+				(new CommandOverload())
+					->target("victim")
+					->target("destination")
+					->addListParameter("checkForBlocks", "Boolean", ["true", "false"], 0, true),
+			]
 		);
 		$this->setPermission("pocketmine.command.teleport");
 	}

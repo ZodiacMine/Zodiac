@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -40,7 +41,13 @@ class KickCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.kick.description",
-			"%commands.kick.usage"
+			"%commands.kick.usage",
+			[],
+			[
+				(new CommandOverload())
+					->target("player")
+					->rawtext("reason")
+			]
 		);
 		$this->setPermission("pocketmine.command.kick");
 	}

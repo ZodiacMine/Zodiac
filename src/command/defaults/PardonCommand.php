@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -36,7 +37,11 @@ class PardonCommand extends VanillaCommand{
 			$name,
 			"%pocketmine.command.unban.player.description",
 			"%commands.unban.usage",
-			["unban"]
+			["unban"],
+			[
+				(new CommandOverload())
+					->rawtext("player")
+			]
 		);
 		$this->setPermission("pocketmine.command.unban.player");
 	}

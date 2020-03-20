@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -35,7 +36,14 @@ class DefaultGamemodeCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.defaultgamemode.description",
-			"%commands.defaultgamemode.usage"
+			"%commands.defaultgamemode.usage",
+			[],
+			[
+				(new CommandOverload())
+					->addListParameter("gameMode", "GameMode", []),
+				(new CommandOverload())
+					->int("gameMode")
+			]
 		);
 		$this->setPermission("pocketmine.command.defaultgamemode");
 	}

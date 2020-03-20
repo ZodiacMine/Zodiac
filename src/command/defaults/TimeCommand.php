@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -38,7 +39,22 @@ class TimeCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.time.description",
-			"%pocketmine.command.time.usage"
+			"%pocketmine.command.time.usage",
+			[],
+			[
+				(new CommandOverload())
+					->addListParameter("mode", "TimeModeAdd", ["add"])
+					->int("amount"),
+				(new CommandOverload())
+					->addListParameter("mode", "TimeModeSet", ["set"])
+					->int("amount"),
+				(new CommandOverload())
+					->addListParameter("mode", "TimeModeSet", ["set"])
+					->addListParameter("time", "TimeSpec", ["day", "sunrise", "noon", "sunset", "night", "midnight"]),
+				(new CommandOverload())
+					->addListParameter("mode", "TimeModeQuery", ["query"])
+					->addListParameter("time", "TimeQuery", ["daytime", "gametime", "day"])
+			]
 		);
 		$this->setPermission("pocketmine.command.time.add;pocketmine.command.time.set;pocketmine.command.time.start;pocketmine.command.time.stop");
 	}

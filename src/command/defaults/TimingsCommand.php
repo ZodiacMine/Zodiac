@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -53,7 +54,12 @@ class TimingsCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.timings.description",
-			"%pocketmine.command.timings.usage"
+			"%pocketmine.command.timings.usage",
+			[],
+			[
+				(new CommandOverload())
+					->addListParameter("mode", "TimingsMode", ["on", "off", "paste", "reset", "report", "merged"])
+			]
 		);
 		$this->setPermission("pocketmine.command.timings");
 	}

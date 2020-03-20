@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -36,7 +37,26 @@ class TitleCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.title.description",
-			"%commands.title.usage"
+			"%commands.title.usage",
+			[],
+			[
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("clear", "TitleClear", ["clear"]),
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("reset", "TitleReset", ["reset"]),
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("titleLocation", "TitleSet", ["title", "subtitle", "actionbar"], 1) //TODO: Use constant?
+					->message("titleText"),
+				(new CommandOverload())
+					->target("player")
+					->addListParameter("times", "TitleTimes", ["times"])
+					->int("fadeIn")
+					->int("stay")
+					->int("fadeOut")
+			]
 		);
 		$this->setPermission("pocketmine.command.title");
 	}

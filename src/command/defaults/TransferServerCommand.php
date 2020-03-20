@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
@@ -34,7 +35,13 @@ class TransferServerCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.transferserver.description",
-			"%pocketmine.command.transferserver.usage"
+			"%pocketmine.command.transferserver.usage",
+			[],
+			[
+				(new CommandOverload())
+					->string("ip")
+					->int("port", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.transferserver");
 	}

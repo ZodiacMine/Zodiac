@@ -36,7 +36,9 @@ class GarbageCollectorCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.gc.description",
-			"%pocketmine.command.gc.usage"
+			"%pocketmine.command.gc.usage",
+			[],
+			[]
 		);
 		$this->setPermission("pocketmine.command.gc");
 	}

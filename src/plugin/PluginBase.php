@@ -25,12 +25,14 @@ namespace pocketmine\plugin;
 
 use pocketmine\command\Command;
 use pocketmine\command\CommandExecutor;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginCommand;
 use pocketmine\command\PluginIdentifiableCommand;
 use pocketmine\scheduler\TaskScheduler;
 use pocketmine\Server;
 use pocketmine\utils\Config;
+use function array_map;
 use function count;
 use function dirname;
 use function fclose;
@@ -210,6 +212,12 @@ abstract class PluginBase implements Plugin, CommandExecutor{
 
 				if(isset($data["permission-message"])){
 					$newCmd->setPermissionMessage($data["permission-message"]);
+				}
+
+				if(isset($data["overloads"])){
+					$newCmd->setOverloads(array_map(function(array $data) : CommandOverload{
+						return CommandOverload::fromArray($data);
+					}, $data["overloads"]));
 				}
 
 				$pluginCmds[] = $newCmd;

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
@@ -36,7 +37,14 @@ class DifficultyCommand extends VanillaCommand{
 		parent::__construct(
 			$name,
 			"%pocketmine.command.difficulty.description",
-			"%commands.difficulty.usage"
+			"%commands.difficulty.usage",
+			[],
+			[
+				(new CommandOverload())
+					->addListParameter("difficulty", "Difficulty", []),
+				(new CommandOverload())
+					->int("difficulty")
+			]
 		);
 		$this->setPermission("pocketmine.command.difficulty");
 	}

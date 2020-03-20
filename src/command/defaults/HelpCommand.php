@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\command\defaults;
 
 use pocketmine\command\Command;
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\lang\TranslationContainer;
 use pocketmine\utils\TextFormat;
@@ -46,7 +47,13 @@ class HelpCommand extends VanillaCommand{
 			$name,
 			"%pocketmine.command.help.description",
 			"%commands.help.usage",
-			["?"]
+			["?"],
+			[
+				(new CommandOverload())
+					->command("command"),
+				(new CommandOverload())
+					->int("page")
+			]
 		);
 		$this->setPermission("pocketmine.command.help");
 	}

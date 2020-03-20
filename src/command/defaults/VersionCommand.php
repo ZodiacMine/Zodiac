@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\command\defaults;
 
+use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\lang\TranslationContainer;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
@@ -40,7 +41,11 @@ class VersionCommand extends VanillaCommand{
 			$name,
 			"%pocketmine.command.version.description",
 			"%pocketmine.command.version.usage",
-			["ver", "about"]
+			["ver", "about"],
+			[
+				(new CommandOverload())
+					->rawtext("pluginName", 0, true)
+			]
 		);
 		$this->setPermission("pocketmine.command.version");
 	}
