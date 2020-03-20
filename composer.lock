@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c55452c3a3228cef5031137f10f056f9",
+    "content-hash": "eb5c00f216648065ac33cbdf00af2038",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -49,46 +49,6 @@
                 "strip-comment"
             ],
             "time": "2020-01-03T13:51:23+00:00"
-        },
-        {
-            "name": "daverandom/callback-validator",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/DaveRandom/CallbackValidator.git",
-                "reference": "d87a08cddbc6099816ed01e50ce25cdfc43b542f"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/DaveRandom/CallbackValidator/zipball/d87a08cddbc6099816ed01e50ce25cdfc43b542f",
-                "reference": "d87a08cddbc6099816ed01e50ce25cdfc43b542f",
-                "shasum": ""
-            },
-            "require": {
-                "ext-reflection": "*",
-                "php": ">=7.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^6.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "DaveRandom\\CallbackValidator\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Chris Wright",
-                    "email": "cw@daverandom.com"
-                }
-            ],
-            "description": "Tools for validating callback signatures",
-            "time": "2017-04-03T15:22:41+00:00"
         },
         {
             "name": "fgrosse/phpasn1",
@@ -328,6 +288,49 @@
             "time": "2020-01-28T12:17:38+00:00"
         },
         {
+            "name": "pocketmine/callback-validator",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pmmp/CallbackValidator.git",
+                "reference": "4aef6bb25f97d0b830ba0b4f66834b1a9c86fc9a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pmmp/CallbackValidator/zipball/4aef6bb25f97d0b830ba0b4f66834b1a9c86fc9a",
+                "reference": "4aef6bb25f97d0b830ba0b4f66834b1a9c86fc9a",
+                "shasum": ""
+            },
+            "require": {
+                "ext-reflection": "*",
+                "php": ">=7.1"
+            },
+            "replace": {
+                "daverandom/callback-validator": "*"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DaveRandom\\CallbackValidator\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Chris Wright",
+                    "email": "cw@daverandom.com"
+                }
+            ],
+            "description": "Fork of daverandom/callback-validator - Tools for validating callback signatures",
+            "time": "2020-03-17T12:04:22+00:00"
+        },
+        {
             "name": "pocketmine/classloader",
             "version": "dev-master",
             "source": {
@@ -443,12 +446,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/NBT.git",
-                "reference": "f205b5e6fe47ddf0ead4f1438b37f9cdee1fc407"
+                "reference": "f2517ec187a8306a3d3f594bf06a7c828645b9d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/NBT/zipball/f205b5e6fe47ddf0ead4f1438b37f9cdee1fc407",
-                "reference": "f205b5e6fe47ddf0ead4f1438b37f9cdee1fc407",
+                "url": "https://api.github.com/repos/pmmp/NBT/zipball/f2517ec187a8306a3d3f594bf06a7c828645b9d7",
+                "reference": "f2517ec187a8306a3d3f594bf06a7c828645b9d7",
                 "shasum": ""
             },
             "require": {
@@ -472,7 +475,7 @@
                 "LGPL-3.0"
             ],
             "description": "PHP library for working with Named Binary Tags",
-            "time": "2020-03-04T16:39:25+00:00"
+            "time": "2020-03-04T18:52:35+00:00"
         },
         {
             "name": "pocketmine/raklib",
@@ -643,16 +646,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.14",
+            "version": "0.12.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "37bdd26a80235d0f9045b49f4151102b7831cbe2"
+                "reference": "b2c37bda79fdb11d801ce208ce391cffc0f572e6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/37bdd26a80235d0f9045b49f4151102b7831cbe2",
-                "reference": "37bdd26a80235d0f9045b49f4151102b7831cbe2",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/b2c37bda79fdb11d801ce208ce391cffc0f572e6",
+                "reference": "b2c37bda79fdb11d801ce208ce391cffc0f572e6",
                 "shasum": ""
             },
             "require": {
@@ -678,7 +681,7 @@
                 "MIT"
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
-            "time": "2020-03-02T22:29:43+00:00"
+            "time": "2020-03-17T15:39:11+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
@@ -797,8 +800,7 @@
         "pocketmine/log": 20,
         "pocketmine/nbt": 20,
         "pocketmine/math": 20,
-        "pocketmine/classloader": 20,
-        "daverandom/callback-validator": 20
+        "pocketmine/classloader": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
