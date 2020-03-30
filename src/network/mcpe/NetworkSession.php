@@ -25,6 +25,7 @@ namespace pocketmine\network\mcpe;
 
 use Mdanter\Ecc\Crypto\Key\PublicKeyInterface;
 use pocketmine\command\CommandOverload;
+use pocketmine\entity\Attribute;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\Human;
 use pocketmine\entity\Living;
@@ -71,6 +72,7 @@ use pocketmine\network\mcpe\protocol\TransferPacket;
 use pocketmine\network\mcpe\protocol\types\command\CommandData;
 use pocketmine\network\mcpe\protocol\types\command\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\command\CommandParameter;
+use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
@@ -272,7 +274,7 @@ class NetworkSession{
 				$payload = $this->cipher->decrypt($payload);
 			}catch(\UnexpectedValueException $e){
 				$this->logger->debug("Encrypted packet: " . base64_encode($payload));
-				throw new BadPacketException("Packet decryption error: " . $e->getMessage(), 0, $e);
+				throw BadPacketException::wrap($e, "Packet decryption error");
 			}finally{
 				Timings::$playerNetworkReceiveDecryptTimer->stopTiming();
 			}
@@ -284,7 +286,7 @@ class NetworkSession{
 		}catch(\ErrorException $e){
 			$this->logger->debug("Failed to decompress packet: " . base64_encode($payload));
 			//TODO: this isn't incompatible game version if we already established protocol version
-			throw new BadPacketException("Compressed packet batch decode error: " . $e->getMessage(), 0, $e);
+			throw BadPacketException::wrap($e, "Compressed packet batch decode error");
 		}finally{
 			Timings::$playerNetworkReceiveDecompressTimer->stopTiming();
 		}
@@ -298,14 +300,14 @@ class NetworkSession{
 				$pk = $stream->getPacket();
 			}catch(BinaryDataException $e){
 				$this->logger->debug("Packet batch: " . base64_encode($stream->getBuffer()));
-				throw new BadPacketException("Packet batch decode error: " . $e->getMessage(), 0, $e);
+				throw BadPacketException::wrap($e, "Packet batch decode error");
 			}
 
 			try{
 				$this->handleDataPacket($pk);
 			}catch(BadPacketException $e){
 				$this->logger->debug($pk->getName() . ": " . base64_encode($pk->getBinaryStream()->getBuffer()));
-				throw new BadPacketException("Error processing " . $pk->getName() . ": " . $e->getMessage(), 0, $e);
+				throw BadPacketException::wrap($e, "Error processing " . $pk->getName());
 			}
 		}
 	}
@@ -659,7 +661,9 @@ class NetworkSession{
 	public function syncAttributes(Living $entity, bool $sendAll = false) : void{
 		$entries = $sendAll ? $entity->getAttributeMap()->getAll() : $entity->getAttributeMap()->needSend();
 		if(count($entries) > 0){
-			$this->sendDataPacket(UpdateAttributesPacket::create($entity->getId(), $entries));
+			$this->sendDataPacket(UpdateAttributesPacket::create($entity->getId(), array_map(function(Attribute $attr) : NetworkAttribute{
+				return new NetworkAttribute($attr->getId(), $attr->getMinValue(), $attr->getMaxValue(), $attr->getValue(), $attr->getDefaultValue());
+			}, $entries)));
 			foreach($entries as $entry){
 				$entry->markSynchronized();
 			}

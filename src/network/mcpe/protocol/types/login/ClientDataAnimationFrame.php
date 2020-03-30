@@ -21,35 +21,40 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\raklib;
+namespace pocketmine\network\mcpe\protocol\types\login;
 
-use pocketmine\network\mcpe\PacketSender;
+/**
+ * Model class for LoginPacket JSON data for JsonMapper
+ */
+final class ClientDataAnimationFrame{
 
-class RakLibPacketSender implements PacketSender{
+	/**
+	 * @var int
+	 * @required
+	 */
+	public $ImageHeight;
 
-	/** @var int */
-	private $sessionId;
-	/** @var RakLibInterface */
-	private $handler;
+	/**
+	 * @var int
+	 * @required
+	 */
+	public $ImageWidth;
 
-	/** @var bool */
-	private $closed = false;
+	/**
+	 * @var float
+	 * @required
+	 */
+	public $Frames;
 
-	public function __construct(int $sessionId, RakLibInterface $handler){
-		$this->sessionId = $sessionId;
-		$this->handler = $handler;
-	}
+	/**
+	 * @var int
+	 * @required
+	 */
+	public $Type;
 
-	public function send(string $payload, bool $immediate) : void{
-		if(!$this->closed){
-			$this->handler->putPacket($this->sessionId, $payload, $immediate);
-		}
-	}
-
-	public function close(string $reason = "unknown reason") : void{
-		if(!$this->closed){
-			$this->closed = true;
-			$this->handler->close($this->sessionId);
-		}
-	}
+	/**
+	 * @var string
+	 * @required
+	 */
+	public $Image;
 }

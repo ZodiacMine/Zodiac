@@ -548,7 +548,7 @@ class InGamePacketHandler extends PacketHandler{
 			$offset = 0;
 			$nbt = (new NetworkNbtSerializer())->read($packet->namedtag, $offset, 512)->mustGetCompoundTag();
 		}catch(NbtDataException $e){
-			throw new BadPacketException($e->getMessage(), 0, $e);
+			throw BadPacketException::wrap($e);
 		}
 
 		if($block instanceof Sign){
@@ -556,7 +556,7 @@ class InGamePacketHandler extends PacketHandler{
 				try{
 					$text = SignText::fromBlob($nbt->getString("Text"));
 				}catch(\InvalidArgumentException $e){
-					throw new BadPacketException("Invalid sign text update: " . $e->getMessage(), 0, $e);
+					throw BadPacketException::wrap($e, "Invalid sign text update");
 				}
 
 				try{
@@ -564,7 +564,7 @@ class InGamePacketHandler extends PacketHandler{
 						$this->player->getWorld()->sendBlocks([$this->player], [$pos]);
 					}
 				}catch(\UnexpectedValueException $e){
-					throw new BadPacketException($e->getMessage(), 0, $e);
+					throw BadPacketException::wrap($e);
 				}
 
 				return true;
