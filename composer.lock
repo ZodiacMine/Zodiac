@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a63bc5707806813d65bd04b27add1207",
+    "content-hash": "4e7f211960d0364396b754e5d0db044f",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -304,21 +304,18 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/pmmp/BinaryUtils.git",
-                "reference": "a36705550b42e7e93e2a9748a8b9fa88985780bf"
+                "url": "https://github.com/Minejong/BinaryUtils.git",
+                "reference": "04e1daaf23812f283af72cba06c02227580e531d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/BinaryUtils/zipball/a36705550b42e7e93e2a9748a8b9fa88985780bf",
-                "reference": "a36705550b42e7e93e2a9748a8b9fa88985780bf",
+                "url": "https://api.github.com/repos/Minejong/BinaryUtils/zipball/04e1daaf23812f283af72cba06c02227580e531d",
+                "reference": "04e1daaf23812f283af72cba06c02227580e531d",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.2",
+                "php": ">=7.0.0",
                 "php-64bit": "*"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^0.12.8"
             },
             "type": "library",
             "autoload": {
@@ -326,12 +323,15 @@
                     "pocketmine\\utils\\": "src/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "LGPL-3.0"
             ],
             "description": "Classes and methods for conveniently handling binary data",
-            "time": "2020-01-28T12:17:38+00:00"
+            "support": {
+                "source": "https://github.com/Minejong/BinaryUtils/tree/master",
+                "issues": "https://github.com/Minejong/BinaryUtils/issues"
+            },
+            "time": "2020-03-20T12:45:43+00:00"
         },
         {
             "name": "pocketmine/callback-validator",
@@ -567,24 +567,21 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Minejong/RakLib.git",
-                "reference": "ac760be844002169c6e08fe2d813b3604f83f8ac"
+                "reference": "33f25c559366446a93e705abf15e57c9861bbbe9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Minejong/RakLib/zipball/ac760be844002169c6e08fe2d813b3604f83f8ac",
-                "reference": "ac760be844002169c6e08fe2d813b3604f83f8ac",
+                "url": "https://api.github.com/repos/Minejong/RakLib/zipball/33f25c559366446a93e705abf15e57c9861bbbe9",
+                "reference": "33f25c559366446a93e705abf15e57c9861bbbe9",
                 "shasum": ""
             },
             "require": {
-                "ext-pthreads": "~3.2.0",
                 "ext-sockets": "*",
                 "php": ">=7.2.0",
                 "php-64bit": "*",
                 "php-ipv6": "*",
                 "pocketmine/binaryutils": "dev-master",
-                "pocketmine/log": "dev-master",
-                "pocketmine/snooze": "^0.1.0",
-                "pocketmine/spl": "dev-master"
+                "pocketmine/log": "dev-master"
             },
             "require-dev": {
                 "phpstan/phpstan": "^0.12.18",
@@ -603,7 +600,7 @@
             "support": {
                 "source": "https://github.com/Minejong/RakLib/tree/master"
             },
-            "time": "2020-03-30T09:54:11+00:00"
+            "time": "2020-04-01T09:24:23+00:00"
         },
         {
             "name": "pocketmine/snooze",
@@ -881,10 +878,10 @@
         "pocketmine/raklib": 20,
         "pocketmine/spl": 20,
         "pocketmine/binaryutils": 20,
-        "pocketmine/log": 20,
         "pocketmine/nbt": 20,
         "pocketmine/math": 20,
         "pocketmine/classloader": 20,
+        "pocketmine/log": 20,
         "pocketmine/log-pthreads": 20
     },
     "prefer-stable": false,
