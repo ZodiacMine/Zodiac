@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4e7f211960d0364396b754e5d0db044f",
+    "content-hash": "9c6b997afce69621be62bcb9b9654def",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -567,12 +567,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Minejong/RakLib.git",
-                "reference": "33f25c559366446a93e705abf15e57c9861bbbe9"
+                "reference": "e1825a99f3c63b35c40406b619deff7160016846"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Minejong/RakLib/zipball/33f25c559366446a93e705abf15e57c9861bbbe9",
-                "reference": "33f25c559366446a93e705abf15e57c9861bbbe9",
+                "url": "https://api.github.com/repos/Minejong/RakLib/zipball/e1825a99f3c63b35c40406b619deff7160016846",
+                "reference": "e1825a99f3c63b35c40406b619deff7160016846",
                 "shasum": ""
             },
             "require": {
@@ -600,7 +600,7 @@
             "support": {
                 "source": "https://github.com/Minejong/RakLib/tree/master"
             },
-            "time": "2020-04-01T09:24:23+00:00"
+            "time": "2020-04-03T06:44:44+00:00"
         },
         {
             "name": "pocketmine/snooze",
@@ -878,10 +878,10 @@
         "pocketmine/raklib": 20,
         "pocketmine/spl": 20,
         "pocketmine/binaryutils": 20,
+        "pocketmine/log": 20,
         "pocketmine/nbt": 20,
         "pocketmine/math": 20,
         "pocketmine/classloader": 20,
-        "pocketmine/log": 20,
         "pocketmine/log-pthreads": 20
     },
     "prefer-stable": false,
