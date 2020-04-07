@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9c6b997afce69621be62bcb9b9654def",
+    "content-hash": "595e148ce162ff739808b36aef007cb6",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -566,13 +566,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/Minejong/RakLib.git",
-                "reference": "e1825a99f3c63b35c40406b619deff7160016846"
+                "url": "https://github.com/ZodiacMine/RakLib.git",
+                "reference": "e429eb69f489556dd1c5e49d92194df986f6890d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Minejong/RakLib/zipball/e1825a99f3c63b35c40406b619deff7160016846",
-                "reference": "e1825a99f3c63b35c40406b619deff7160016846",
+                "url": "https://api.github.com/repos/ZodiacMine/RakLib/zipball/e429eb69f489556dd1c5e49d92194df986f6890d",
+                "reference": "e429eb69f489556dd1c5e49d92194df986f6890d",
                 "shasum": ""
             },
             "require": {
@@ -598,9 +598,9 @@
             ],
             "description": "A RakNet server implementation written in PHP",
             "support": {
-                "source": "https://github.com/Minejong/RakLib/tree/master"
+                "source": "https://github.com/ZodiacMine/RakLib/tree/master"
             },
-            "time": "2020-04-03T06:44:44+00:00"
+            "time": "2020-04-07T06:42:06+00:00"
         },
         {
             "name": "pocketmine/snooze",

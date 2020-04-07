@@ -70,7 +70,7 @@
    "repositories": [
       {
          "type": "vcs",
-         "url": "https://github.com/Minejong/RakLib"
+         "url": "https://github.com/ZodiacMine/RakLib"
       },
       {
          "type": "vcs",
