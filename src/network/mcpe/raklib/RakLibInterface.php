@@ -101,7 +101,6 @@ class RakLibInterface implements ServerEventListener, AdvancedNetworkInterface{
 			$this->sleeper
 		);
 		$this->eventReceiver = new RakLibToUserThreadMessageReceiver(
-			$this,
 			new PthreadsChannelReader($threadToMainBuffer)
 		);
 		$this->interface = new UserToRakLibThreadMessageSender(
@@ -111,7 +110,7 @@ class RakLibInterface implements ServerEventListener, AdvancedNetworkInterface{
 
 	public function start() : void{
 		$this->server->getTickSleeper()->addNotifier($this->sleeper, function() : void{
-			while($this->eventReceiver->handle());
+			while($this->eventReceiver->handle($this));
 		});
 		$this->server->getLogger()->debug("Waiting for RakLib to start...");
 		$this->rakLib->startAndWait(PTHREADS_INHERIT_CONSTANTS); //HACK: MainLogger needs constants for exception logging
