@@ -46,7 +46,7 @@ class SeedCommand extends VanillaCommand{
 		}
 
 		if($sender instanceof Player){
-			$seed = $sender->getPosition()->getWorld()->getSeed();
+			$seed = $sender->getPosition()->getWorldNonNull()->getSeed();
 		}else{
 			$seed = $sender->getServer()->getWorldManager()->getDefaultWorld()->getSeed();
 		}

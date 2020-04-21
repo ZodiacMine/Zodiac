@@ -163,7 +163,11 @@ class NetworkSession{
 
 		$this->connectTime = time();
 
-		$this->setHandler(new LoginPacketHandler($this->server, $this));
+		$this->setHandler(new LoginPacketHandler($this->server, $this, function(PlayerInfo $info) : void{
+			$this->info = $info;
+			$this->logger->info("Player: " . TextFormat::AQUA . $info->getUsername() . TextFormat::RESET);
+			$this->logger->setPrefix($this->getLogPrefix());
+		}));
 
 		$this->manager->add($this);
 		$this->logger->info("Session opened");
@@ -203,20 +207,6 @@ class NetworkSession{
 
 	public function getPlayerInfo() : ?PlayerInfo{
 		return $this->info;
-	}
-
-	/**
-	 * TODO: this shouldn't be accessible after the initial login phase
-	 *
-	 * @throws \InvalidStateException
-	 */
-	public function setPlayerInfo(PlayerInfo $info) : void{
-		if($this->info !== null){
-			throw new \InvalidStateException("Player info has already been set");
-		}
-		$this->info = $info;
-		$this->logger->info("Player: " . TextFormat::AQUA . $info->getUsername() . TextFormat::RESET);
-		$this->logger->setPrefix($this->getLogPrefix());
 	}
 
 	public function isConnected() : bool{
@@ -541,23 +531,21 @@ class NetworkSession{
 
 		if($this->manager->kickDuplicates($this)){
 			if(NetworkCipher::$ENABLED){
-				$this->server->getAsyncPool()->submitTask(new PrepareEncryptionTask($this, $clientPubKey));
+				$this->server->getAsyncPool()->submitTask(new PrepareEncryptionTask($clientPubKey, function(string $encryptionKey, string $handshakeJwt) : void{
+					if(!$this->connected){
+						return;
+					}
+					$this->sendDataPacket(ServerToClientHandshakePacket::create($handshakeJwt), true); //make sure this gets sent before encryption is enabled
+
+					$this->cipher = new NetworkCipher($encryptionKey);
+
+					$this->setHandler(new HandshakePacketHandler($this));
+					$this->logger->debug("Enabled encryption");
+				}));
 			}else{
 				$this->onLoginSuccess();
 			}
 		}
-	}
-
-	public function enableEncryption(string $encryptionKey, string $handshakeJwt) : void{
-		if(!$this->connected){
-			return;
-		}
-		$this->sendDataPacket(ServerToClientHandshakePacket::create($handshakeJwt), true); //make sure this gets sent before encryption is enabled
-
-		$this->cipher = new NetworkCipher($encryptionKey);
-
-		$this->setHandler(new HandshakePacketHandler($this));
-		$this->logger->debug("Enabled encryption");
 	}
 
 	public function onLoginSuccess() : void{

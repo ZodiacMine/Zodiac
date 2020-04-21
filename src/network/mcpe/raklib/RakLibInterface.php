@@ -34,7 +34,6 @@ use pocketmine\utils\Filesystem;
 use pocketmine\utils\Utils;
 use raklib\protocol\EncapsulatedPacket;
 use raklib\protocol\PacketReliability;
-use raklib\RakLib;
 use raklib\server\ipc\RakLibToUserThreadMessageReceiver;
 use raklib\server\ipc\UserToRakLibThreadMessageSender;
 use raklib\server\ServerEventListener;
@@ -231,6 +230,10 @@ class RakLibInterface implements ServerEventListener, AdvancedNetworkInterface{
 		$this->interface->setOption("portChecking", $name);
 	}
 
+	public function setPacketLimit(int $limit) : void{
+		$this->interface->setOption("packetLimit", $limit);
+	}
+
 	public function handleOption(string $option, string $value) : void{
 		if($option === "bandwidth"){
 			$v = unserialize($value);
@@ -245,7 +248,7 @@ class RakLibInterface implements ServerEventListener, AdvancedNetworkInterface{
 			$pk->reliability = PacketReliability::RELIABLE_ORDERED;
 			$pk->orderChannel = 0;
 
-			$this->interface->sendEncapsulated($sessionId, $pk, ($immediate ? RakLib::PRIORITY_IMMEDIATE : RakLib::PRIORITY_NORMAL));
+			$this->interface->sendEncapsulated($sessionId, $pk, $immediate);
 		}
 	}
 

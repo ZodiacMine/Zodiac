@@ -25,11 +25,16 @@ namespace pocketmine\network\mcpe\handler;
 
 use pocketmine\entity\Skin;
 use pocketmine\event\player\PlayerPreLoginEvent;
+use pocketmine\network\BadPacketException;
 use pocketmine\network\mcpe\auth\ProcessLoginTask;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaPieceTintColor;
+use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaSkinPiece;
+use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
+use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\network\mcpe\protocol\types\SkinAnimation;
 use pocketmine\network\mcpe\protocol\types\SkinData;
@@ -50,10 +55,19 @@ class LoginPacketHandler extends PacketHandler{
 	private $server;
 	/** @var NetworkSession */
 	private $session;
+	/**
+	 * @var \Closure
+	 * @phpstan-var \Closure(PlayerInfo) : void
+	 */
+	private $playerInfoConsumer;
 
-	public function __construct(Server $server, NetworkSession $session){
+	/**
+	 * @phpstan-param \Closure(PlayerInfo) : void $playerInfoConsumer
+	 */
+	public function __construct(Server $server, NetworkSession $session, \Closure $playerInfoConsumer){
 		$this->session = $session;
 		$this->server = $server;
+		$this->playerInfoConsumer = $playerInfoConsumer;
 	}
 
 	public function handleLogin(LoginPacket $packet) : bool{
@@ -101,7 +115,16 @@ class LoginPacketHandler extends PacketHandler{
 				$clientData->PremiumSkin,
 				$clientData->PersonaSkin,
 				$clientData->CapeOnClassicSkin,
-				$clientData->CapeId
+				$clientData->CapeId,
+				null,
+				$clientData->ArmSize,
+				$clientData->SkinColor,
+				array_map(function(ClientDataPersonaSkinPiece $piece) : PersonaSkinPiece{
+					return new PersonaSkinPiece($piece->PieceId, $piece->PieceType, $piece->PackId, $piece->IsDefault, $piece->ProductId);
+				}, $clientData->PersonaPieces),
+				array_map(function(ClientDataPersonaPieceTintColor $tint) : PersonaPieceTintColor{
+					return new PersonaPieceTintColor($tint->PieceType, $tint->Colors);
+				}, $clientData->PieceTintColors)
 			);
 
 			$skin = SkinAdapterSingleton::get()->fromSkinData($skinData);
@@ -112,9 +135,14 @@ class LoginPacketHandler extends PacketHandler{
 			return true;
 		}
 
-		$this->session->setPlayerInfo(new PlayerInfo(
+		try{
+			$uuid = UUID::fromString($packet->extraData->identity);
+		}catch(\InvalidArgumentException $e){
+			throw BadPacketException::wrap($e, "Failed to parse login UUID");
+		}
+		($this->playerInfoConsumer)(new PlayerInfo(
 			$packet->extraData->displayName,
-			UUID::fromString($packet->extraData->identity),
+			$uuid,
 			$skin,
 			$packet->clientData->LanguageCode,
 			$packet->extraData->XUID,

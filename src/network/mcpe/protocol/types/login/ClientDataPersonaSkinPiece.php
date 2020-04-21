@@ -21,23 +21,39 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\network\mcpe\protocol\types\login;
 
-use pocketmine\item\Hoe;
-use pocketmine\item\Item;
-use pocketmine\math\Facing;
-use pocketmine\math\Vector3;
-use pocketmine\player\Player;
+/**
+ * Model class for LoginPacket JSON data for JsonMapper
+ */
+final class ClientDataPersonaSkinPiece{
+	/**
+	 * @var string
+	 * @required
+	 */
+	public $PieceId;
 
-class CoarseDirt extends Dirt{
+	/**
+	 * @var string
+	 * @required
+	 */
+	public $PieceType;
 
-	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
-		if($face === Facing::UP and $item instanceof Hoe){
-			$item->applyDamage(1);
-			$this->pos->getWorldNonNull()->setBlock($this->pos, VanillaBlocks::DIRT());
-			return true;
-		}
+	/**
+	 * @var string
+	 * @required
+	 */
+	public $PackId;
 
-		return false;
-	}
+	/**
+	 * @var bool
+	 * @required
+	 */
+	public $IsDefault;
+
+	/**
+	 * @var string
+	 * @required
+	 */
+	public $ProductId;
 }

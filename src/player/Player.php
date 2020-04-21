@@ -691,8 +691,8 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	/**
 	 * Resets the player's cooldown time for the given item back to the maximum.
 	 */
-	public function resetItemCooldown(Item $item) : void{
-		$ticks = $item->getCooldownTicks();
+	public function resetItemCooldown(Item $item, ?int $ticks = null) : void{
+		$ticks = $ticks ?? $item->getCooldownTicks();
 		if($ticks > 0){
 			$this->usedItemsCooldown[$item->getId()] = $this->server->getTick() + $ticks;
 		}
@@ -945,7 +945,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		if(!($pos instanceof Position)){
 			$world = $this->getWorld();
 		}else{
-			$world = $pos->getWorld();
+			$world = $pos->getWorldNonNull();
 		}
 		$this->spawnPosition = new Position($pos->x, $pos->y, $pos->z, $world);
 		$this->networkSession->syncPlayerSpawnPoint($this->spawnPosition);
@@ -1905,22 +1905,15 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	 *
 	 * @param TranslationContainer|string $quitMessage
 	 */
-	public function kick(string $reason = "", bool $isAdmin = true, $quitMessage = null) : bool{
+	public function kick(string $reason = "", $quitMessage = null) : bool{
 		$ev = new PlayerKickEvent($this, $reason, $quitMessage ?? $this->getLeaveMessage());
 		$ev->call();
 		if(!$ev->isCancelled()){
 			$reason = $ev->getReason();
-			$message = $reason;
-			if($isAdmin){
-				if(!$this->isBanned()){
-					$message = "Kicked by admin." . ($reason !== "" ? " Reason: " . $reason : "");
-				}
-			}else{
-				if($reason === ""){
-					$message = "disconnectionScreen.noReason";
-				}
+			if($reason === ""){
+				$reason = "disconnectionScreen.noReason";
 			}
-			$this->disconnect($message, $ev->getQuitMessage());
+			$this->disconnect($reason, $ev->getQuitMessage());
 
 			return true;
 		}
@@ -1932,8 +1925,8 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	 * Removes the player from the server. This cannot be cancelled.
 	 * This is used for remote disconnects and for uninterruptible disconnects (for example, when the server shuts down).
 	 *
-	 * Note for plugin developers: Prefer kick() with the isAdmin flag set to kick without the "Kicked by admin" part
-	 * instead of this method. This way other plugins can have a say in whether the player is removed or not.
+	 * Note for plugin developers: Prefer kick() instead of this method.
+	 * That way other plugins can have a say in whether the player is removed or not.
 	 *
 	 * @param string                      $reason Shown to the player, usually this will appear on their disconnect screen.
 	 * @param TranslationContainer|string $quitMessage Message to broadcast to online players (null will use default)
@@ -2040,7 +2033,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		}
 
 		if($this->hasValidSpawnPosition()){
-			$nbt->setString("SpawnLevel", $this->spawnPosition->getWorld()->getFolderName());
+			$nbt->setString("SpawnLevel", $this->spawnPosition->getWorldNonNull()->getFolderName());
 			$nbt->setInt("SpawnX", $this->spawnPosition->getFloorX());
 			$nbt->setInt("SpawnY", $this->spawnPosition->getFloorY());
 			$nbt->setInt("SpawnZ", $this->spawnPosition->getFloorZ());
@@ -2113,7 +2106,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		$ev = new PlayerRespawnEvent($this, $this->getSpawn());
 		$ev->call();
 
-		$realSpawn = Position::fromObject($ev->getRespawnPosition()->add(0.5, 0, 0.5), $ev->getRespawnPosition()->getWorld());
+		$realSpawn = Position::fromObject($ev->getRespawnPosition()->add(0.5, 0, 0.5), $ev->getRespawnPosition()->getWorldNonNull());
 		$this->teleport($realSpawn);
 
 		$this->setSprinting(false);

@@ -21,23 +21,35 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\item\Hoe;
-use pocketmine\item\Item;
-use pocketmine\math\Facing;
-use pocketmine\math\Vector3;
-use pocketmine\player\Player;
+final class PersonaPieceTintColor{
 
-class CoarseDirt extends Dirt{
+	public const PIECE_TYPE_PERSONA_EYES = "persona_eyes";
+	public const PIECE_TYPE_PERSONA_HAIR = "persona_hair";
+	public const PIECE_TYPE_PERSONA_MOUTH = "persona_mouth";
 
-	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
-		if($face === Facing::UP and $item instanceof Hoe){
-			$item->applyDamage(1);
-			$this->pos->getWorldNonNull()->setBlock($this->pos, VanillaBlocks::DIRT());
-			return true;
-		}
+	/** @var string */
+	private $pieceType;
+	/** @var string[] */
+	private $colors;
 
-		return false;
+	/**
+	 * @param string[] $colors
+	 */
+	public function __construct(string $pieceType, array $colors){
+		$this->pieceType = $pieceType;
+		$this->colors = $colors;
+	}
+
+	public function getPieceType() : string{
+		return $this->pieceType;
+	}
+
+	/**
+	 * @return string[]
+	 */
+	public function getColors() : array{
+		return $this->colors;
 	}
 }

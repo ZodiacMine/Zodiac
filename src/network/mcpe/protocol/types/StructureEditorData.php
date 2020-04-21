@@ -21,23 +21,28 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\item\Hoe;
-use pocketmine\item\Item;
-use pocketmine\math\Facing;
-use pocketmine\math\Vector3;
-use pocketmine\player\Player;
+class StructureEditorData{
+	public const TYPE_DATA = 0;
+	public const TYPE_SAVE = 1;
+	public const TYPE_LOAD = 2;
+	public const TYPE_CORNER = 3;
+	public const TYPE_INVALID = 4;
+	public const TYPE_EXPORT = 5;
 
-class CoarseDirt extends Dirt{
-
-	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
-		if($face === Facing::UP and $item instanceof Hoe){
-			$item->applyDamage(1);
-			$this->pos->getWorldNonNull()->setBlock($this->pos, VanillaBlocks::DIRT());
-			return true;
-		}
-
-		return false;
-	}
+	/** @var string */
+	public $structureName;
+	/** @var string */
+	public $structureDataField;
+	/** @var bool */
+	public $includePlayers;
+	/** @var bool */
+	public $showBoundingBox;
+	/** @var int */
+	public $structureBlockType;
+	/** @var StructureSettings */
+	public $structureSettings;
+	/** @var int */
+	public $structureRedstoneSaveMove;
 }
