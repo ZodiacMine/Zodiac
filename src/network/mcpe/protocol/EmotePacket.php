@@ -31,7 +31,7 @@ use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::EMOTE_PACKET;
 
-	private const FLAG_SERVER = 1 << 0;
+	public const FLAG_SERVER = 1 << 0;
 
 	/** @var int */
 	private $entityRuntimeId;
@@ -48,10 +48,7 @@ class EmotePacket extends DataPacket implements ClientboundPacket, ServerboundPa
 		return $result;
 	}
 
-	/**
-	 * TODO: we can't call this getEntityRuntimeId() because of base class collision (crap architecture, thanks Shoghi)
-	 */
-	public function getEntityRuntimeIdField() : int{
+	public function getEntityRuntimeId() : int{
 		return $this->entityRuntimeId;
 	}
 
