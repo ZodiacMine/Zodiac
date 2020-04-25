@@ -110,8 +110,8 @@ class LoginPacketHandler extends PacketHandler{
 						$animation[LoginPacket::I_ANIMATION_IMAGE_WIDTH],
 						base64_decode($animation[LoginPacket::I_ANIMATION_IMAGE_DATA], true)
 					),
-					$animation->Type,
-					$animation->Frames
+					$animation[LoginPacket::I_ANIMATION_IMAGE_TYPE],
+					$animation[LoginPacket::I_ANIMATION_IMAGE_FRAMES]
 				);
 			}
 			$skinData = new SkinData(
