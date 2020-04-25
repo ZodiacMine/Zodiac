@@ -85,7 +85,7 @@ abstract class Command{
 		$this->setAliases($aliases);
 		if($overloads === null){
 			$this->overloads = [
-				(new CommandOverload())->string("args", 0, true)
+				(new CommandOverload())->rawtext("args", 0, true)
 			];
 		}else{
 			$this->setOverloads($overloads);
