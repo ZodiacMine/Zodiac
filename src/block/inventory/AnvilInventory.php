@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\inventory;
+namespace pocketmine\block\inventory;
 
 use pocketmine\player\Player;
 use pocketmine\world\Position;

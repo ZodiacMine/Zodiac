@@ -21,11 +21,13 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\crafting;
+namespace pocketmine\network\mcpe\protocol\types\recipe;
 
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use pocketmine\utils\UUID;
 
-class MultiRecipe{
+final class MultiRecipe extends RecipeWithTypeId{
+
 	public const TYPE_REPAIR_ITEM = "00000000-0000-0000-0000-000000000001";
 	public const TYPE_MAP_EXTENDING = "D392B075-4BA1-40AE-8789-AF868D56F6CE";
 	public const TYPE_MAP_EXTENDING_CARTOGRAPHY = "8B36268C-1829-483C-A0F1-993B7156A8F2";
@@ -40,9 +42,22 @@ class MultiRecipe{
 	public const TYPE_MAP_LOCKING_CARTOGRAPHY = "602234E4-CAC1-4353-8BB7-B1EBFF70024B";
 
 	/** @var UUID */
-	private $uuid;
+	private $recipeId;
 
-	public function __construct(UUID $uuid){
-		$this->uuid = $uuid;
+	public function __construct(int $typeId, UUID $recipeId){
+		parent::__construct($typeId);
+		$this->recipeId = $recipeId;
+	}
+
+	public function getRecipeId() : UUID{
+		return $this->recipeId;
+	}
+
+	public static function decode(int $typeId, NetworkBinaryStream $in) : self{
+		return new self($typeId, $in->getUUID());
+	}
+
+	public function encode(NetworkBinaryStream $out) : void{
+		$out->putUUID($this->recipeId);
 	}
 }

@@ -36,7 +36,11 @@ use pocketmine\form\Form;
 use pocketmine\math\Vector3;
 use pocketmine\network\BadPacketException;
 use pocketmine\network\mcpe\compression\CompressBatchPromise;
+use pocketmine\network\mcpe\compression\DecompressionException;
 use pocketmine\network\mcpe\compression\Zlib;
+use pocketmine\network\mcpe\convert\SkinAdapterSingleton;
+use pocketmine\network\mcpe\convert\TypeConverter;
+use pocketmine\network\mcpe\encryption\DecryptionException;
 use pocketmine\network\mcpe\encryption\NetworkCipher;
 use pocketmine\network\mcpe\encryption\PrepareEncryptionTask;
 use pocketmine\network\mcpe\handler\DeathPacketHandler;
@@ -76,7 +80,6 @@ use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
-use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
 use pocketmine\network\NetworkSessionManager;
 use pocketmine\player\GameMode;
@@ -163,11 +166,18 @@ class NetworkSession{
 
 		$this->connectTime = time();
 
-		$this->setHandler(new LoginPacketHandler($this->server, $this, function(PlayerInfo $info) : void{
-			$this->info = $info;
-			$this->logger->info("Player: " . TextFormat::AQUA . $info->getUsername() . TextFormat::RESET);
-			$this->logger->setPrefix($this->getLogPrefix());
-		}));
+		$this->setHandler(new LoginPacketHandler(
+			$this->server,
+			$this,
+			function(PlayerInfo $info) : void{
+				$this->info = $info;
+				$this->logger->info("Player: " . TextFormat::AQUA . $info->getUsername() . TextFormat::RESET);
+				$this->logger->setPrefix($this->getLogPrefix());
+			},
+			function(bool $isAuthenticated, bool $authRequired, ?string $error, ?PublicKeyInterface $clientPubKey) : void{
+				$this->setAuthenticationStatus($isAuthenticated, $authRequired, $error, $clientPubKey);
+			}
+		));
 
 		$this->manager->add($this);
 		$this->logger->info("Session opened");
@@ -262,7 +272,7 @@ class NetworkSession{
 			Timings::$playerNetworkReceiveDecryptTimer->startTiming();
 			try{
 				$payload = $this->cipher->decrypt($payload);
-			}catch(\UnexpectedValueException $e){
+			}catch(DecryptionException $e){
 				$this->logger->debug("Encrypted packet: " . base64_encode($payload));
 				throw BadPacketException::wrap($e, "Packet decryption error");
 			}finally{
@@ -273,7 +283,7 @@ class NetworkSession{
 		Timings::$playerNetworkReceiveDecompressTimer->startTiming();
 		try{
 			$stream = new PacketBatch(Zlib::decompress($payload));
-		}catch(\ErrorException $e){
+		}catch(DecompressionException $e){
 			$this->logger->debug("Failed to decompress packet: " . base64_encode($payload));
 			//TODO: this isn't incompatible game version if we already established protocol version
 			throw BadPacketException::wrap($e, "Compressed packet batch decode error");
@@ -501,7 +511,7 @@ class NetworkSession{
 		}, $reason);
 	}
 
-	public function setAuthenticationStatus(bool $authenticated, bool $authRequired, ?string $error, ?PublicKeyInterface $clientPubKey) : void{
+	private function setAuthenticationStatus(bool $authenticated, bool $authRequired, ?string $error, ?PublicKeyInterface $clientPubKey) : void{
 		if(!$this->connected){
 			return;
 		}
@@ -539,7 +549,9 @@ class NetworkSession{
 
 					$this->cipher = new NetworkCipher($encryptionKey);
 
-					$this->setHandler(new HandshakePacketHandler($this));
+					$this->setHandler(new HandshakePacketHandler(function() : void{
+						$this->onLoginSuccess();
+					}));
 					$this->logger->debug("Enabled encryption");
 				}));
 			}else{
@@ -548,16 +560,18 @@ class NetworkSession{
 		}
 	}
 
-	public function onLoginSuccess() : void{
+	private function onLoginSuccess() : void{
 		$this->loggedIn = true;
 
 		$this->sendDataPacket(PlayStatusPacket::create(PlayStatusPacket::LOGIN_SUCCESS));
 
 		$this->logger->debug("Initiating resource packs phase");
-		$this->setHandler(new ResourcePacksPacketHandler($this, $this->server->getResourcePackManager()));
+		$this->setHandler(new ResourcePacksPacketHandler($this, $this->server->getResourcePackManager(), function() : void{
+			$this->onResourcePacksDone();
+		}));
 	}
 
-	public function onResourcePacksDone() : void{
+	private function onResourcePacksDone() : void{
 		$this->createPlayer();
 
 		$this->setHandler(new PreSpawnPacketHandler($this->server, $this->player, $this));
@@ -781,14 +795,23 @@ class NetworkSession{
 	public function onMobEquipmentChange(Human $mob) : void{
 		//TODO: we could send zero for slot here because remote players don't need to know which slot was selected
 		$inv = $mob->getInventory();
-		$this->sendDataPacket(MobEquipmentPacket::create($mob->getId(), $inv->getItemInHand(), $inv->getHeldItemIndex(), ContainerIds::INVENTORY));
+
+		$this->sendDataPacket(MobEquipmentPacket::create($mob->getId(), TypeConverter::getInstance()->coreItemStackToNet($inv->getItemInHand()), $inv->getHeldItemIndex(), ContainerIds::INVENTORY));
 		$inv = $mob->getOffHandInventory();
-		$this->sendDataPacket(MobEquipmentPacket::create($mob->getId(), $inv->getItemInHand(), $inv->getHeldItemIndex(), ContainerIds::OFFHAND));
+		$this->sendDataPacket(MobEquipmentPacket::create($mob->getId(), TypeConverter::getInstance()->coreItemStackToNet($inv->getItemInHand()), $inv->getHeldItemIndex(), ContainerIds::OFFHAND));
+
 	}
 
 	public function onMobArmorChange(Living $mob) : void{
 		$inv = $mob->getArmorInventory();
-		$this->sendDataPacket(MobArmorEquipmentPacket::create($mob->getId(), $inv->getHelmet(), $inv->getChestplate(), $inv->getLeggings(), $inv->getBoots()));
+		$converter = TypeConverter::getInstance();
+		$this->sendDataPacket(MobArmorEquipmentPacket::create(
+			$mob->getId(),
+			$converter->coreItemStackToNet($inv->getHelmet()),
+			$converter->coreItemStackToNet($inv->getChestplate()),
+			$converter->coreItemStackToNet($inv->getLeggings()),
+			$converter->coreItemStackToNet($inv->getBoots())
+		));
 	}
 
 	public function syncPlayerList() : void{

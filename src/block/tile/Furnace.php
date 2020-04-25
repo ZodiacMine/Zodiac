@@ -24,11 +24,11 @@ declare(strict_types=1);
 namespace pocketmine\block\tile;
 
 use pocketmine\block\Furnace as BlockFurnace;
+use pocketmine\block\inventory\FurnaceInventory;
 use pocketmine\crafting\FurnaceRecipe;
 use pocketmine\event\inventory\FurnaceBurnEvent;
 use pocketmine\event\inventory\FurnaceSmeltEvent;
-use pocketmine\inventory\CallbackInventoryChangeListener;
-use pocketmine\inventory\FurnaceInventory;
+use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
@@ -58,7 +58,7 @@ class Furnace extends Spawnable implements Container, Nameable{
 	public function __construct(World $world, Vector3 $pos){
 		parent::__construct($world, $pos);
 		$this->inventory = new FurnaceInventory($this->pos);
-		$this->inventory->addChangeListeners(CallbackInventoryChangeListener::onAnyChange(
+		$this->inventory->addListeners(CallbackInventoryListener::onAnyChange(
 			function(Inventory $unused) : void{
 				$this->pos->getWorldNonNull()->scheduleDelayedBlockUpdate($this->pos, 1);
 			})
@@ -169,7 +169,7 @@ class Furnace extends Spawnable implements Container, Nameable{
 				++$this->cookTime;
 
 				if($this->cookTime >= 200){ //10 seconds
-					$product = ItemFactory::get($smelt->getResult()->getId(), $smelt->getResult()->getMeta(), $product->getCount() + 1);
+					$product = ItemFactory::getInstance()->get($smelt->getResult()->getId(), $smelt->getResult()->getMeta(), $product->getCount() + 1);
 
 					$ev = new FurnaceSmeltEvent($this, $raw, $product);
 					$ev->call();

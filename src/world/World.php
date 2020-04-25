@@ -346,7 +346,7 @@ class World implements ChunkManager{
 
 		$dontTickBlocks = array_fill_keys($this->server->getProperty("chunk-ticking.disable-block-ticking", []), true);
 
-		foreach(BlockFactory::getAllKnownStates() as $state){
+		foreach(BlockFactory::getInstance()->getAllKnownStates() as $state){
 			if(!isset($dontTickBlocks[$state->getId()]) and $state->ticksRandomly()){
 				$this->randomTickBlocks[$state->getFullId()] = true;
 			}
@@ -945,7 +945,7 @@ class World implements ChunkManager{
 
 						if(isset($this->randomTickBlocks[$state])){
 							/** @var Block $block */
-							$block = BlockFactory::fromFullBlock($state);
+							$block = BlockFactory::getInstance()->fromFullBlock($state);
 							$block->position($this, $chunkX * 16 + $x, ($Y << 4) + $y, $chunkZ * 16 + $z);
 							$block->onRandomTick();
 						}
@@ -1303,7 +1303,7 @@ class World implements ChunkManager{
 			}
 		}
 
-		$block = BlockFactory::fromFullBlock($fullState);
+		$block = BlockFactory::getInstance()->fromFullBlock($fullState);
 		$block->position($this, $x, $y, $z);
 
 		static $dynamicStateRead = false;
@@ -1397,7 +1397,7 @@ class World implements ChunkManager{
 		$nbt->setTag("Item", $item->nbtSerialize());
 
 		/** @var ItemEntity $itemEntity */
-		$itemEntity = EntityFactory::create(ItemEntity::class, $this, $nbt);
+		$itemEntity = EntityFactory::getInstance()->create(ItemEntity::class, $this, $nbt);
 		$itemEntity->spawnToAll();
 		return $itemEntity;
 
@@ -1422,7 +1422,7 @@ class World implements ChunkManager{
 			$nbt->setShort(ExperienceOrb::TAG_VALUE_PC, $split);
 
 			/** @var ExperienceOrb $orb */
-			$orb = EntityFactory::create(ExperienceOrb::class, $this, $nbt);
+			$orb = EntityFactory::getInstance()->create(ExperienceOrb::class, $this, $nbt);
 			$orb->spawnToAll();
 			$orbs[] = $orb;
 		}
@@ -1464,8 +1464,9 @@ class World implements ChunkManager{
 
 			if($player->isAdventure(true) and !$ev->isCancelled()){
 				$canBreak = false;
+				$itemFactory = ItemFactory::getInstance();
 				foreach($item->getCanDestroy() as $v){
-					$entry = ItemFactory::fromString($v);
+					$entry = $itemFactory->fromString($v);
 					if($entry->getBlock()->isSameType($target)){
 						$canBreak = true;
 						break;
@@ -1599,8 +1600,9 @@ class World implements ChunkManager{
 			$ev = new BlockPlaceEvent($player, $hand, $blockReplace, $blockClicked, $item);
 			if($player->isAdventure(true) and !$ev->isCancelled()){
 				$canPlace = false;
+				$itemFactory = ItemFactory::getInstance();
 				foreach($item->getCanPlaceOn() as $v){
-					$entry = ItemFactory::fromString($v);
+					$entry = $itemFactory->fromString($v);
 					if($entry->getBlock()->isSameType($blockClicked)){
 						$canPlace = true;
 						break;

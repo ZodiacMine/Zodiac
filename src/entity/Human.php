@@ -28,7 +28,7 @@ use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\projectile\ProjectileSource;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\player\PlayerExhaustEvent;
-use pocketmine\inventory\EnderChestInventory;
+use pocketmine\block\inventory\EnderChestInventory;
 use pocketmine\inventory\InventoryHolder;
 use pocketmine\inventory\PlayerInventory;
 use pocketmine\inventory\PlayerOffHandInventory;
@@ -42,6 +42,8 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\IntTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
+use pocketmine\network\mcpe\convert\SkinAdapterSingleton;
+use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\AddPlayerPacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
@@ -50,7 +52,6 @@ use pocketmine\network\mcpe\protocol\PlayerSkinPacket;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\network\mcpe\protocol\types\entity\StringMetadataProperty;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
-use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\player\Player;
 use pocketmine\utils\Limits;
 use pocketmine\utils\UUID;
@@ -229,8 +230,8 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 
 		$inventoryTag = $nbt->getListTag("Inventory");
 		if($inventoryTag !== null){
-			$armorListeners = $this->armorInventory->getChangeListeners();
-			$this->armorInventory->removeChangeListeners(...$armorListeners);
+			$armorListeners = $this->armorInventory->getListeners();
+			$this->armorInventory->removeListeners(...$armorListeners);
 
 			/** @var CompoundTag $item */
 			foreach($inventoryTag as $i => $item){
@@ -244,7 +245,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 				}
 			}
 
-			$this->armorInventory->addChangeListeners(...$armorListeners);
+			$this->armorInventory->addListeners(...$armorListeners);
 		}
 
 		$enderChestInventoryTag = $nbt->getListTag("EnderChestInventory");
@@ -429,7 +430,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		$pk->motion = $this->getMotion();
 		$pk->yaw = $this->location->yaw;
 		$pk->pitch = $this->location->pitch;
-		$pk->item = $this->getInventory()->getItemInHand();
+		$pk->item = TypeConverter::getInstance()->coreItemStackToNet($this->getInventory()->getItemInHand());
 		$pk->metadata = $this->getSyncedNetworkData(false);
 		$player->getNetworkSession()->sendDataPacket($pk);
 

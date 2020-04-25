@@ -23,10 +23,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\handler;
 
-use pocketmine\entity\Skin;
+use Mdanter\Ecc\Crypto\Key\PublicKeyInterface;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\network\BadPacketException;
 use pocketmine\network\mcpe\auth\ProcessLoginTask;
+use pocketmine\network\mcpe\convert\SkinAdapterSingleton;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
@@ -35,7 +36,6 @@ use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaPieceTintColor
 use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
 use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
-use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\network\mcpe\protocol\types\SkinAnimation;
 use pocketmine\network\mcpe\protocol\types\SkinData;
 use pocketmine\network\mcpe\protocol\types\SkinImage;
@@ -43,6 +43,7 @@ use pocketmine\player\Player;
 use pocketmine\player\PlayerInfo;
 use pocketmine\Server;
 use pocketmine\utils\UUID;
+use function array_map;
 use function base64_decode;
 use function in_array;
 
@@ -60,14 +61,25 @@ class LoginPacketHandler extends PacketHandler{
 	 * @phpstan-var \Closure(PlayerInfo) : void
 	 */
 	private $playerInfoConsumer;
+	/**
+	 * @var \Closure
+	 * @phpstan-var \Closure(bool, bool, ?string, ?PublicKeyInterface) : void
+	 */
+	private $authCallback;
 
 	/**
 	 * @phpstan-param \Closure(PlayerInfo) : void $playerInfoConsumer
+	 * @phpstan-param \Closure(bool $isAuthenticated, bool $authRequired, ?string $error, ?PublicKeyInterface $clientPubKey) : void $authCallback
 	 */
-	public function __construct(Server $server, NetworkSession $session, \Closure $playerInfoConsumer){
+	public function __construct(Server $server, NetworkSession $session, \Closure $playerInfoConsumer, \Closure $authCallback){
 		$this->session = $session;
 		$this->server = $server;
 		$this->playerInfoConsumer = $playerInfoConsumer;
+		$this->authCallback = $authCallback;
+	}
+
+	private static function dummy() : void{
+		echo PublicKeyInterface::class; //this prevents the import getting removed by tools that don't understand phpstan
 	}
 
 	public function handleLogin(LoginPacket $packet) : bool{
@@ -183,7 +195,7 @@ class LoginPacketHandler extends PacketHandler{
 	 * @throws \InvalidArgumentException
 	 */
 	protected function processLogin(LoginPacket $packet, bool $authRequired) : void{
-		$this->server->getAsyncPool()->submitTask(new ProcessLoginTask($this->session, $packet, $authRequired));
+		$this->server->getAsyncPool()->submitTask(new ProcessLoginTask($packet, $authRequired, $this->authCallback));
 		$this->session->setHandler(NullPacketHandler::getInstance()); //drop packets received during login verification
 	}
 

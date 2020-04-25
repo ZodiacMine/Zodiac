@@ -25,11 +25,10 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\item\Item;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\protocol\types\entity\EntityLink;
 use pocketmine\network\mcpe\protocol\types\entity\MetadataProperty;
+use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use pocketmine\utils\UUID;
 use function count;
@@ -57,7 +56,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 	public $yaw = 0.0;
 	/** @var float|null */
 	public $headYaw = null; //TODO
-	/** @var Item */
+	/** @var ItemStack */
 	public $item;
 	/**
 	 * @var MetadataProperty[]
@@ -150,7 +149,7 @@ class AddPlayerPacket extends DataPacket implements ClientboundPacket{
 		$out->putLInt($this->buildPlatform);
 	}
 
-	public function handle(PacketHandler $handler) : bool{
+	public function handle(PacketHandlerInterface $handler) : bool{
 		return $handler->handleAddPlayer($this);
 	}
 }

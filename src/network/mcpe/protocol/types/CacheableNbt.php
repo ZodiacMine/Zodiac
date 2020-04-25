@@ -21,13 +21,40 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\inventory;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\world\Position;
+use pocketmine\nbt\tag\Tag;
+use pocketmine\nbt\TreeRoot;
+use pocketmine\network\mcpe\serializer\NetworkNbtSerializer;
 
-class HopperInventory extends BlockInventory{
+/**
+ * @phpstan-template TTagType of Tag
+ */
+final class CacheableNbt{
 
-	public function __construct(Position $holder, int $size = 5){
-		parent::__construct($holder, $size);
+	/**
+	 * @var Tag
+	 * @phpstan-var TTagType
+	 */
+	private $root;
+	/** @var string|null */
+	private $encodedNbt;
+
+	/**
+	 * @phpstan-param TTagType $nbtRoot
+	 */
+	public function __construct(Tag $nbtRoot){
+		$this->root = $nbtRoot;
+	}
+
+	/**
+	 * @phpstan-return TTagType
+	 */
+	public function getRoot() : Tag{
+		return $this->root;
+	}
+
+	public function getEncodedNbt() : string{
+		return $this->encodedNbt ?? ($this->encodedNbt = (new NetworkNbtSerializer())->write(new TreeRoot($this->root)));
 	}
 }

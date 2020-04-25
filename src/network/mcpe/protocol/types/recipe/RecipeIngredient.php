@@ -21,23 +21,32 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\inventory;
+namespace pocketmine\network\mcpe\protocol\types\recipe;
 
-use pocketmine\player\Player;
-use pocketmine\world\Position;
+final class RecipeIngredient{
 
-class EnchantInventory extends BlockInventory{
+	/** @var int */
+	private $id;
+	/** @var int */
+	private $meta;
+	/** @var int */
+	private $count;
 
-	public function __construct(Position $holder){
-		parent::__construct($holder, 2);
+	public function __construct(int $id, int $meta, int $count){
+		$this->id = $id;
+		$this->meta = $meta;
+		$this->count = $count;
 	}
 
-	public function onClose(Player $who) : void{
-		parent::onClose($who);
+	public function getId() : int{
+		return $this->id;
+	}
 
-		foreach($this->getContents() as $item){
-			$who->dropItem($item);
-		}
-		$this->clearAll();
+	public function getMeta() : int{
+		return $this->meta;
+	}
+
+	public function getCount() : int{
+		return $this->count;
 	}
 }

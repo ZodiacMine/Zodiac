@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\world\generator;
 
+use pocketmine\block\BlockFactory;
 use pocketmine\scheduler\AsyncTask;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\io\FastChunkSerializer;
@@ -118,8 +119,9 @@ class PopulationTask extends AsyncTask{
 		$chunk = $manager->getChunk($chunk->getX(), $chunk->getZ());
 		$chunk->setPopulated();
 
-		$chunk->recalculateHeightMap();
-		$chunk->populateSkyLight();
+		$blockFactory = BlockFactory::getInstance();
+		$chunk->recalculateHeightMap($blockFactory->lightFilter, $blockFactory->diffusesSkyLight);
+		$chunk->populateSkyLight($blockFactory->lightFilter);
 		$chunk->setLightPopulated();
 
 		$this->chunk = FastChunkSerializer::serialize($chunk);

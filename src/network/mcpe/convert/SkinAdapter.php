@@ -21,23 +21,23 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\network\mcpe\convert;
+
+use pocketmine\entity\Skin;
+use pocketmine\network\mcpe\protocol\types\SkinData;
 
 /**
- * Accessor for SkinAdapter
+ * Used to convert new skin data to the skin entity or old skin entity to skin data.
  */
-class SkinAdapterSingleton{
-	/** @var SkinAdapter|null */
-	private static $skinAdapter = null;
+interface SkinAdapter{
 
-	public static function get() : SkinAdapter{
-		if(self::$skinAdapter === null){
-			self::$skinAdapter = new LegacySkinAdapter();
-		}
-		return self::$skinAdapter;
-	}
+	/**
+	 * Allows you to convert a skin entity to skin data.
+	 */
+	public function toSkinData(Skin $skin) : SkinData;
 
-	public static function set(SkinAdapter $adapter) : void{
-		self::$skinAdapter = $adapter;
-	}
+	/**
+	 * Allows you to convert skin data to a skin entity.
+	 */
+	public function fromSkinData(SkinData $data) : Skin;
 }

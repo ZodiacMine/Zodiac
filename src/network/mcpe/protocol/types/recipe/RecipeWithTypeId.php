@@ -21,38 +21,21 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\inventory;
+namespace pocketmine\network\mcpe\protocol\types\recipe;
 
-use pocketmine\item\Item;
-use pocketmine\world\Position;
+use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 
-class FurnaceInventory extends BlockInventory{
+abstract class RecipeWithTypeId{
+	/** @var int */
+	private $typeId;
 
-	public function __construct(Position $holder){
-		parent::__construct($holder, 3);
+	protected function __construct(int $typeId){
+		$this->typeId = $typeId;
 	}
 
-	public function getResult() : Item{
-		return $this->getItem(2);
+	final public function getTypeId() : int{
+		return $this->typeId;
 	}
 
-	public function getFuel() : Item{
-		return $this->getItem(1);
-	}
-
-	public function getSmelting() : Item{
-		return $this->getItem(0);
-	}
-
-	public function setResult(Item $item) : void{
-		$this->setItem(2, $item);
-	}
-
-	public function setFuel(Item $item) : void{
-		$this->setItem(1, $item);
-	}
-
-	public function setSmelting(Item $item) : void{
-		$this->setItem(0, $item);
-	}
+	abstract public function encode(NetworkBinaryStream $out) : void;
 }

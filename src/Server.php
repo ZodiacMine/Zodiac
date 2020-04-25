@@ -27,22 +27,18 @@ declare(strict_types=1);
  */
 namespace pocketmine;
 
-use pocketmine\block\BlockFactory;
 use pocketmine\command\CommandReader;
 use pocketmine\command\CommandSender;
 use pocketmine\command\ConsoleCommandSender;
 use pocketmine\command\PluginIdentifiableCommand;
 use pocketmine\command\SimpleCommandMap;
 use pocketmine\crafting\CraftingManager;
-use pocketmine\entity\EntityFactory;
 use pocketmine\event\HandlerListManager;
 use pocketmine\event\player\PlayerDataSaveEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\event\server\QueryRegenerateEvent;
-use pocketmine\inventory\CreativeInventory;
 use pocketmine\item\enchantment\Enchantment;
-use pocketmine\item\ItemFactory;
 use pocketmine\lang\Language;
 use pocketmine\lang\LanguageNotFoundException;
 use pocketmine\lang\TranslationContainer;
@@ -970,11 +966,7 @@ class Server{
 
 			$this->commandMap = new SimpleCommandMap($this);
 
-			EntityFactory::init();
-			BlockFactory::init();
 			Enchantment::init();
-			ItemFactory::init();
-			CreativeInventory::init();
 			Biome::init();
 
 			$this->craftingManager = new CraftingManager();

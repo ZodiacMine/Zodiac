@@ -21,13 +21,28 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\inventory;
+namespace pocketmine\block\inventory;
 
 use pocketmine\world\Position;
+use pocketmine\world\sound\EnderChestCloseSound;
+use pocketmine\world\sound\EnderChestOpenSound;
+use pocketmine\world\sound\Sound;
 
-class BrewingStandInventory extends BlockInventory{
+class EnderChestInventory extends ChestInventory{
 
-	public function __construct(Position $holder, int $size = 5){
-		parent::__construct($holder, $size);
+	public function __construct(){
+		parent::__construct(new Position(0, 0, 0, null));
+	}
+
+	public function setHolderPosition(Position $pos) : void{
+		$this->holder = $pos->asPosition();
+	}
+
+	protected function getOpenSound() : Sound{
+		return new EnderChestOpenSound();
+	}
+
+	protected function getCloseSound() : Sound{
+		return new EnderChestCloseSound();
 	}
 }

@@ -25,7 +25,6 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 
 class ResourcePackChunkDataPacket extends DataPacket implements ClientboundPacket{
@@ -63,7 +62,7 @@ class ResourcePackChunkDataPacket extends DataPacket implements ClientboundPacke
 		$out->putString($this->data);
 	}
 
-	public function handle(PacketHandler $handler) : bool{
+	public function handle(PacketHandlerInterface $handler) : bool{
 		return $handler->handleResourcePackChunkData($this);
 	}
 }

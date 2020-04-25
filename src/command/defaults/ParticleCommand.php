@@ -189,12 +189,12 @@ class ParticleCommand extends VanillaCommand{
 				return new ItemBreakParticle(VanillaItems::SLIMEBALL());
 			case "itembreak":
 				if($data !== null and $data !== 0){
-					return new ItemBreakParticle(ItemFactory::get($data));
+					return new ItemBreakParticle(ItemFactory::getInstance()->get($data));
 				}
 				break;
 			case "terrain":
 				if($data !== null and $data !== 0){
-					return new TerrainParticle(BlockFactory::get($data));
+					return new TerrainParticle(BlockFactory::getInstance()->get($data));
 				}
 				break;
 			case "heart":
@@ -217,12 +217,12 @@ class ParticleCommand extends VanillaCommand{
 		if(strpos($name, "iconcrack_") === 0){
 			$d = explode("_", $name);
 			if(count($d) === 3){
-				return new ItemBreakParticle(ItemFactory::get((int) $d[1], (int) $d[2]));
+				return new ItemBreakParticle(ItemFactory::getInstance()->get((int) $d[1], (int) $d[2]));
 			}
 		}elseif(strpos($name, "blockcrack_") === 0){
 			$d = explode("_", $name);
 			if(count($d) === 2){
-				return new TerrainParticle(BlockFactory::get(((int) $d[1]) & 0xff, ((int) $d[1]) >> 12));
+				return new TerrainParticle(BlockFactory::getInstance()->get(((int) $d[1]) & 0xff, ((int) $d[1]) >> 12));
 			}
 		}elseif(strpos($name, "blockdust_") === 0){
 			$d = explode("_", $name);

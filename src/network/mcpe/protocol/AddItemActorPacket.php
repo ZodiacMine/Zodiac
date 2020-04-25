@@ -25,10 +25,9 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\item\Item;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\protocol\types\entity\MetadataProperty;
+use pocketmine\network\mcpe\protocol\types\inventory\ItemStack;
 use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 
 class AddItemActorPacket extends DataPacket implements ClientboundPacket{
@@ -38,7 +37,7 @@ class AddItemActorPacket extends DataPacket implements ClientboundPacket{
 	public $entityUniqueId = null; //TODO
 	/** @var int */
 	public $entityRuntimeId;
-	/** @var Item */
+	/** @var ItemStack */
 	public $item;
 	/** @var Vector3 */
 	public $position;
@@ -72,7 +71,7 @@ class AddItemActorPacket extends DataPacket implements ClientboundPacket{
 		$out->putBool($this->isFromFishing);
 	}
 
-	public function handle(PacketHandler $handler) : bool{
+	public function handle(PacketHandlerInterface $handler) : bool{
 		return $handler->handleAddItemActor($this);
 	}
 }

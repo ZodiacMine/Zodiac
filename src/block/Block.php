@@ -39,7 +39,7 @@ use pocketmine\math\Facing;
 use pocketmine\math\RayTraceResult;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping;
+use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\player\Player;
 use pocketmine\world\BlockTransaction;
 use pocketmine\world\Position;
@@ -104,14 +104,14 @@ class Block{
 	}
 
 	public function asItem() : Item{
-		return ItemFactory::get($this->idInfo->getItemId(), $this->idInfo->getVariant());
+		return ItemFactory::getInstance()->get($this->idInfo->getItemId(), $this->idInfo->getVariant());
 	}
 
 	/**
 	 * @internal
 	 */
 	public function getRuntimeId() : int{
-		return RuntimeBlockMapping::toStaticRuntimeId($this->getId(), $this->getMeta());
+		return RuntimeBlockMapping::getInstance()->toStaticRuntimeId($this->getId(), $this->getMeta());
 	}
 
 	public function getMeta() : int{

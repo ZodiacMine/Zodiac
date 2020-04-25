@@ -38,6 +38,8 @@ use pocketmine\math\Vector3;
 use pocketmine\nbt\NbtDataException;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\network\BadPacketException;
+use pocketmine\network\mcpe\convert\SkinAdapterSingleton;
+use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\ActorFallPacket;
@@ -82,7 +84,6 @@ use pocketmine\network\mcpe\protocol\types\inventory\NormalTransactionData;
 use pocketmine\network\mcpe\protocol\types\inventory\ReleaseItemTransactionData;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemOnEntityTransactionData;
 use pocketmine\network\mcpe\protocol\types\inventory\UseItemTransactionData;
-use pocketmine\network\mcpe\protocol\types\SkinAdapterSingleton;
 use pocketmine\network\mcpe\serializer\NetworkNbtSerializer;
 use pocketmine\player\Player;
 use function array_push;
@@ -204,15 +205,18 @@ class InGamePacketHandler extends PacketHandler{
 
 		$isCrafting = false;
 		$isFinalCraftingPart = false;
+		$converter = TypeConverter::getInstance();
 		foreach($data->getActions() as $networkInventoryAction){
+			$old = $converter->netItemStackToCore($networkInventoryAction->oldItem);
+			$new = $converter->netItemStackToCore($networkInventoryAction->newItem);
 			if(
 				$networkInventoryAction->sourceType === NetworkInventoryAction::SOURCE_CONTAINER and
 				$networkInventoryAction->windowId === ContainerIds::UI and
 				$networkInventoryAction->inventorySlot === 50 and
-				!$networkInventoryAction->oldItem->equalsExact($networkInventoryAction->newItem)
+				!$old->equalsExact($new)
 			){
 				$isCrafting = true;
-				if(!$networkInventoryAction->oldItem->isNull() and $networkInventoryAction->newItem->isNull()){
+				if(!$old->isNull() and $new->isNull()){
 					$isFinalCraftingPart = true;
 				}
 			}elseif(
@@ -225,7 +229,7 @@ class InGamePacketHandler extends PacketHandler{
 			}
 
 			try{
-				$action = $networkInventoryAction->createInventoryAction($this->player);
+				$action = $converter->createInventoryAction($networkInventoryAction, $this->player);
 				if($action !== null){
 					$actions[] = $action;
 				}
