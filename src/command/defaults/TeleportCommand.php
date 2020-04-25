@@ -154,20 +154,20 @@ class TeleportCommand extends VanillaCommand{
 		}else{
 			TELEPORT_POSITION:
 
-			if(count($args) < 3){
+			if(count($args) < 3 or count($args) > 5){
 				throw new InvalidCommandSyntaxException();
 			}
 
-			$x = $this->getRelativeDouble($targetLocation->x, $sender, array_shift($args));
-			$y = $this->getRelativeDouble($targetLocation->y, $sender, array_shift($args), 0, 256);
-			$z = $this->getRelativeDouble($targetLocation->z, $sender, array_shift($args));
+			$x = $this->getRelativeDouble($targetLocation->x, $sender, $args[0]);
+			$y = $this->getRelativeDouble($targetLocation->y, $sender, $args[1], 0, 256);
+			$z = $this->getRelativeDouble($targetLocation->z, $sender, $args[2]);
 			$yaw = $targetLocation->getYaw();
 			$pitch = $targetLocation->getPitch();
 
-			if(count($args) > 0){
-				$yaw = (float) array_shift($args);
-				if(count($args) > 0){
-					$pitch = (float) array_shift($args);
+			if(count($args) > 3){
+				$yaw = (float) $args[3];
+				if(count($args) > 4){
+					$pitch = (float) $args[4];
 				}
 			}
 
