@@ -36,6 +36,19 @@ final class PersonaSkinPiece{
 	public const PIECE_TYPE_PERSONA_SKIN = "persona_skin";
 	public const PIECE_TYPE_PERSONA_TOP = "persona_top";
 
+	public const PIECE_TYPE_ALL = [
+		self::PIECE_TYPE_PERSONA_BODY,
+		self::PIECE_TYPE_PERSONA_BOTTOM,
+		self::PIECE_TYPE_PERSONA_EYES,
+		self::PIECE_TYPE_PERSONA_FACIAL_HAIR,
+		self::PIECE_TYPE_PERSONA_FEET,
+		self::PIECE_TYPE_PERSONA_HAIR,
+		self::PIECE_TYPE_PERSONA_MOUTH,
+		self::PIECE_TYPE_PERSONA_SKELETON,
+		self::PIECE_TYPE_PERSONA_SKIN,
+		self::PIECE_TYPE_PERSONA_TOP
+	];
+
 	/** @var string */
 	private $pieceId;
 	/** @var string */

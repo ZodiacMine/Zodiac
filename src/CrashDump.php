@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace pocketmine;
 
-use PackageVersions\Versions;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginManager;
@@ -320,7 +319,7 @@ class CrashDump{
 		$this->data["general"]["zend"] = zend_version();
 		$this->data["general"]["php_os"] = PHP_OS;
 		$this->data["general"]["os"] = Utils::getOS();
-		$this->data["general"]["composer_libraries"] = Versions::VERSIONS;
+		$this->data["general"]["composer_libraries"] = [];
 		$this->addLine($this->server->getName() . " version: " . $version->getFullVersion(true) . " [Protocol " . implode(", ", ProtocolInfo::ACCEPTED_PROTOCOLS) . "]");
 		$this->addLine("Git commit: " . \pocketmine\GIT_COMMIT);
 		$this->addLine("uname -a: " . php_uname("a"));
@@ -328,9 +327,6 @@ class CrashDump{
 		$this->addLine("Zend version: " . zend_version());
 		$this->addLine("OS : " . PHP_OS . ", " . Utils::getOS());
 		$this->addLine("Composer libraries: ");
-		foreach(Versions::VERSIONS as $library => $libraryVersion){
-			$this->addLine("- $library $libraryVersion");
-		}
 	}
 
 	/**

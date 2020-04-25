@@ -27,8 +27,8 @@ use pocketmine\utils\UUID;
 
 class SkinData{
 
-	public const ARM_SIZE_SLIM = "slim";
 	public const ARM_SIZE_WIDE = "wide";
+	public const ARM_SIZE_SLIM = "slim";
 
 	/** @var string */
 	private $skinId;
@@ -63,14 +63,14 @@ class SkinData{
 	/** @var PersonaPieceTintColor[] */
 	private $pieceTintColors;
 	/** @var bool */
-	private $isVerified;
+	private $isTrusted;
 
 	/**
 	 * @param SkinAnimation[]         $animations
 	 * @param PersonaSkinPiece[]      $personaPieces
 	 * @param PersonaPieceTintColor[] $pieceTintColors
 	 */
-	public function __construct(string $skinId, string $resourcePatch, SkinImage $skinImage, array $animations = [], SkinImage $capeImage = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, bool $personaCapeOnClassic = false, string $capeId = "", ?string $fullSkinId = null, string $armSize = self::ARM_SIZE_WIDE, string $skinColor = "", array $personaPieces = [], array $pieceTintColors = [], bool $isVerified = false){
+	public function __construct(string $skinId, string $resourcePatch, SkinImage $skinImage, array $animations = [], SkinImage $capeImage = null, string $geometryData = "", string $animationData = "", bool $premium = false, bool $persona = false, bool $personaCapeOnClassic = false, string $capeId = "", ?string $fullSkinId = null, string $armSize = self::ARM_SIZE_WIDE, string $skinColor = "", array $personaPieces = [], array $pieceTintColors = [], bool $isTrusted = false){
 		$this->skinId = $skinId;
 		$this->resourcePatch = $resourcePatch;
 		$this->skinImage = $skinImage;
@@ -88,7 +88,7 @@ class SkinData{
 		$this->skinColor = $skinColor;
 		$this->personaPieces = $personaPieces;
 		$this->pieceTintColors = $pieceTintColors;
-		$this->isVerified = $isVerified;
+		$this->isTrusted = $isTrusted;
 	}
 
 	public function getSkinId() : string{
@@ -164,14 +164,14 @@ class SkinData{
 		return $this->pieceTintColors;
 	}
 
-	public function isVerified() : bool{
-		return $this->isVerified;
+	public function isTrustedSkin() : bool{
+		return $this->isTrusted;
 	}
 
 	/**
 	 * @internal
 	 */
-	public function setVerified(bool $verified) : void{
-		$this->isVerified = $verified;
+	public function setIsTrustedSkin(bool $isTrustedSkin) : void{
+		$this->isTrusted = $isTrustedSkin;
 	}
 }

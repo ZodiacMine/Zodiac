@@ -63,10 +63,10 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 	protected function decodePayload(NetworkBinaryStream $in) : void{
 		$this->type = $in->getByte();
 		$count = $in->getUnsignedVarInt();
-		for($i = 0; $i < $count; ++$i){
-			$entry = new PlayerListEntry();
+		if($this->type === self::TYPE_ADD){
+			for($i = 0; $i < $count; ++$i){
+				$entry = new PlayerListEntry();
 
-			if($this->type === self::TYPE_ADD){
 				$entry->uuid = $in->getUUID();
 				$entry->entityUniqueId = $in->getEntityUniqueId();
 				$entry->username = $in->getString();
@@ -76,15 +76,18 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				$entry->skinData = $in->getSkin();
 				$entry->isTeacher = $in->getBool();
 				$entry->isHost = $in->getBool();
-			}else{
-				$entry->uuid = $in->getUUID();
+
+				$this->entries[$i] = $entry;
 			}
 
-			$this->entries[$i] = $entry;
-		}
-		if($this->type === self::TYPE_ADD){
 			for($i = 0; $i < $count; ++$i){
-				$this->entries[$i]->skinData->setVerified($in->getBool());
+				$this->entries[$i]->skinData->setIsTrustedSkin($in->getBool());
+			}
+		}else{
+			for($i = 0; $i < $count; ++$i){
+				$entry = new PlayerListEntry();
+				$entry->uuid = $in->getUUID();
+				$this->entries[$i] = $entry;
 			}
 		}
 	}
@@ -92,8 +95,8 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 	protected function encodePayload(NetworkBinaryStream $out) : void{
 		$out->putByte($this->type);
 		$out->putUnsignedVarInt(count($this->entries));
-		foreach($this->entries as $entry){
-			if($this->type === self::TYPE_ADD){
+		if($this->type === self::TYPE_ADD){
+			foreach($this->entries as $entry){
 				$out->putUUID($entry->uuid);
 				$out->putEntityUniqueId($entry->entityUniqueId);
 				$out->putString($entry->username);
@@ -103,13 +106,14 @@ class PlayerListPacket extends DataPacket implements ClientboundPacket{
 				$out->putSkin($entry->skinData);
 				$out->putBool($entry->isTeacher);
 				$out->putBool($entry->isHost);
-			}else{
-				$out->putUUID($entry->uuid);
 			}
-		}
-		if($this->type === self::TYPE_ADD){
+
 			foreach($this->entries as $entry){
-				$out->putBool($entry->skinData->isVerified());
+				$out->putBool($entry->skinData->isTrustedSkin());
+			}
+		}else{
+			foreach($this->entries as $entry){
+				$out->putUUID($entry->uuid);
 			}
 		}
 	}

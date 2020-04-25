@@ -224,7 +224,9 @@ class NetworkBinaryStream extends BinaryStream{
 				throw new BadPacketException("Unexpected NBT count $c");
 			}
 			try{
-				$compound = (new NetworkNbtSerializer())->read($this->buffer, $this->offset, 512)->mustGetCompoundTag();
+				$offset = $this->getOffset();
+				$compound = (new NetworkNbtSerializer())->read($this->getBuffer(), $offset, 512)->mustGetCompoundTag();
+				$this->setOffset($offset);
 			}catch(NbtDataException $e){
 				throw new BadPacketException($e->getMessage(), 0, $e);
 			}
