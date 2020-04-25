@@ -30,11 +30,11 @@ use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\MapDecoration;
 use pocketmine\network\mcpe\protocol\types\MapTrackedObject;
 use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
-use pocketmine\utils\Color;
-use function count;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
 #endif
+use pocketmine\utils\Color;
+use function count;
 
 class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPacket{
 	public const NETWORK_ID = ProtocolInfo::CLIENTBOUND_MAP_ITEM_DATA_PACKET;
