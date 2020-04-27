@@ -25,9 +25,8 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\network\BadPacketException;
+use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
 use pocketmine\network\mcpe\protocol\types\ScorePacketEntry;
-use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use function count;
 
 class SetScorePacket extends DataPacket implements ClientboundPacket{
@@ -59,7 +58,7 @@ class SetScorePacket extends DataPacket implements ClientboundPacket{
 						$entry->customName = $in->getString();
 						break;
 					default:
-						throw new BadPacketException("Unknown entry type $entry->type");
+						throw new PacketDecodeException("Unknown entry type $entry->type");
 				}
 			}
 			$this->entries[] = $entry;

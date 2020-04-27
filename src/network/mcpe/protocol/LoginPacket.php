@@ -26,10 +26,9 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use Particle\Validator\Validator;
-use pocketmine\network\BadPacketException;
+use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
 use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\SkinData;
-use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
 use pocketmine\utils\Utils;
@@ -129,7 +128,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 	/**
 	 * @param mixed $data
 	 *
-	 * @throws BadPacketException
+	 * @throws PacketDecodeException
 	 */
 	private static function validate(Validator $v, string $name, $data) : void{
 		$result = $v->validate($data);
@@ -138,12 +137,12 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 			foreach($result->getFailures() as $f){
 				$messages[] = $f->format();
 			}
-			throw new BadPacketException("Failed to validate '$name': " . implode(", ", $messages));
+			throw new PacketDecodeException("Failed to validate '$name': " . implode(", ", $messages));
 		}
 	}
 
 	/**
-	 * @throws BadPacketException
+	 * @throws PacketDecodeException
 	 * @throws BinaryDataException
 	 */
 	protected function decodeConnectionRequest(NetworkBinaryStream $in) : void{
@@ -151,7 +150,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 		$chainData = json_decode($buffer->get($buffer->getLInt()), true);
 		if(!is_array($chainData)){
-			throw new BadPacketException("Failed to decode chainData JSON: " . json_last_error_msg());
+			throw new PacketDecodeException("Failed to decode chainData JSON: " . json_last_error_msg());
 		}
 
 		$vd = new Validator();
@@ -166,14 +165,14 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 			try{
 				$claims = Utils::getJwtClaims($chain);
 			}catch(\UnexpectedValueException $e){
-				throw new BadPacketException($e->getMessage(), 0, $e);
+				throw new PacketDecodeException($e->getMessage(), 0, $e);
 			}
 			if(isset($claims["extraData"])){
 				if(!is_array($claims["extraData"])){
-					throw new BadPacketException("'extraData' key should be an array");
+					throw new PacketDecodeException("'extraData' key should be an array");
 				}
 				if($this->extraData !== null){
-					throw new BadPacketException("Found 'extraData' more than once in chainData");
+					throw new PacketDecodeException("Found 'extraData' more than once in chainData");
 				}
 
 				$extraV = new Validator();
@@ -186,14 +185,14 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 			}
 		}
 		if($this->extraData === null){
-			throw new BadPacketException("'extraData' not found in chain data");
+			throw new PacketDecodeException("'extraData' not found in chain data");
 		}
 
 		$this->clientDataJwt = $buffer->get($buffer->getLInt());
 		try{
 			$clientData = Utils::getJwtClaims($this->clientDataJwt);
 		}catch(\UnexpectedValueException $e){
-			throw new BadPacketException($e->getMessage(), 0, $e);
+			throw new PacketDecodeException($e->getMessage(), 0, $e);
 		}
 
 		$v = new Validator();

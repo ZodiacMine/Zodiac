@@ -21,31 +21,11 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\entity;
+namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
+final class PacketDecodeException extends \RuntimeException{
 
-final class StringMetadataProperty implements MetadataProperty{
-	/** @var string */
-	private $value;
-
-	public function __construct(string $value){
-		$this->value = $value;
-	}
-
-	public static function id() : int{
-		return EntityMetadataTypes::STRING;
-	}
-
-	public static function read(NetworkBinaryStream $in) : self{
-		return new self($in->getString());
-	}
-
-	public function write(NetworkBinaryStream $out) : void{
-		$out->putString($this->value);
-	}
-
-	public function equals(MetadataProperty $other) : bool{
-		return $other instanceof self and $other->value === $this->value;
+	public static function wrap(\Throwable $previous, ?string $prefix = null) : self{
+		return new self(($prefix !== null ? $prefix . ": " : "") . $previous->getMessage(), 0, $previous);
 	}
 }

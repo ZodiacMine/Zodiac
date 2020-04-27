@@ -25,7 +25,7 @@ namespace pocketmine\block\tile;
 
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\TreeRoot;
-use pocketmine\network\mcpe\serializer\NetworkNbtSerializer;
+use pocketmine\network\mcpe\protocol\serializer\NetworkNbtSerializer;
 use function get_class;
 
 abstract class Spawnable extends Tile{
@@ -71,7 +71,7 @@ abstract class Spawnable extends Tile{
 
 	final public function getSpawnCompound() : CompoundTag{
 		$nbt = CompoundTag::create()
-			->setString(self::TAG_ID, TileFactory::getSaveId(get_class($this))) //TODO: disassociate network ID from save ID
+			->setString(self::TAG_ID, TileFactory::getInstance()->getSaveId(get_class($this))) //TODO: disassociate network ID from save ID
 			->setInt(self::TAG_X, $this->pos->x)
 			->setInt(self::TAG_Y, $this->pos->y)
 			->setInt(self::TAG_Z, $this->pos->z);

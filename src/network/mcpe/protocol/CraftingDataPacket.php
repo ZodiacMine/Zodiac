@@ -25,7 +25,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
-use pocketmine\network\BadPacketException;
+use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
 use pocketmine\network\mcpe\protocol\types\PotionContainerChangeRecipe;
 use pocketmine\network\mcpe\protocol\types\PotionTypeRecipe;
 use pocketmine\network\mcpe\protocol\types\recipe\FurnaceRecipe;
@@ -33,7 +33,6 @@ use pocketmine\network\mcpe\protocol\types\recipe\MultiRecipe;
 use pocketmine\network\mcpe\protocol\types\recipe\RecipeWithTypeId;
 use pocketmine\network\mcpe\protocol\types\recipe\ShapedRecipe;
 use pocketmine\network\mcpe\protocol\types\recipe\ShapelessRecipe;
-use pocketmine\network\mcpe\serializer\NetworkBinaryStream;
 use function count;
 
 class CraftingDataPacket extends DataPacket implements ClientboundPacket{
@@ -80,7 +79,7 @@ class CraftingDataPacket extends DataPacket implements ClientboundPacket{
 					$this->entries[] = MultiRecipe::decode($recipeType, $in);
 					break;
 				default:
-					throw new BadPacketException("Unhandled recipe type $recipeType!"); //do not continue attempting to decode
+					throw new PacketDecodeException("Unhandled recipe type $recipeType!"); //do not continue attempting to decode
 			}
 		}
 		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
