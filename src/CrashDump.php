@@ -289,11 +289,10 @@ class CrashDump{
 				$this->data["plugin_involvement"] = self::PLUGIN_INVOLVEMENT_INDIRECT;
 			}
 
-			$reflection = new \ReflectionClass(PluginBase::class);
-			$file = $reflection->getProperty("file");
+			$file = new \ReflectionMethod(PluginBase::class, "getFile");
 			$file->setAccessible(true);
 			foreach($this->server->getPluginManager()->getPlugins() as $plugin){
-				$filePath = Filesystem::cleanPath($file->getValue($plugin));
+				$filePath = Filesystem::cleanPath($file->invoke($plugin));
 				if(strpos($frameCleanPath, $filePath) === 0){
 					$this->data["plugin"] = $plugin->getName();
 					$this->addLine("BAD PLUGIN: " . $plugin->getDescription()->getFullName());
