@@ -237,6 +237,7 @@ class ExperienceManager{
 
 	public function onPickupXp(int $xpValue) : void{
 		static $mainHandIndex = -1;
+		static $offHandIndex = -2;
 
 		//TODO: replace this with a more generic equipment getting/setting interface
 		/** @var Durable[] $equipment */
@@ -245,14 +246,19 @@ class ExperienceManager{
 		if(($item = $this->entity->getInventory()->getItemInHand()) instanceof Durable and $item->hasEnchantment(Enchantment::MENDING())){
 			$equipment[$mainHandIndex] = $item;
 		}
-		//TODO: check offhand
+
 		foreach($this->entity->getArmorInventory()->getContents() as $k => $armorItem){
 			if($armorItem instanceof Durable and $armorItem->hasEnchantment(Enchantment::MENDING())){
 				$equipment[$k] = $armorItem;
 			}
 		}
 
+		if(($item = $this->entity->getOffHandInventory()->getItemInHand()) instanceof Durable and $item->hasEnchantment(Enchantment::MENDING())){
+			$equipment[$offHandIndex] = $item;
+		}
+
 		if(count($equipment) > 0){
+			/** @var int $k */
 			$repairItem = $equipment[$k = array_rand($equipment)];
 			if($repairItem->getDamage() > 0){
 				$repairAmount = min($repairItem->getDamage(), $xpValue * 2);
@@ -261,6 +267,8 @@ class ExperienceManager{
 
 				if($k === $mainHandIndex){
 					$this->entity->getInventory()->setItemInHand($repairItem);
+				}elseif($k === $offHandIndex){
+					$this->entity->getOffHandInventory()->setItemInHand($repairItem);
 				}else{
 					$this->entity->getArmorInventory()->setItem($k, $repairItem);
 				}
