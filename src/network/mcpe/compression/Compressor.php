@@ -23,37 +23,14 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\compression;
 
-use function zlib_decode;
-use function zlib_encode;
-use const ZLIB_ENCODING_DEFLATE;
+interface Compressor{
 
-final class Zlib{
-	/** @var int */
-	public static $LEVEL = 7;
-	/** @var int */
-	public static $THRESHOLD = 256;
-
-	private function __construct(){
-
-	}
+	public function willCompress(string $data) : bool;
 
 	/**
-	 * @param int    $maxDecodedLength default 2MB
-	 *
 	 * @throws DecompressionException
 	 */
-	public static function decompress(string $payload, int $maxDecodedLength = 1024 * 1024 * 2) : string{
-		$result = @zlib_decode($payload, $maxDecodedLength);
-		if($result === false){
-			throw new DecompressionException("Failed to decompress data");
-		}
-		return $result;
-	}
+	public function decompress(string $payload) : string;
 
-	/**
-	 * @param int    $compressionLevel
-	 */
-	public static function compress(string $payload, ?int $compressionLevel = null) : string{
-		return zlib_encode($payload, ZLIB_ENCODING_DEFLATE, $compressionLevel ?? self::$LEVEL);
-	}
+	public function compress(string $payload) : string;
 }

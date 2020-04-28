@@ -33,6 +33,7 @@ use pocketmine\command\ConsoleCommandSender;
 use pocketmine\command\PluginIdentifiableCommand;
 use pocketmine\command\SimpleCommandMap;
 use pocketmine\crafting\CraftingManager;
+use pocketmine\crafting\CraftingManagerFromDataHelper;
 use pocketmine\event\HandlerListManager;
 use pocketmine\event\player\PlayerDataSaveEvent;
 use pocketmine\event\server\CommandEvent;
@@ -48,12 +49,13 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\TreeRoot;
 use pocketmine\network\mcpe\compression\CompressBatchPromise;
 use pocketmine\network\mcpe\compression\CompressBatchTask;
-use pocketmine\network\mcpe\compression\Zlib as ZlibNetworkCompression;
+use pocketmine\network\mcpe\compression\Compressor;
+use pocketmine\network\mcpe\compression\ZlibCompressor;
 use pocketmine\network\mcpe\encryption\NetworkCipher;
 use pocketmine\network\mcpe\NetworkSession;
-use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\network\mcpe\raklib\RakLibInterface;
 use pocketmine\network\Network;
 use pocketmine\network\query\QueryHandler;
@@ -898,17 +900,18 @@ class Server{
 
 			$this->asyncPool = new AsyncPool($poolSize, max(-1, (int) $this->getProperty("memory.async-worker-hard-limit", 256)), $this->autoloader, $this->logger);
 
+			$netCompressionThreshold = -1;
 			if($this->getProperty("network.batch-threshold", 256) >= 0){
-				ZlibNetworkCompression::$THRESHOLD = (int) $this->getProperty("network.batch-threshold", 256);
-			}else{
-				ZlibNetworkCompression::$THRESHOLD = -1;
+				$netCompressionThreshold = (int) $this->getProperty("network.batch-threshold", 256);
 			}
 
-			ZlibNetworkCompression::$LEVEL = $this->getProperty("network.compression-level", 7);
-			if(ZlibNetworkCompression::$LEVEL < 1 or ZlibNetworkCompression::$LEVEL > 9){
-				$this->logger->warning("Invalid network compression level " . ZlibNetworkCompression::$LEVEL . " set, setting to default 7");
-				ZlibNetworkCompression::$LEVEL = 7;
+			$netCompressionLevel = $this->getProperty("network.compression-level", 7);
+			if($netCompressionLevel < 1 or $netCompressionLevel > 9){
+				$this->logger->warning("Invalid network compression level $netCompressionLevel set, setting to default 7");
+				$netCompressionLevel = 7;
 			}
+			ZlibCompressor::setInstance(new ZlibCompressor($netCompressionLevel, $netCompressionThreshold, ZlibCompressor::DEFAULT_MAX_DECOMPRESSION_SIZE));
+
 			$this->networkCompressionAsync = (bool) $this->getProperty("network.async-compression", true);
 
 			NetworkCipher::$ENABLED = (bool) $this->getProperty("network.enable-encryption", true);
@@ -969,7 +972,7 @@ class Server{
 			Enchantment::init();
 			Biome::init();
 
-			$this->craftingManager = new CraftingManager();
+			$this->craftingManager = CraftingManagerFromDataHelper::make(\pocketmine\RESOURCE_PATH . '/vanilla/recipes.json');
 
 			$this->resourceManager = new ResourcePackManager($this->getDataPath() . "resource_packs" . DIRECTORY_SEPARATOR, $this->logger);
 
@@ -1235,16 +1238,28 @@ class Server{
 
 		$stream = PacketBatch::fromPackets(...$ev->getPackets());
 
-		if(ZlibNetworkCompression::$THRESHOLD < 0 or strlen($stream->getBuffer()) < ZlibNetworkCompression::$THRESHOLD){
-			foreach($recipients as $target){
-				foreach($ev->getPackets() as $pk){
-					$target->addToSendBuffer($pk);
+		$compressors = [];
+		$compressorTargets = [];
+		foreach($recipients as $recipient){
+			$compressor = $recipient->getCompressor();
+			$compressorId = spl_object_id($compressor);
+			//TODO: different compressors might be compatible, it might not be necessary to split them up by object
+			$compressors[$compressorId] = $compressor;
+			$compressorTargets[$compressorId][] = $recipient;
+		}
+
+		foreach($compressors as $compressorId => $compressor){
+			if(!$compressor->willCompress($stream->getBuffer())){
+				foreach($compressorTargets[$compressorId] as $target){
+					foreach($ev->getPackets() as $pk){
+						$target->addToSendBuffer($pk);
+					}
 				}
-			}
-		}else{
-			$promise = $this->prepareBatch($stream);
-			foreach($recipients as $target){
-				$target->queueCompressed($promise);
+			}else{
+				$promise = $this->prepareBatch($stream, $compressor);
+				foreach($compressorTargets[$compressorId] as $target){
+					$target->queueCompressed($promise);
+				}
 			}
 		}
 
@@ -1254,23 +1269,21 @@ class Server{
 	/**
 	 * Broadcasts a list of packets in a batch to a list of players
 	 */
-	public function prepareBatch(PacketBatch $stream, bool $forceSync = false) : CompressBatchPromise{
+	public function prepareBatch(PacketBatch $stream, Compressor $compressor, bool $forceSync = false) : CompressBatchPromise{
 		try{
 			Timings::$playerNetworkSendCompressTimer->startTiming();
 
-			$compressionLevel = ZlibNetworkCompression::$LEVEL;
 			$buffer = $stream->getBuffer();
-			if(ZlibNetworkCompression::$THRESHOLD < 0 or strlen($buffer) < ZlibNetworkCompression::$THRESHOLD){
-				$compressionLevel = 0; //Do not compress packets under the threshold
+			if(!$compressor->willCompress($buffer)){
 				$forceSync = true;
 			}
 
 			$promise = new CompressBatchPromise();
 			if(!$forceSync and $this->networkCompressionAsync){
-				$task = new CompressBatchTask($buffer, $compressionLevel, $promise);
+				$task = new CompressBatchTask($buffer, $promise, $compressor);
 				$this->asyncPool->submitTask($task);
 			}else{
-				$promise->resolve(ZlibNetworkCompression::compress($buffer, $compressionLevel));
+				$promise->resolve($compressor->compress($buffer));
 			}
 
 			return $promise;
