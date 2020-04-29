@@ -63,6 +63,8 @@ class RakLibServer extends Thread{
 	protected $serverId;
 	/** @var int */
 	protected $maxMtuSize;
+	/** @var int[] */
+	private $protocolVersions;
 
 	/** @var SleeperNotifier */
 	protected $mainThreadNotifier;
@@ -74,7 +76,7 @@ class RakLibServer extends Thread{
 	 * @param \ThreadedLogger      $logger
 	 * @param InternetAddress      $address
 	 * @param int                  $maxMtuSize
-	 * @param int|null             $overrideProtocolVersion Optional custom protocol version to use, defaults to current RakLib's protocol
+	 * @param int[]|null           $overrideProtocolVersions Optional custom list of protocol versions to use, defaults to current RakLib's protocol
 	 * @param SleeperNotifier|null $sleeper
 	 */
 	public function __construct(
@@ -84,7 +86,7 @@ class RakLibServer extends Thread{
 		InternetAddress $address,
 		int $serverId,
 		int $maxMtuSize = 1492,
-		?int $overrideProtocolVersion = null,
+		?array $overrideProtocolVersions = null,
 		?SleeperNotifier $sleeper = null
 	){
 		$this->address = $address;
@@ -98,6 +100,8 @@ class RakLibServer extends Thread{
 		$this->threadToMainBuffer = $threadToMainBuffer;
 
 		$this->mainPath = \pocketmine\PATH;
+
+		$this->protocolVersions = $overrideProtocolVersions ?? [RakLib::DEFAULT_PROTOCOL_VERSION];
 
 		$this->mainThreadNotifier = $sleeper;
 	}
@@ -155,7 +159,7 @@ class RakLibServer extends Thread{
 				$this->logger,
 				$socket,
 				$this->maxMtuSize,
-				new MultiProtocolAcceptor(8, 9),
+				new MultiProtocolAcceptor(...$this->protocolVersions),
 				new UserToRakLibThreadMessageReceiver(new PthreadsChannelReader($this->mainToThreadBuffer)),
 				new RakLibToUserThreadMessageSender(new PthreadsChannelWriter($this->threadToMainBuffer, $this->mainThreadNotifier)),
 				new ExceptionTraceCleaner($this->mainPath)
