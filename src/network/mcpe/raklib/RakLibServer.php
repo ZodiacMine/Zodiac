@@ -29,8 +29,8 @@ use raklib\generic\Socket;
 use raklib\RakLib;
 use raklib\server\ipc\RakLibToUserThreadMessageSender;
 use raklib\server\ipc\UserToRakLibThreadMessageReceiver;
+use raklib\server\MultiProtocolAcceptor;
 use raklib\server\Server;
-use raklib\server\SimpleProtocolAcceptor;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;
 use function error_get_last;
@@ -63,8 +63,6 @@ class RakLibServer extends Thread{
 	protected $serverId;
 	/** @var int */
 	protected $maxMtuSize;
-	/** @var int */
-	private $protocolVersion;
 
 	/** @var SleeperNotifier */
 	protected $mainThreadNotifier;
@@ -100,8 +98,6 @@ class RakLibServer extends Thread{
 		$this->threadToMainBuffer = $threadToMainBuffer;
 
 		$this->mainPath = \pocketmine\PATH;
-
-		$this->protocolVersion = $overrideProtocolVersion ?? RakLib::DEFAULT_PROTOCOL_VERSION;
 
 		$this->mainThreadNotifier = $sleeper;
 	}
@@ -159,7 +155,7 @@ class RakLibServer extends Thread{
 				$this->logger,
 				$socket,
 				$this->maxMtuSize,
-				new SimpleProtocolAcceptor($this->protocolVersion),
+				new MultiProtocolAcceptor(8, 9),
 				new UserToRakLibThreadMessageReceiver(new PthreadsChannelReader($this->mainToThreadBuffer)),
 				new RakLibToUserThreadMessageSender(new PthreadsChannelWriter($this->threadToMainBuffer, $this->mainThreadNotifier)),
 				new ExceptionTraceCleaner($this->mainPath)

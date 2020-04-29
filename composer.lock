@@ -521,12 +521,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ZodiacMine/RakLib.git",
-                "reference": "7be9eb330653303cb1f5a7b38675a59783ad985e"
+                "reference": "00862ecf880dd4a79bb14693f818e4454b44198c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ZodiacMine/RakLib/zipball/7be9eb330653303cb1f5a7b38675a59783ad985e",
-                "reference": "7be9eb330653303cb1f5a7b38675a59783ad985e",
+                "url": "https://api.github.com/repos/ZodiacMine/RakLib/zipball/00862ecf880dd4a79bb14693f818e4454b44198c",
+                "reference": "00862ecf880dd4a79bb14693f818e4454b44198c",
                 "shasum": ""
             },
             "require": {
@@ -554,7 +554,7 @@
             "support": {
                 "source": "https://github.com/ZodiacMine/RakLib/tree/master"
             },
-            "time": "2020-04-08T20:21:43+00:00"
+            "time": "2020-04-29T05:24:49+00:00"
         },
         {
             "name": "pocketmine/snooze",
