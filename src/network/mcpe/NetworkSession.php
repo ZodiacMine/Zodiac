@@ -27,6 +27,7 @@ use Mdanter\Ecc\Crypto\Key\PublicKeyInterface;
 use pocketmine\command\CommandOverload;
 use pocketmine\entity\Attribute;
 use pocketmine\entity\effect\EffectInstance;
+use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\entity\Living;
 use pocketmine\event\player\PlayerCreationEvent;
@@ -47,7 +48,6 @@ use pocketmine\network\mcpe\handler\DeathPacketHandler;
 use pocketmine\network\mcpe\handler\HandshakePacketHandler;
 use pocketmine\network\mcpe\handler\InGamePacketHandler;
 use pocketmine\network\mcpe\handler\LoginPacketHandler;
-use pocketmine\network\mcpe\handler\NullPacketHandler;
 use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\handler\PreSpawnPacketHandler;
 use pocketmine\network\mcpe\handler\ResourcePacksPacketHandler;
@@ -65,19 +65,26 @@ use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\network\mcpe\protocol\NetworkChunkPublisherUpdatePacket;
 use pocketmine\network\mcpe\protocol\Packet;
 use pocketmine\network\mcpe\protocol\PacketDecodeException;
+use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
+use pocketmine\network\mcpe\protocol\RemoveActorPacket;
 use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\network\mcpe\protocol\ServerboundPacket;
 use pocketmine\network\mcpe\protocol\ServerToClientHandshakePacket;
+use pocketmine\network\mcpe\protocol\SetActorDataPacket;
+use pocketmine\network\mcpe\protocol\SetDifficultyPacket;
 use pocketmine\network\mcpe\protocol\SetPlayerGameTypePacket;
 use pocketmine\network\mcpe\protocol\SetSpawnPositionPacket;
+use pocketmine\network\mcpe\protocol\SetTimePacket;
 use pocketmine\network\mcpe\protocol\SetTitlePacket;
+use pocketmine\network\mcpe\protocol\TakeItemActorPacket;
 use pocketmine\network\mcpe\protocol\TextPacket;
 use pocketmine\network\mcpe\protocol\TransferPacket;
 use pocketmine\network\mcpe\protocol\types\command\CommandData;
 use pocketmine\network\mcpe\protocol\types\command\CommandEnum;
 use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
+use pocketmine\network\mcpe\protocol\types\entity\MetadataProperty;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
@@ -125,8 +132,8 @@ class NetworkSession{
 	/** @var int|null */
 	private $ping = null;
 
-	/** @var PacketHandler */
-	private $handler;
+	/** @var PacketHandler|null */
+	private $handler = null;
 
 	/** @var bool */
 	private $connected = true;
@@ -150,13 +157,16 @@ class NetworkSession{
 	/** @var Compressor */
 	private $compressor;
 
+	/** @var PacketPool */
+	private $packetPool;
+
 	/** @var InventoryManager|null */
 	private $invManager = null;
 
 	/** @var PacketSender */
 	private $sender;
 
-	public function __construct(Server $server, NetworkSessionManager $manager, PacketSender $sender, Compressor $compressor, string $ip, int $port){
+	public function __construct(Server $server, NetworkSessionManager $manager, PacketPool $packetPool, PacketSender $sender, Compressor $compressor, string $ip, int $port){
 		$this->server = $server;
 		$this->manager = $manager;
 		$this->sender = $sender;
@@ -167,6 +177,7 @@ class NetworkSession{
 
 		$this->compressedQueue = new \SplQueue();
 		$this->compressor = $compressor;
+		$this->packetPool = $packetPool;
 
 		$this->connectTime = time();
 
@@ -253,14 +264,16 @@ class NetworkSession{
 		$this->ping = $ping;
 	}
 
-	public function getHandler() : PacketHandler{
+	public function getHandler() : ?PacketHandler{
 		return $this->handler;
 	}
 
-	public function setHandler(PacketHandler $handler) : void{
+	public function setHandler(?PacketHandler $handler) : void{
 		if($this->connected){ //TODO: this is fine since we can't handle anything from a disconnected session, but it might produce surprises in some cases
 			$this->handler = $handler;
-			$this->handler->setUp();
+			if($this->handler !== null){
+				$this->handler->setUp();
+			}
 		}
 	}
 
@@ -301,7 +314,7 @@ class NetworkSession{
 				throw new BadPacketException("Too many packets in a single batch");
 			}
 			try{
-				$pk = $stream->getPacket();
+				$pk = $stream->getPacket($this->packetPool);
 			}catch(BinaryDataException $e){
 				$this->logger->debug("Packet batch: " . base64_encode($stream->getBuffer()));
 				throw BadPacketException::wrap($e, "Packet batch decode error");
@@ -345,7 +358,7 @@ class NetworkSession{
 
 			$ev = new DataPacketReceiveEvent($this, $packet);
 			$ev->call();
-			if(!$ev->isCancelled() and !$packet->handle($this->handler)){
+			if(!$ev->isCancelled() and ($this->handler === null or !$packet->handle($this->handler))){
 				$this->logger->debug("Unhandled " . $packet->getName() . ": " . base64_encode($stream->getBuffer()));
 			}
 		}finally{
@@ -454,7 +467,7 @@ class NetworkSession{
 			$this->disconnectGuard = true;
 			$func();
 			$this->disconnectGuard = false;
-			$this->setHandler(NullPacketHandler::getInstance());
+			$this->setHandler(null);
 			$this->connected = false;
 			$this->manager->remove($this);
 			$this->logger->info("Session closed due to $reason");
@@ -672,16 +685,23 @@ class NetworkSession{
 		$this->sendDataPacket($pk);
 	}
 
-	public function syncAttributes(Living $entity, bool $sendAll = false) : void{
-		$entries = $sendAll ? $entity->getAttributeMap()->getAll() : $entity->getAttributeMap()->needSend();
-		if(count($entries) > 0){
+	/**
+	 * @param Attribute[] $attributes
+	 */
+	public function syncAttributes(Living $entity, array $attributes) : void{
+		if(count($attributes) > 0){
 			$this->sendDataPacket(UpdateAttributesPacket::create($entity->getId(), array_map(function(Attribute $attr) : NetworkAttribute{
 				return new NetworkAttribute($attr->getId(), $attr->getMinValue(), $attr->getMaxValue(), $attr->getValue(), $attr->getDefaultValue());
-			}, $entries)));
-			foreach($entries as $entry){
-				$entry->markSynchronized();
-			}
+			}, $attributes)));
 		}
+	}
+
+	/**
+	 * @param MetadataProperty[] $properties
+	 * @phpstan-param array<int, MetadataProperty> $properties
+	 */
+	public function syncActorData(Entity $entity, array $properties) : void{
+		$this->sendDataPacket(SetActorDataPacket::create($entity->getId(), $properties));
 	}
 
 	public function onEntityEffectAdded(Living $entity, EffectInstance $effect, bool $replacesOldEffect) : void{
@@ -690,6 +710,10 @@ class NetworkSession{
 
 	public function onEntityEffectRemoved(Living $entity, EffectInstance $effect) : void{
 		$this->sendDataPacket(MobEffectPacket::remove($entity->getId(), $effect->getId()));
+	}
+
+	public function onEntityRemoved(Entity $entity) : void{
+		$this->sendDataPacket(RemoveActorPacket::create($entity->getId()));
 	}
 
 	public function syncAvailableCommands() : void{
@@ -793,8 +817,16 @@ class NetworkSession{
 
 	public function onEnterWorld() : void{
 		$world = $this->player->getWorld();
-		$world->sendTime($this->player);
-		$world->sendDifficulty($this->player);
+		$this->syncWorldTime($world->getTime());
+		$this->syncWorldDifficulty($world->getDifficulty());
+	}
+
+	public function syncWorldTime(int $worldTime) : void{
+		$this->sendDataPacket(SetTimePacket::create($worldTime));
+	}
+
+	public function syncWorldDifficulty(int $worldDifficulty) : void{
+		$this->sendDataPacket(SetDifficultyPacket::create($worldDifficulty));
 	}
 
 	public function getInvManager() : InventoryManager{
@@ -826,10 +858,17 @@ class NetworkSession{
 		));
 	}
 
-	public function syncPlayerList() : void{
+	public function onPlayerPickUpItem(Player $collector, Entity $pickedUp) : void{
+		$this->sendDataPacket(TakeItemActorPacket::create($collector->getId(), $pickedUp->getId()));
+	}
+
+	/**
+	 * @param Player[] $players
+	 */
+	public function syncPlayerList(array $players) : void{
 		$this->sendDataPacket(PlayerListPacket::add(array_map(function(Player $player) : PlayerListEntry{
 			return PlayerListEntry::createAdditionEntry($player->getUniqueId(), $player->getId(), $player->getDisplayName(), SkinAdapterSingleton::get()->toSkinData($player->getSkin()), $player->getXuid());
-		}, $this->server->getOnlinePlayers())));
+		}, $players)));
 	}
 
 	public function onPlayerAdded(Player $p) : void{

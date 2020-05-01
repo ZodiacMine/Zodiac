@@ -21,28 +21,24 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\world\particle;
+namespace pocketmine\entity\animation;
 
-use pocketmine\block\Block;
-use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\protocol\LevelEventPacket;
+use pocketmine\entity\Human;
+use pocketmine\network\mcpe\protocol\ActorEventPacket;
 
-/**
- * This particle appears when a player is attacking a block face in survival mode attempting to break it.
- */
-class PunchBlockParticle implements Particle{
+final class TotemUseAnimation implements Animation{
 
-	/** @var Block */
-	private $block;
-	/** @var int */
-	private $face;
+	/** @var Human */
+	private $human;
 
-	public function __construct(Block $block, int $face){
-		$this->block = $block;
-		$this->face = $face;
+	public function __construct(Human $human){
+		//TODO: check if this can be expanded to more than just humans
+		$this->human = $human;
 	}
 
-	public function encode(Vector3 $pos){
-		return LevelEventPacket::create(LevelEventPacket::EVENT_PARTICLE_PUNCH_BLOCK, $this->block->getRuntimeId() | ($this->face << 24), $pos);
+	public function encode() : array{
+		return [
+			ActorEventPacket::create($this->human->getId(), ActorEventPacket::CONSUME_TOTEM, 0)
+		];
 	}
 }

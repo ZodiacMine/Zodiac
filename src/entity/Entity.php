@@ -28,6 +28,7 @@ namespace pocketmine\entity;
 
 use pocketmine\block\Block;
 use pocketmine\block\Water;
+use pocketmine\entity\animation\Animation;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDespawnEvent;
 use pocketmine\event\entity\EntityMotionEvent;
@@ -43,12 +44,8 @@ use pocketmine\nbt\tag\DoubleTag;
 use pocketmine\nbt\tag\FloatTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\nbt\tag\StringTag;
-use pocketmine\network\mcpe\protocol\ActorEventPacket;
 use pocketmine\network\mcpe\protocol\AddActorPacket;
-use pocketmine\network\mcpe\protocol\AnimatePacket;
 use pocketmine\network\mcpe\protocol\MoveActorAbsolutePacket;
-use pocketmine\network\mcpe\protocol\RemoveActorPacket;
-use pocketmine\network\mcpe\protocol\SetActorDataPacket;
 use pocketmine\network\mcpe\protocol\SetActorMotionPacket;
 use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
@@ -1561,7 +1558,7 @@ abstract class Entity{
 		$id = spl_object_id($player);
 		if(isset($this->hasSpawned[$id])){
 			if($send){
-				$player->getNetworkSession()->sendDataPacket(RemoveActorPacket::create($this->id));
+				$player->getNetworkSession()->onEntityRemoved($this);
 			}
 			unset($this->hasSpawned[$id]);
 		}
@@ -1647,17 +1644,18 @@ abstract class Entity{
 			$player = [$player];
 		}
 
-		$pk = SetActorDataPacket::create($this->getId(), $data ?? $this->getSyncedNetworkData(false));
+		$data = $data ?? $this->getSyncedNetworkData(false);
 
 		foreach($player as $p){
 			if($p === $this){
 				continue;
 			}
-			$p->getNetworkSession()->sendDataPacket(clone $pk);
+			$p->getNetworkSession()->syncActorData($this, $data);
 		}
 
 		if($this instanceof Player){
-			$this->getNetworkSession()->sendDataPacket($pk);
+			//TODO: bad hack, remove
+			$this->getNetworkSession()->syncActorData($this, $data);
 		}
 	}
 
@@ -1695,17 +1693,10 @@ abstract class Entity{
 	}
 
 	/**
-	 * @param Player[]|null $players
+	 * @param Player[]|null $targets
 	 */
-	public function broadcastEntityEvent(int $eventId, ?int $eventData = null, ?array $players = null) : void{
-		$this->server->broadcastPackets($players ?? $this->getViewers(), [ActorEventPacket::create($this->id, $eventId, $eventData ?? 0)]);
-	}
-
-	/**
-	 * @param Player[]|null $players
-	 */
-	public function broadcastAnimation(?array $players, int $animationId) : void{
-		$this->server->broadcastPackets($players ?? $this->getViewers(), [AnimatePacket::create($this->id, $animationId)]);
+	public function broadcastAnimation(Animation $animation, ?array $targets = null) : void{
+		$this->server->broadcastPackets($targets ?? $this->getViewers(), $animation->encode());
 	}
 
 	public function __destruct(){

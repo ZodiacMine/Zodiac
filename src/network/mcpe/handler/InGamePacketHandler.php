@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\handler;
 use pocketmine\block\ItemFrame;
 use pocketmine\block\Sign;
 use pocketmine\block\utils\SignText;
+use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\event\player\PlayerEditBookEvent;
 use pocketmine\inventory\transaction\action\InventoryAction;
 use pocketmine\inventory\transaction\CraftingTransaction;
@@ -158,11 +159,11 @@ class InGamePacketHandler extends PacketHandler{
 
 		switch($packet->event){
 			case ActorEventPacket::EATING_ITEM: //TODO: ignore this and handle it server-side
-				if($packet->data === 0){
+				$item = $this->player->getInventory()->getItemInHand();
+				if($item->isNull()){
 					return false;
 				}
-
-				$this->player->broadcastEntityEvent(ActorEventPacket::EATING_ITEM, $packet->data);
+				$this->player->broadcastAnimation(new ConsumingItemAnimation($this->player, $this->player->getInventory()->getItemInHand()));
 				break;
 			default:
 				return false;
@@ -257,6 +258,15 @@ class InGamePacketHandler extends PacketHandler{
 					$this->craftingTransaction->execute();
 				}catch(TransactionValidationException $e){
 					$this->session->getLogger()->debug("Failed to execute crafting transaction: " . $e->getMessage());
+
+					/*
+					 * TODO: HACK!
+					 * we can't resend the contents of the crafting window, so we force the client to close it instead.
+					 * So people don't whine about messy desync issues when someone cancels CraftItemEvent, or when a crafting
+					 * transaction goes wrong.
+					 */
+					$this->session->sendDataPacket(ContainerClosePacket::create(ContainerIds::NONE));
+
 					return false;
 				}finally{
 					$this->craftingTransaction = null;
@@ -749,6 +759,15 @@ class InGamePacketHandler extends PacketHandler{
 	}
 
 	public function handleLevelSoundEvent(LevelSoundEventPacket $packet) : bool{
+		//TODO: we want to block out this packet completely, but we don't yet know the full scope of sounds that the client sends us from here
+		switch($packet->sound){
+			case LevelSoundEventPacket::SOUND_HIT: //block punch, maybe entity attack too?
+			case LevelSoundEventPacket::SOUND_LAND:
+			case LevelSoundEventPacket::SOUND_FALL:
+			case LevelSoundEventPacket::SOUND_FALL_SMALL:
+			case LevelSoundEventPacket::SOUND_FALL_BIG:
+				return true;
+		}
 		$this->player->getWorld()->broadcastPacketToViewers($this->player->getPosition(), $packet);
 		return true;
 	}

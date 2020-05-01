@@ -21,20 +21,28 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\handler;
+namespace pocketmine\world\particle;
+
+use pocketmine\block\Block;
+use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\LevelEventPacket;
 
 /**
- * Handler which simply ignores all packets received.
+ * This particle appears when a player is attacking a block face in survival mode attempting to break it.
  */
-final class NullPacketHandler extends PacketHandler{
-	/** @var self|null */
-	private static $instance = null;
+class BlockPunchParticle implements Particle{
 
-	public static function getInstance() : self{
-		return self::$instance ?? (self::$instance = new self);
+	/** @var Block */
+	private $block;
+	/** @var int */
+	private $face;
+
+	public function __construct(Block $block, int $face){
+		$this->block = $block;
+		$this->face = $face;
 	}
 
-	private function __construct(){
-
+	public function encode(Vector3 $pos){
+		return LevelEventPacket::create(LevelEventPacket::EVENT_PARTICLE_PUNCH_BLOCK, $this->block->getRuntimeId() | ($this->face << 24), $pos);
 	}
 }

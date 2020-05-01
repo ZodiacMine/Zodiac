@@ -54,8 +54,6 @@ use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
-use pocketmine\network\mcpe\protocol\SetDifficultyPacket;
-use pocketmine\network\mcpe\protocol\SetTimePacket;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use pocketmine\player\Player;
 use pocketmine\Server;
@@ -248,6 +246,11 @@ class World implements ChunkManager{
 
 	/** @var bool */
 	private $closed = false;
+	/**
+	 * @var \Closure[]
+	 * @phpstan-var array<int, \Closure() : void>
+	 */
+	private $unloadCallbacks = [];
 
 	/** @var BlockLightUpdate|null */
 	private $blockLightUpdate = null;
@@ -407,6 +410,11 @@ class World implements ChunkManager{
 			throw new \InvalidStateException("Tried to close a world which is already closed");
 		}
 
+		foreach($this->unloadCallbacks as $callback){
+			$callback();
+		}
+		$this->unloadCallbacks = [];
+
 		foreach($this->chunks as $chunk){
 			$this->unloadChunk($chunk->getX(), $chunk->getZ(), false);
 		}
@@ -421,6 +429,14 @@ class World implements ChunkManager{
 		$this->temporalPosition = null;
 
 		$this->closed = true;
+	}
+
+	public function addOnUnloadCallback(\Closure $callback) : void{
+		$this->unloadCallbacks[spl_object_id($callback)] = $callback;
+	}
+
+	public function removeOnUnloadCallback(\Closure $callback) : void{
+		unset($this->unloadCallbacks[spl_object_id($callback)]);
 	}
 
 	/**
@@ -644,12 +660,8 @@ class World implements ChunkManager{
 	 * @param Player ...$targets If empty, will send to all players in the world.
 	 */
 	public function sendTime(Player ...$targets) : void{
-		$pk = SetTimePacket::create($this->time);
-
-		if(count($targets) === 0){
-			$this->broadcastGlobalPacket($pk);
-		}else{
-			$this->server->broadcastPackets($targets, [$pk]);
+		foreach($targets as $player){
+			$player->getNetworkSession()->syncWorldTime($this->time);
 		}
 	}
 
@@ -2362,18 +2374,8 @@ class World implements ChunkManager{
 		}
 		$this->provider->getWorldData()->setDifficulty($difficulty);
 
-		$this->sendDifficulty();
-	}
-
-	/**
-	 * @param Player ...$targets
-	 */
-	public function sendDifficulty(Player ...$targets) : void{
-		$pk = SetDifficultyPacket::create($this->getDifficulty());
-		if(count($targets) === 0){
-			$this->broadcastGlobalPacket($pk);
-		}else{
-			$this->server->broadcastPackets($targets, [$pk]);
+		foreach($this->players as $player){
+			$player->getNetworkSession()->syncWorldDifficulty($this->getDifficulty());
 		}
 	}
 
