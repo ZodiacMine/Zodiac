@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0c30dbc6c72854775255f20c3660d713",
+    "content-hash": "90e1e04ef776cd371b996e1ecd6cae9f",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -258,18 +258,21 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/Minejong/BinaryUtils.git",
-                "reference": "04e1daaf23812f283af72cba06c02227580e531d"
+                "url": "https://github.com/ZodiacMine/BinaryUtils.git",
+                "reference": "6be9786034f3e097dbd6b3f80ae4b90a4ddededc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Minejong/BinaryUtils/zipball/04e1daaf23812f283af72cba06c02227580e531d",
-                "reference": "04e1daaf23812f283af72cba06c02227580e531d",
+                "url": "https://api.github.com/repos/ZodiacMine/BinaryUtils/zipball/6be9786034f3e097dbd6b3f80ae4b90a4ddededc",
+                "reference": "6be9786034f3e097dbd6b3f80ae4b90a4ddededc",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.0.0",
+                "php": ">=7.2",
                 "php-64bit": "*"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^0.12.8"
             },
             "type": "library",
             "autoload": {
@@ -282,10 +285,9 @@
             ],
             "description": "Classes and methods for conveniently handling binary data",
             "support": {
-                "source": "https://github.com/Minejong/BinaryUtils/tree/master",
-                "issues": "https://github.com/Minejong/BinaryUtils/issues"
+                "source": "https://github.com/ZodiacMine/BinaryUtils/tree/master"
             },
-            "time": "2020-03-20T12:45:43+00:00"
+            "time": "2020-05-01T19:51:56+00:00"
         },
         {
             "name": "pocketmine/callback-validator",
