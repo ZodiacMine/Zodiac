@@ -68,6 +68,7 @@ use pocketmine\network\mcpe\protocol\PacketDecodeException;
 use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\PlayerListPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\RemoveActorPacket;
 use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\network\mcpe\protocol\ServerboundPacket;
@@ -224,6 +225,10 @@ class NetworkSession{
 		$this->player->getEffects()->onEffectRemove(function(EffectInstance $effect) : void{
 			$this->onEntityEffectRemoved($this->player, $effect);
 		});
+	}
+
+	public function getPlayerProtocol() : int{
+		return ProtocolInfo::CURRENT_PROTOCOL;
 	}
 
 	public function getPlayer() : ?Player{
