@@ -23,31 +23,20 @@ declare(strict_types=1);
 
 namespace pocketmine\world\sound;
 
-use pocketmine\data\bedrock\LegacyEntityIdToStringIdMap;
-use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
-use pocketmine\player\Player;
 
 /**
- * Played when an entity hits the ground after falling a short distance.
+ * Played when a player attacks a mob, but fails to deal damage (e.g. cancelled or attack cooldown).
  */
-class EntityShortFallSound implements Sound{
-
-	/** @var Entity */
-	private $entity;
-
-	public function __construct(Entity $entity){
-		$this->entity = $entity;
-	}
+class EntityAttackNoDamageSound implements Sound{
 
 	public function encode(?Vector3 $pos){
 		return LevelSoundEventPacket::create(
-			LevelSoundEventPacket::SOUND_FALL_SMALL,
+			LevelSoundEventPacket::SOUND_ATTACK_NODAMAGE,
 			$pos,
 			-1,
-			$this->entity instanceof Player ? "minecraft:player" : LegacyEntityIdToStringIdMap::getInstance()->legacyToString($this->entity::NETWORK_ID) //TODO: bad hack, stuff depends on players having a -1 network ID :(
-			//TODO: does isBaby have any relevance here?
+			"minecraft:player"
 		);
 	}
 }

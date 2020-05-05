@@ -53,7 +53,6 @@ use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
-use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use pocketmine\player\Player;
 use pocketmine\Server;
@@ -168,8 +167,6 @@ class World implements ChunkManager{
 
 	/** @var ClientboundPacket[][] */
 	private $chunkPackets = [];
-	/** @var ClientboundPacket[] */
-	private $globalPackets = [];
 
 	/** @var float[] */
 	private $unloadQueue = [];
@@ -477,20 +474,6 @@ class World implements ChunkManager{
 		}
 	}
 
-	/**
-	 * Broadcasts a LevelEvent to players in the area. This could be sound, particles, weather changes, etc.
-	 *
-	 * @param Vector3|null $pos If null, broadcasts to every player in the World
-	 */
-	public function broadcastLevelEvent(?Vector3 $pos, int $evid, int $data = 0) : void{
-		$pk = LevelEventPacket::create($evid, $data, $pos);
-		if($pos !== null){
-			$this->broadcastPacketToViewers($pos, $pk);
-		}else{
-			$this->broadcastGlobalPacket($pk);
-		}
-	}
-
 	public function getAutoSave() : bool{
 		return $this->autoSave;
 	}
@@ -530,29 +513,14 @@ class World implements ChunkManager{
 	}
 
 	/**
-	 * Queues a packet to be sent to all players using the chunk at the specified X/Z coordinates at the end of the
-	 * current tick.
+	 * Broadcasts a packet to every player who has the target position within their view distance.
 	 */
-	public function addChunkPacket(int $chunkX, int $chunkZ, ClientboundPacket $packet) : void{
-		if(!isset($this->chunkPackets[$index = World::chunkHash($chunkX, $chunkZ)])){
+	public function broadcastPacketToViewers(Vector3 $pos, ClientboundPacket $packet) : void{
+		if(!isset($this->chunkPackets[$index = World::chunkHash($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4)])){
 			$this->chunkPackets[$index] = [$packet];
 		}else{
 			$this->chunkPackets[$index][] = $packet;
 		}
-	}
-
-	/**
-	 * Broadcasts a packet to every player who has the target position within their view distance.
-	 */
-	public function broadcastPacketToViewers(Vector3 $pos, ClientboundPacket $packet) : void{
-		$this->addChunkPacket($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4, $packet);
-	}
-
-	/**
-	 * Broadcasts a packet to every player in the world.
-	 */
-	public function broadcastGlobalPacket(ClientboundPacket $packet) : void{
-		$this->globalPackets[] = $packet;
 	}
 
 	public function registerChunkLoader(ChunkLoader $loader, int $chunkX, int $chunkZ, bool $autoLoad = true) : void{
@@ -660,6 +628,9 @@ class World implements ChunkManager{
 	 * @param Player ...$targets If empty, will send to all players in the world.
 	 */
 	public function sendTime(Player ...$targets) : void{
+		if(count($targets) === 0){
+			$targets = $this->players;
+		}
 		foreach($targets as $player){
 			$player->getNetworkSession()->syncWorldTime($this->time);
 		}
@@ -795,13 +766,6 @@ class World implements ChunkManager{
 
 		if($this->sleepTicks > 0 and --$this->sleepTicks <= 0){
 			$this->checkSleep();
-		}
-
-		if(count($this->globalPackets) > 0){
-			if(count($this->players) > 0){
-				$this->server->broadcastPackets($this->players, $this->globalPackets);
-			}
-			$this->globalPackets = [];
 		}
 
 		foreach($this->chunkPackets as $index => $entries){

@@ -51,10 +51,9 @@ final class ChunkSerializer{
 		return 0;
 	}
 
-	public static function serialize(Chunk $chunk, ?string $tiles = null) : string{
+	public static function serialize(Chunk $chunk, RuntimeBlockMapping $blockMapper, ?string $tiles = null) : string{
 		$stream = new NetworkBinaryStream();
 		$subChunkCount = self::getSubChunkCount($chunk);
-		$blockMapper = RuntimeBlockMapping::getInstance();
 		for($y = 0; $y < $subChunkCount; ++$y){
 			$layers = $chunk->getSubChunk($y)->getBlockLayers();
 			$stream->putByte(8); //version
@@ -91,7 +90,7 @@ final class ChunkSerializer{
 		$stream = new BinaryStream();
 		foreach($chunk->getTiles() as $tile){
 			if($tile instanceof Spawnable){
-				$stream->put($tile->getSerializedSpawnCompound());
+				$stream->put($tile->getSerializedSpawnCompound()->getEncodedNbt());
 			}
 		}
 

@@ -104,6 +104,8 @@ use pocketmine\world\format\Chunk;
 use pocketmine\world\particle\BlockPunchParticle;
 use pocketmine\world\Position;
 use pocketmine\world\sound\BlockPunchSound;
+use pocketmine\world\sound\EntityAttackNoDamageSound;
+use pocketmine\world\sound\EntityAttackSound;
 use pocketmine\world\World;
 use function abs;
 use function assert;
@@ -1573,7 +1575,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 			//TODO: improve this to take stuff like swimming, ladders, enchanted tools into account, fix wrong tool break time calculations for bad tools (pmmp/PocketMine-MP#211)
 			$breakTime = ceil($target->getBreakInfo()->getBreakTime($this->inventory->getItemInHand()) * 20);
 			if($breakTime > 0){
-				$this->getWorld()->broadcastLevelEvent($pos, LevelEventPacket::EVENT_BLOCK_START_BREAK, (int) (65535 / $breakTime));
+				$this->getWorld()->broadcastPacketToViewers($pos, LevelEventPacket::create(LevelEventPacket::EVENT_BLOCK_START_BREAK, (int) (65535 / $breakTime), $pos));
 			}
 		}
 
@@ -1590,7 +1592,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	}
 
 	public function stopBreakBlock(Vector3 $pos) : void{
-		$this->getWorld()->broadcastLevelEvent($pos, LevelEventPacket::EVENT_BLOCK_STOP_BREAK);
+		$this->getWorld()->broadcastPacketToViewers($pos, LevelEventPacket::create(LevelEventPacket::EVENT_BLOCK_STOP_BREAK, 0, $pos));
 	}
 
 	/**
@@ -1682,10 +1684,13 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 
 		$entity->attack($ev);
 
+		$soundPos = $entity->getPosition()->add(0, $entity->width / 2, 0);
 		if($ev->isCancelled()){
+			$this->getWorld()->addSound($soundPos, new EntityAttackNoDamageSound());
 			return false;
 		}
 		$this->broadcastAnimation(new ArmSwingAnimation($this), $this->getViewers());
+		$this->getWorld()->addSound($soundPos, new EntityAttackSound());
 
 		if($ev->getModifier(EntityDamageEvent::MODIFIER_CRITICAL) > 0 and $entity instanceof Living){
 			$entity->broadcastAnimation(new CriticalHitAnimation($entity));
