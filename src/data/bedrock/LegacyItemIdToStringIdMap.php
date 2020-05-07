@@ -31,10 +31,10 @@ use function is_int;
 use function is_string;
 use function json_decode;
 
-final class LegacyEntityIdToStringIdMap extends LegacyToStringBidirectionalIdMap{
+final class LegacyItemIdToStringIdMap extends LegacyToStringBidirectionalIdMap{
 	use SingletonTrait;
 
 	public function __construct(){
-		parent::__construct(\pocketmine\RESOURCE_PATH . '/vanilla/entity_id_map.json');
+		parent::__construct(\pocketmine\RESOURCE_PATH . 'vanilla/item_id_map.json');
 	}
 }

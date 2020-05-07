@@ -362,30 +362,6 @@ class Utils{
 	}
 
 	/**
-	 * @return mixed[] array of claims
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @throws \UnexpectedValueException
-	 */
-	public static function getJwtClaims(string $token) : array{
-		$v = explode(".", $token);
-		if(count($v) !== 3){
-			throw new \UnexpectedValueException("Expected exactly 3 JWT parts, got " . count($v));
-		}
-		$payloadB64 = $v[1];
-		$payloadJSON = base64_decode(strtr($payloadB64, '-_', '+/'), true);
-		if($payloadJSON === false){
-			throw new \UnexpectedValueException("Invalid base64 JWT payload");
-		}
-		$result = json_decode($payloadJSON, true);
-		if(!is_array($result)){
-			throw new \UnexpectedValueException("Failed to decode JWT payload JSON: " . json_last_error_msg());
-		}
-
-		return $result;
-	}
-
-	/**
 	 * @param object $value
 	 */
 	public static function getReferenceCount($value, bool $includeCurrent = true) : int{
@@ -468,9 +444,15 @@ class Utils{
 	 * @return string[] an array of tagName => tag value. If the tag has no value, an empty string is used as the value.
 	 */
 	public static function parseDocComment(string $docComment) : array{
-		preg_match_all('/(*ANYCRLF)^[\t ]*\* @([a-zA-Z]+)(?:[\t ]+(.+))?[\t ]*$/m', $docComment, $matches);
+		$rawDocComment = substr($docComment, 3, -2); //remove the opening and closing markers
+		if($rawDocComment === false){ //usually empty doc comment, but this is safer and statically analysable
+			return [];
+		}
+		preg_match_all('/(*ANYCRLF)^[\t ]*(?:\* )?@([a-zA-Z]+)(?:[\t ]+(.+?))?[\t ]*$/m', $rawDocComment, $matches);
 
-		return array_combine($matches[1], $matches[2]);
+		$result = array_combine($matches[1], $matches[2]);
+		if($result === false) throw new AssumptionFailedError("array_combine() doesn't return false with two equal-sized arrays");
+		return $result;
 	}
 
 	/**

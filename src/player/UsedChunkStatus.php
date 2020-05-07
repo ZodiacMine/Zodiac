@@ -21,20 +21,27 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\data\bedrock;
+namespace pocketmine\player;
 
-use pocketmine\utils\AssumptionFailedError;
-use pocketmine\utils\SingletonTrait;
-use function file_get_contents;
-use function is_array;
-use function is_int;
-use function is_string;
-use function json_decode;
+use pocketmine\utils\EnumTrait;
 
-final class LegacyEntityIdToStringIdMap extends LegacyToStringBidirectionalIdMap{
-	use SingletonTrait;
+/**
+ * This doc-block is generated automatically, do not modify it manually.
+ * This must be regenerated whenever registry members are added, removed or changed.
+ * @see RegistryTrait::_generateMethodAnnotations()
+ *
+ * @method static self NEEDED()
+ * @method static self REQUESTED()
+ * @method static self SENT()
+ */
+final class UsedChunkStatus{
+	use EnumTrait;
 
-	public function __construct(){
-		parent::__construct(\pocketmine\RESOURCE_PATH . '/vanilla/entity_id_map.json');
+	protected static function setup() : void{
+		self::registerAll(
+			new self("NEEDED"),
+			new self("REQUESTED"),
+			new self("SENT")
+		);
 	}
 }

@@ -26,14 +26,16 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use Particle\Validator\Validator;
+use pocketmine\network\mcpe\JwtUtils;
 use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
 use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\SkinData;
 use pocketmine\utils\BinaryDataException;
 use pocketmine\utils\BinaryStream;
-use pocketmine\utils\Utils;
 use function is_array;
+use function is_object;
 use function json_decode;
+use function json_last_error_msg;
 
 class LoginPacket extends DataPacket implements ServerboundPacket{
 	public const NETWORK_ID = ProtocolInfo::LOGIN_PACKET;
@@ -108,14 +110,6 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 	 */
 	public $clientData;
 
-	/**
-	 * This field may be used by plugins to bypass keychain verification. It should only be used for plugins such as
-	 * Specter where passing verification would take too much time and not be worth it.
-	 *
-	 * @var bool
-	 */
-	public $skipVerification = false;
-
 	public function canBeSentBeforeLogin() : bool{
 		return true;
 	}
@@ -163,7 +157,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		foreach($this->chainDataJwt as $k => $chain){
 			//validate every chain element
 			try{
-				$claims = Utils::getJwtClaims($chain);
+				$claims = JwtUtils::getClaims($chain);
 			}catch(\UnexpectedValueException $e){
 				throw new PacketDecodeException($e->getMessage(), 0, $e);
 			}
@@ -190,7 +184,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 		$this->clientDataJwt = $buffer->get($buffer->getLInt());
 		try{
-			$clientData = Utils::getJwtClaims($this->clientDataJwt);
+			$clientData = JwtUtils::getClaims($this->clientDataJwt);
 		}catch(\UnexpectedValueException $e){
 			throw new PacketDecodeException($e->getMessage(), 0, $e);
 		}
