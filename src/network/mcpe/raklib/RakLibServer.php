@@ -29,7 +29,6 @@ use raklib\generic\Socket;
 use raklib\RakLib;
 use raklib\server\ipc\RakLibToUserThreadMessageSender;
 use raklib\server\ipc\UserToRakLibThreadMessageReceiver;
-use raklib\server\MultiProtocolAcceptor;
 use raklib\server\Server;
 use raklib\utils\ExceptionTraceCleaner;
 use raklib\utils\InternetAddress;

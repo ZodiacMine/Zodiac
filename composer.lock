@@ -523,12 +523,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ZodiacMine/RakLib.git",
-                "reference": "00862ecf880dd4a79bb14693f818e4454b44198c"
+                "reference": "4e3a752dc3fc4fc0d26aef2b2259efecd5fe5040"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ZodiacMine/RakLib/zipball/00862ecf880dd4a79bb14693f818e4454b44198c",
-                "reference": "00862ecf880dd4a79bb14693f818e4454b44198c",
+                "url": "https://api.github.com/repos/ZodiacMine/RakLib/zipball/4e3a752dc3fc4fc0d26aef2b2259efecd5fe5040",
+                "reference": "4e3a752dc3fc4fc0d26aef2b2259efecd5fe5040",
                 "shasum": ""
             },
             "require": {
@@ -556,7 +556,7 @@
             "support": {
                 "source": "https://github.com/ZodiacMine/RakLib/tree/master"
             },
-            "time": "2020-04-29T05:24:49+00:00"
+            "time": "2020-05-07T16:18:59+00:00"
         },
         {
             "name": "pocketmine/snooze",
@@ -683,16 +683,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.19",
+            "version": "0.12.23",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "054f6d76b12ba9a6c13a5a8d5fcdf51219615f4d"
+                "reference": "71e529efced79e055fa8318b692e7f7d03ea4e75"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/054f6d76b12ba9a6c13a5a8d5fcdf51219615f4d",
-                "reference": "054f6d76b12ba9a6c13a5a8d5fcdf51219615f4d",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/71e529efced79e055fa8318b692e7f7d03ea4e75",
+                "reference": "71e529efced79e055fa8318b692e7f7d03ea4e75",
                 "shasum": ""
             },
             "require": {
@@ -721,7 +721,7 @@
                 "MIT"
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
-            "time": "2020-04-19T20:35:10+00:00"
+            "time": "2020-05-05T12:55:44+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
