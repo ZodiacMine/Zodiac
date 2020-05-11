@@ -69,10 +69,6 @@
    "repositories": [
       {
          "type": "vcs",
-         "url": "https://github.com/ZodiacMine/RakLib"
-      },
-      {
-         "type": "vcs",
          "url": "https://github.com/ZodiacMine/BinaryUtils"
       }
    ]

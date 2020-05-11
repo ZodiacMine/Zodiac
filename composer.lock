@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "999ab04326c9d5f6d7f75f308b9c2b79",
+    "content-hash": "bf4179c39f3d1644541084cceb7699c7",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -522,13 +522,13 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/ZodiacMine/RakLib.git",
-                "reference": "4e3a752dc3fc4fc0d26aef2b2259efecd5fe5040"
+                "url": "https://github.com/pmmp/RakLib.git",
+                "reference": "12153dcd1e37d1d1b026db65605210f094579861"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ZodiacMine/RakLib/zipball/4e3a752dc3fc4fc0d26aef2b2259efecd5fe5040",
-                "reference": "4e3a752dc3fc4fc0d26aef2b2259efecd5fe5040",
+                "url": "https://api.github.com/repos/pmmp/RakLib/zipball/12153dcd1e37d1d1b026db65605210f094579861",
+                "reference": "12153dcd1e37d1d1b026db65605210f094579861",
                 "shasum": ""
             },
             "require": {
@@ -549,14 +549,12 @@
                     "raklib\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "GPL-3.0"
             ],
             "description": "A RakNet server implementation written in PHP",
-            "support": {
-                "source": "https://github.com/ZodiacMine/RakLib/tree/master"
-            },
-            "time": "2020-05-07T16:18:59+00:00"
+            "time": "2020-05-10T10:47:44+00:00"
         },
         {
             "name": "pocketmine/snooze",
@@ -598,12 +596,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/SPL.git",
-                "reference": "9856cb78ebeeea40375a432a4f87aa47307b9351"
+                "reference": "98589af98ff5662f4f69a76bdbf3129c9e2e3614"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/SPL/zipball/9856cb78ebeeea40375a432a4f87aa47307b9351",
-                "reference": "9856cb78ebeeea40375a432a4f87aa47307b9351",
+                "url": "https://api.github.com/repos/pmmp/SPL/zipball/98589af98ff5662f4f69a76bdbf3129c9e2e3614",
+                "reference": "98589af98ff5662f4f69a76bdbf3129c9e2e3614",
                 "shasum": ""
             },
             "require": {
@@ -623,7 +621,7 @@
                 "LGPL-3.0"
             ],
             "description": "Standard library files required by PocketMine-MP and related projects",
-            "time": "2020-01-31T16:18:46+00:00"
+            "time": "2020-05-10T12:05:24+00:00"
         }
     ],
     "packages-dev": [
@@ -683,16 +681,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "0.12.23",
+            "version": "0.12.25",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "71e529efced79e055fa8318b692e7f7d03ea4e75"
+                "reference": "9619551d68b2d4c0d681a8df73f3c847c798ee64"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/71e529efced79e055fa8318b692e7f7d03ea4e75",
-                "reference": "71e529efced79e055fa8318b692e7f7d03ea4e75",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9619551d68b2d4c0d681a8df73f3c847c798ee64",
+                "reference": "9619551d68b2d4c0d681a8df73f3c847c798ee64",
                 "shasum": ""
             },
             "require": {
@@ -721,7 +719,7 @@
                 "MIT"
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
-            "time": "2020-05-05T12:55:44+00:00"
+            "time": "2020-05-10T20:36:16+00:00"
         },
         {
             "name": "phpstan/phpstan-phpunit",
