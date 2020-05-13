@@ -21,32 +21,20 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types\command;
+namespace pocketmine\scheduler;
 
-use pocketmine\uuid\UUID;
+class PublishProgressRaceAsyncTask extends AsyncTask{
+	/** @var bool */
+	public static $success = false;
 
-class CommandOriginData{
-	public const ORIGIN_PLAYER = 0;
-	public const ORIGIN_BLOCK = 1;
-	public const ORIGIN_MINECART_BLOCK = 2;
-	public const ORIGIN_DEV_CONSOLE = 3;
-	public const ORIGIN_TEST = 4;
-	public const ORIGIN_AUTOMATION_PLAYER = 5;
-	public const ORIGIN_CLIENT_AUTOMATION = 6;
-	public const ORIGIN_DEDICATED_SERVER = 7;
-	public const ORIGIN_ENTITY = 8;
-	public const ORIGIN_VIRTUAL = 9;
-	public const ORIGIN_GAME_ARGUMENT = 10;
-	public const ORIGIN_ENTITY_SERVER = 11; //???
+	public function onRun() : void{
+		$this->publishProgress("hello");
+	}
 
-	/** @var int */
-	public $type;
-	/** @var UUID */
-	public $uuid;
-
-	/** @var string */
-	public $requestId;
-
-	/** @var int */
-	public $varlong1;
+	public function onProgressUpdate($progress) : void{
+		if($progress === "hello"){
+			// thread local on main thread
+			self::$success = true;
+		}
+	}
 }

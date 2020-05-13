@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bf4179c39f3d1644541084cceb7699c7",
+    "content-hash": "a58b2a34054ef19446d1d51f91ef79ba",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -371,6 +371,40 @@
             "time": "2020-01-31T14:26:22+00:00"
         },
         {
+            "name": "pocketmine/errorhandler",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pmmp/ErrorHandler.git",
+                "reference": "0503a1929a3934e754114814509ff9152f4908eb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pmmp/ErrorHandler/zipball/0503a1929a3934e754114814509ff9152f4908eb",
+                "reference": "0503a1929a3934e754114814509ff9152f4908eb",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^0.12.23",
+                "phpstan/phpstan-strict-rules": "^0.12.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "pocketmine\\errorhandler\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0"
+            ],
+            "description": "Utilities to handle nasty PHP E_* errors in a usable way",
+            "time": "2020-05-10T11:45:02+00:00"
+        },
+        {
             "name": "pocketmine/log",
             "version": "dev-master",
             "source": {
@@ -622,6 +656,41 @@
             ],
             "description": "Standard library files required by PocketMine-MP and related projects",
             "time": "2020-05-10T12:05:24+00:00"
+        },
+        {
+            "name": "pocketmine/uuid",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/pmmp/UUID.git",
+                "reference": "c45c995cb87eafee01a14a06a4b7b517cada03a5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/pmmp/UUID/zipball/c45c995cb87eafee01a14a06a4b7b517cada03a5",
+                "reference": "c45c995cb87eafee01a14a06a4b7b517cada03a5",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.3",
+                "pocketmine/binaryutils": "^0.1 || dev-master"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^0.12.23",
+                "phpstan/phpstan-strict-rules": "^0.12.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "pocketmine\\uuid\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0"
+            ],
+            "description": "Basic UUID implementation used by PocketMine-MP and related projects",
+            "time": "2020-05-10T12:38:41+00:00"
         }
     ],
     "packages-dev": [
