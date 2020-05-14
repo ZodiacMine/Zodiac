@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use Particle\Validator\Validator;
+use pocketmine\network\mcpe\JwtException;
 use pocketmine\network\mcpe\JwtUtils;
 use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
 use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
@@ -157,8 +158,8 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		foreach($this->chainDataJwt as $k => $chain){
 			//validate every chain element
 			try{
-				$claims = JwtUtils::getClaims($chain);
-			}catch(\UnexpectedValueException $e){
+				[, $claims, ] = JwtUtils::parse($chain);
+			}catch(JwtException $e){
 				throw new PacketDecodeException($e->getMessage(), 0, $e);
 			}
 			if(isset($claims["extraData"])){
@@ -184,8 +185,8 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 
 		$this->clientDataJwt = $buffer->get($buffer->getLInt());
 		try{
-			$clientData = JwtUtils::getClaims($this->clientDataJwt);
-		}catch(\UnexpectedValueException $e){
+			[, $clientData, ] = JwtUtils::parse($this->clientDataJwt);
+		}catch(JwtException $e){
 			throw new PacketDecodeException($e->getMessage(), 0, $e);
 		}
 
