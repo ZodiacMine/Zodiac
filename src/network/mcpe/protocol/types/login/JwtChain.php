@@ -21,22 +21,16 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\world\particle;
+namespace pocketmine\network\mcpe\protocol\types\login;
 
-use pocketmine\color\Color;
-use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\protocol\LevelEventPacket;
-use pocketmine\network\mcpe\protocol\types\ParticleIds;
+/**
+ * Model class for LoginPacket JSON data for JsonMapper
+ */
+final class JwtChain{
 
-class InstantEnchantParticle implements Particle{
-	/** @var Color */
-	private $color;
-
-	public function __construct(Color $color){
-		$this->color = $color;
-	}
-
-	public function encode(Vector3 $pos){
-		return LevelEventPacket::standardParticle(ParticleIds::MOB_SPELL_INSTANTANEOUS, $this->color->toARGB(), $pos);
-	}
+	/**
+	 * @var string[]
+	 * @required
+	 */
+	public $chain;
 }

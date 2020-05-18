@@ -34,7 +34,8 @@ use pocketmine\player\Player;
 use function sqrt;
 
 class ExperienceOrb extends Entity{
-	public const NETWORK_ID = EntityLegacyIds::XP_ORB;
+
+	public static function getNetworkTypeId() : int{ return EntityLegacyIds::XP_ORB; }
 
 	public const TAG_VALUE_PC = "Value"; //short
 	public const TAG_VALUE_PE = "experience value"; //int (WTF?)

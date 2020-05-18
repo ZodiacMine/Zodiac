@@ -24,14 +24,23 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\handler;
 
 use Mdanter\Ecc\Crypto\Key\PublicKeyInterface;
+use Particle\Validator\Failure;
+use Particle\Validator\Validator;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\network\BadPacketException;
 use pocketmine\network\mcpe\auth\ProcessLoginTask;
 use pocketmine\network\mcpe\convert\SkinAdapterSingleton;
+use pocketmine\network\mcpe\JwtException;
+use pocketmine\network\mcpe\JwtUtils;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\types\login\AuthenticationData;
+use pocketmine\network\mcpe\protocol\types\login\ClientData;
+use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaPieceTintColor;
+use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaSkinPiece;
+use pocketmine\network\mcpe\protocol\types\login\JwtChain;
 use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
 use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\SkinAnimation;
@@ -44,11 +53,63 @@ use pocketmine\uuid\UUID;
 use function array_map;
 use function base64_decode;
 use function in_array;
+use function is_array;
 
 /**
  * Handles the initial login phase of the session. This handler is used as the initial state.
  */
 class LoginPacketHandler extends PacketHandler{
+
+	private const I_USERNAME = 'displayName';
+	private const I_UUID = 'identity';
+	private const I_TITLE_ID = 'titleId';
+	private const I_XUID = 'XUID';
+
+	private const I_CLIENT_RANDOM_ID = 'ClientRandomId';
+	private const I_SERVER_ADDRESS = 'ServerAddress';
+	private const I_LANGUAGE_CODE = 'LanguageCode';
+
+	private const I_SKIN_RESOURCE_PATCH = 'SkinResourcePatch';
+
+	private const I_SKIN_ID = 'SkinId';
+	private const I_SKIN_HEIGHT = 'SkinImageHeight';
+	private const I_SKIN_WIDTH = 'SkinImageWidth';
+	private const I_SKIN_DATA = 'SkinData';
+
+	private const I_CAPE_ID = 'CapeId';
+	private const I_CAPE_HEIGHT = 'CapeImageHeight';
+	private const I_CAPE_WIDTH = 'CapeImageWidth';
+	private const I_CAPE_DATA = 'CapeData';
+
+	private const I_GEOMETRY_DATA = 'SkinGeometryData';
+
+	private const I_ANIMATION_DATA = 'SkinAnimationData';
+	private const I_ANIMATION_FRAMES = 'AnimatedImageData';
+
+	private const I_ANIMATION_IMAGE_HEIGHT = 'ImageHeight';
+	private const I_ANIMATION_IMAGE_WIDTH = 'ImageWidth';
+	private const I_ANIMATION_IMAGE_FRAMES = 'Frames';
+	private const I_ANIMATION_IMAGE_TYPE = 'Type';
+	private const I_ANIMATION_IMAGE_DATA = 'Image';
+
+	private const I_PREMIUM_SKIN = 'PremiumSkin';
+	private const I_PERSONA_SKIN = 'PersonaSkin';
+	private const I_PERSONA_CAPE_ON_CLASSIC_SKIN = 'CapeOnClassicSkin';
+
+	private const I_SKIN_ARM_SIZE = 'ArmSize';
+	private const I_SKIN_COLOR = 'SkinColor';
+
+	private const I_PERSONA_PIECES = 'PersonaPieces';
+	private const I_PIECE_TINT_COLORS = 'PieceTintColors';
+
+	private const I_PERSONA_PIECE_ID = 'PieceId';
+	private const I_PERSONA_PIECE_TYPE = 'PieceType';
+	private const I_PERSONA_PIECE_PACK_ID = 'PackId';
+	private const I_PERSONA_PIECE_IS_DEFAULT = 'IsDefault';
+	private const I_PERSONA_PIECE_PRODUCT_ID = 'ProductId';
+
+	private const I_PIECE_TINT_COLOR_TYPE = 'PieceType';
+	private const I_PIECE_TINT_COLOR_COLORS = 'Colors';
 
 	/** @var Server */
 	private $server;
@@ -93,65 +154,74 @@ class LoginPacketHandler extends PacketHandler{
 			return true;
 		}
 
-		if(!Player::isValidUserName($packet->extraData[LoginPacket::I_USERNAME])){
+		$extraData = $this->fetchAuthData($packet->chainDataJwt);
+
+		if(!Player::isValidUserName($extraData[self::I_USERNAME])){
 			$this->session->disconnect("disconnectionScreen.invalidName");
 
 			return true;
 		}
 
+		$clientData = $this->parseClientData($packet->clientDataJwt);
+		$safeB64Decode = static function(string $base64, string $context) : string{
+			$result = base64_decode($base64, true);
+			if($result === false){
+				throw new \InvalidArgumentException("$context: Malformed base64, cannot be decoded");
+			}
+			return $result;
+		};
 		try{
-			$clientData = $packet->clientData; //this serves no purpose except readability
 			/** @var SkinAnimation[] $animations */
 			$animations = [];
-			foreach($clientData[LoginPacket::I_ANIMATION_FRAMES] as $animation){
+			foreach($clientData[self::I_ANIMATION_FRAMES] as $k => $animation){
 				$animations[] = new SkinAnimation(
 					new SkinImage(
-						$animation[LoginPacket::I_ANIMATION_IMAGE_HEIGHT],
-						$animation[LoginPacket::I_ANIMATION_IMAGE_WIDTH],
-						base64_decode($animation[LoginPacket::I_ANIMATION_IMAGE_DATA], true)
+						$animation[self::I_ANIMATION_IMAGE_HEIGHT],
+						$animation[self::I_ANIMATION_IMAGE_WIDTH],
+						$safeB64Decode($animation[self::I_ANIMATION_IMAGE_DATA], "AnimatedImageData.$k.Image")
 					),
-					$animation[LoginPacket::I_ANIMATION_IMAGE_TYPE],
-					$animation[LoginPacket::I_ANIMATION_IMAGE_FRAMES]
+					$animation[self::I_ANIMATION_IMAGE_TYPE],
+					$animation[self::I_ANIMATION_IMAGE_FRAMES]
 				);
 			}
 			$skinData = new SkinData(
-				$packet->clientData[LoginPacket::I_SKIN_ID],
-				base64_decode($packet->clientData[LoginPacket::I_SKIN_RESOURCE_PATCH], true),
+				$clientData[self::I_SKIN_ID],
+				$safeB64Decode($clientData[self::I_SKIN_RESOURCE_PATCH], "SkinResourcePatch"),
 				new SkinImage(
-					$packet->clientData[LoginPacket::I_SKIN_HEIGHT],
-					$packet->clientData[LoginPacket::I_SKIN_WIDTH],
-					base64_decode($packet->clientData[LoginPacket::I_SKIN_DATA], true)
+					$clientData[self::I_SKIN_HEIGHT],
+					$clientData[self::I_SKIN_WIDTH],
+					$safeB64Decode($clientData[self::I_SKIN_DATA], "SkinData")
 				),
 				$animations,
 				new SkinImage(
-					$packet->clientData[LoginPacket::I_CAPE_HEIGHT],
-					$packet->clientData[LoginPacket::I_CAPE_WIDTH],
-					base64_decode($packet->clientData[LoginPacket::I_CAPE_DATA], true)
+					$clientData[self::I_CAPE_HEIGHT],
+					$clientData[self::I_CAPE_WIDTH],
+					$safeB64Decode($clientData[self::I_CAPE_DATA], "CapeData")
 				),
-				base64_decode($packet->clientData[LoginPacket::I_GEOMETRY_DATA], true),
-				base64_decode($packet->clientData[LoginPacket::I_ANIMATION_DATA], true),
-				$packet->clientData[LoginPacket::I_PREMIUM_SKIN],
-				$packet->clientData[LoginPacket::I_PERSONA_SKIN],
-				$packet->clientData[LoginPacket::I_PERSONA_CAPE_ON_CLASSIC_SKIN],
-				$packet->clientData[LoginPacket::I_CAPE_ID],
+				$safeB64Decode($clientData[self::I_GEOMETRY_DATA], "SkinGeometryData"),
+				$safeB64Decode($clientData[self::I_ANIMATION_DATA], "SkinAnimationData"),
+				$clientData[self::I_PREMIUM_SKIN],
+				$clientData[self::I_PERSONA_SKIN],
+				$clientData[self::I_PERSONA_CAPE_ON_CLASSIC_SKIN],
+				$clientData[self::I_CAPE_ID],
 				null,
-				$packet->clientData[LoginPacket::I_SKIN_ARM_SIZE],
-				$packet->clientData[LoginPacket::I_SKIN_COLOR],
+				$clientData[self::I_SKIN_ARM_SIZE],
+				$clientData[self::I_SKIN_COLOR],
 				array_map(function(array $piece) : PersonaSkinPiece{
 					return new PersonaSkinPiece(
-						$piece[LoginPacket::I_PERSONA_PIECE_ID],
-						$piece[LoginPacket::I_PERSONA_PIECE_TYPE],
-						$piece[LoginPacket::I_PERSONA_PIECE_PACK_ID],
-						$piece[LoginPacket::I_PERSONA_PIECE_IS_DEFAULT],
-						$piece[LoginPacket::I_PERSONA_PIECE_PRODUCT_ID]
+						$piece[self::I_PERSONA_PIECE_ID],
+						$piece[self::I_PERSONA_PIECE_TYPE],
+						$piece[self::I_PERSONA_PIECE_PACK_ID],
+						$piece[self::I_PERSONA_PIECE_IS_DEFAULT],
+						$piece[self::I_PERSONA_PIECE_PRODUCT_ID]
 					);
-				}, $clientData[LoginPacket::I_PERSONA_PIECES]),
+				}, $clientData[self::I_PERSONA_PIECES]),
 				array_map(function(array $tint) : PersonaPieceTintColor{
 					return new PersonaPieceTintColor(
-						$tint[LoginPacket::I_PIECE_TINT_COLOR_TYPE],
-						$tint[LoginPacket::I_PIECE_TINT_COLOR_COLORS]
+						$tint[self::I_PIECE_TINT_COLOR_TYPE],
+						$tint[self::I_PIECE_TINT_COLOR_COLORS]
 					);
-				}, $clientData[LoginPacket::I_PIECE_TINT_COLORS])
+				}, $clientData[self::I_PIECE_TINT_COLORS])
 			);
 
 			$skin = SkinAdapterSingleton::get()->fromSkinData($skinData);
@@ -163,17 +233,17 @@ class LoginPacketHandler extends PacketHandler{
 		}
 
 		try{
-			$uuid = UUID::fromString($packet->extraData[LoginPacket::I_UUID]);
+			$uuid = UUID::fromString($extraData[self::I_UUID]);
 		}catch(\InvalidArgumentException $e){
 			throw BadPacketException::wrap($e, "Failed to parse login UUID");
 		}
 		($this->playerInfoConsumer)(new PlayerInfo(
-			$packet->extraData[LoginPacket::I_USERNAME],
+			$extraData[self::I_USERNAME],
 			$uuid,
 			$skin,
-			$packet->clientData[LoginPacket::I_LANGUAGE_CODE],
-			$packet->extraData[LoginPacket::I_XUID],
-			$packet->clientData
+			$clientData[self::I_LANGUAGE_CODE],
+			$extraData[self::I_XUID],
+			$clientData
 		));
 
 		$ev = new PlayerPreLoginEvent(
@@ -201,6 +271,128 @@ class LoginPacketHandler extends PacketHandler{
 		$this->processLogin($packet, $ev->isAuthRequired());
 
 		return true;
+	}
+
+	/**
+	 * @return mixed[] extraData index of whichever JWT has it
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @throws BadPacketException
+	 */
+	protected function fetchAuthData(JwtChain $chain) : array{
+		$extraData = null;
+		foreach($chain->chain as $k => $jwt){
+			//validate every chain element
+			try{
+				[, $claims, ] = JwtUtils::parse($jwt);
+			}catch(JwtException $e){
+				throw BadPacketException::wrap($e);
+			}
+			if(isset($claims["extraData"])){
+				if($extraData !== null){
+					throw new BadPacketException("Found 'extraData' more than once in chainData");
+				}
+
+				if(!is_array($claims["extraData"])){
+					throw new BadPacketException("'extraData' key should be an array");
+				}
+
+				$extraData = $claims['extraData'];
+
+				$extraV = new Validator();
+				$extraV->required(self::I_USERNAME)->string();
+				$extraV->required(self::I_UUID)->uuid();
+				$extraV->optional(self::I_TITLE_ID)->string(); //TODO: find out what this is for
+				$extraV->required(self::I_XUID)->string()->digits()->allowEmpty(true);
+
+				$result = $extraV->validate($extraData);
+				if($result->isNotValid()){
+					$messages = array_map(static function(Failure $f) : string{
+						return $f->format();
+					}, $result->getFailures());
+					throw new BadPacketException("Failed to validate extraData of chain $k: " . implode(", ", $messages));
+				}
+			}
+		}
+		if($extraData === null){
+			throw new BadPacketException("'extraData' not found in chain data");
+		}
+		return $extraData;
+	}
+
+	/**
+	 * @return mixed[] decoded payload of the clientData JWT
+	 * @phpstan-return array<string, mixed>
+	 *
+	 * @throws BadPacketException
+	 */
+	protected function parseClientData(string $clientDataJwt) : array{
+		try{
+			[, $clientDataClaims, ] = JwtUtils::parse($clientDataJwt);
+		}catch(JwtException $e){
+			throw BadPacketException::wrap($e);
+		}
+
+		$v = new Validator();
+		$v->required(self::I_CLIENT_RANDOM_ID)->integer();
+		$v->required(self::I_SERVER_ADDRESS)->string();
+		$v->required(self::I_LANGUAGE_CODE)->string();
+
+		$v->required(self::I_SKIN_RESOURCE_PATCH)->string();
+
+		$v->required(self::I_SKIN_ID)->string();
+		$v->required(self::I_SKIN_DATA)->string();
+		$v->required(self::I_SKIN_HEIGHT)->integer(true);
+		$v->required(self::I_SKIN_WIDTH)->integer(true);
+
+		$v->required(self::I_CAPE_ID, null, true)->string();
+		$v->required(self::I_CAPE_DATA, null, true)->string();
+		$v->required(self::I_CAPE_HEIGHT)->integer(true);
+		$v->required(self::I_CAPE_WIDTH)->integer(true);
+
+		$v->required(self::I_GEOMETRY_DATA, null, true)->string();
+
+		$v->required(self::I_ANIMATION_DATA, null, true)->string();
+		$v->required(self::I_ANIMATION_FRAMES, null, true)->isArray()->each(function(Validator $vSub) : void{
+			$vSub->required(self::I_ANIMATION_IMAGE_HEIGHT)->integer(true);
+			$vSub->required(self::I_ANIMATION_IMAGE_WIDTH)->integer(true);
+			$vSub->required(self::I_ANIMATION_IMAGE_FRAMES)->numeric(); //float() doesn't accept ints ???
+			$vSub->required(self::I_ANIMATION_IMAGE_TYPE)->integer(true);
+			$vSub->required(self::I_ANIMATION_IMAGE_DATA)->string();
+		});
+		$v->required(self::I_PREMIUM_SKIN)->bool();
+		$v->required(self::I_PERSONA_SKIN)->bool();
+		$v->required(self::I_PERSONA_CAPE_ON_CLASSIC_SKIN)->bool();
+		$v->required(self::I_SKIN_ARM_SIZE, null, true)->string()->inArray([
+			SkinData::ARM_SIZE_WIDE,
+			SkinData::ARM_SIZE_SLIM
+		]);
+		$v->required(self::I_SKIN_COLOR)->string()->callback(function(string $data) : bool{
+			return preg_match("~^\\#[0-9a-f]*$~i", $data) > 0;
+		});
+		$v->required(self::I_PERSONA_PIECES, null, true)->isArray()->each(function(Validator $vSub) : void{
+			$vSub->required(self::I_PERSONA_PIECE_IS_DEFAULT)->bool();
+			$vSub->required(self::I_PERSONA_PIECE_PACK_ID)->uuid();
+			$vSub->required(self::I_PERSONA_PIECE_ID)->uuid();
+			$vSub->required(self::I_PERSONA_PIECE_TYPE)->string()->inArray(PersonaSkinPiece::PIECE_TYPE_ALL);
+			$vSub->required(self::I_PERSONA_PIECE_PRODUCT_ID, null, true)->string();
+		});
+		$v->required(self::I_PIECE_TINT_COLORS, null, true)->isArray()->each(function(Validator $vSub) : void{
+			$vSub->required(self::I_PIECE_TINT_COLOR_COLORS)->isArray()->callback(function(array $data) : bool{
+				return count(array_filter($data, '\is_string')) === count($data);
+			});
+			$vSub->required(self::I_PIECE_TINT_COLOR_TYPE)->string()->inArray(PersonaSkinPiece::PIECE_TYPE_ALL);
+		});
+
+		$result = $v->validate($clientDataClaims);
+		if($result->isNotValid()){
+			$messages = array_map(static function(Failure $f) : string{
+				return $f->format();
+			}, $result->getFailures());
+			throw new BadPacketException("Failed to validate ClientData: " . implode(", ", $messages));
+		}
+
+		return $clientDataClaims;
 	}
 
 	/**

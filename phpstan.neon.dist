@@ -30,6 +30,9 @@ parameters:
 		- build/make-release.php
 		- build/server-phar.php
 		- tests/phpunit
+	excludes_analyse:
+		- src/world/generator/noise/Simplex.php
+		- src/utils/Random.php
 	dynamicConstantNames:
 		- pocketmine\IS_DEVELOPMENT_BUILD
 		- pocketmine\DEBUG

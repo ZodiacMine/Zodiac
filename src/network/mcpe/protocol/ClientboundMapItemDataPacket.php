@@ -25,6 +25,7 @@ namespace pocketmine\network\mcpe\protocol;
 
 #include <rules/DataPacket.h>
 
+use pocketmine\color\Color;
 use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\MapDecoration;
@@ -32,7 +33,6 @@ use pocketmine\network\mcpe\protocol\types\MapTrackedObject;
 #ifndef COMPILE
 use pocketmine\utils\Binary;
 #endif
-use pocketmine\utils\Color;
 use function count;
 
 class ClientboundMapItemDataPacket extends DataPacket implements ClientboundPacket{
