@@ -778,16 +778,16 @@
         },
         {
             "name": "respect/validation",
-            "version": "2.0.3",
+            "version": "2.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Respect/Validation.git",
-                "reference": "3463343b14a7fa5ba931f03b5dcb8efcbc0ddf9c"
+                "reference": "6f9213287416a34afe864ba0b203feeb8f318bbe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Respect/Validation/zipball/3463343b14a7fa5ba931f03b5dcb8efcbc0ddf9c",
-                "reference": "3463343b14a7fa5ba931f03b5dcb8efcbc0ddf9c",
+                "url": "https://api.github.com/repos/Respect/Validation/zipball/6f9213287416a34afe864ba0b203feeb8f318bbe",
+                "reference": "6f9213287416a34afe864ba0b203feeb8f318bbe",
                 "shasum": ""
             },
             "require": {
@@ -840,7 +840,7 @@
                 "validation",
                 "validator"
             ],
-            "time": "2020-05-13T16:41:55+00:00"
+            "time": "2020-05-19T09:31:43+00:00"
         },
         {
             "name": "symfony/polyfill-mbstring",

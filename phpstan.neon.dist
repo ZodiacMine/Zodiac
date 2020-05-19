@@ -4,8 +4,6 @@ includes:
 	- tests/phpstan/configs/custom-leveldb.neon
 	- tests/phpstan/configs/ds-bugs.neon
 	- tests/phpstan/configs/gc-hacks.neon
-	- tests/phpstan/configs/l7-baseline.neon
-	- tests/phpstan/configs/l8-baseline.neon
 	- tests/phpstan/configs/php-bugs.neon
 	- tests/phpstan/configs/phpstan-bugs.neon
 	- tests/phpstan/configs/phpunit-wiring-tests.neon
@@ -19,7 +17,7 @@ rules:
 	- pocketmine\phpstan\rules\DisallowEnumComparisonRule
 
 parameters:
-	level: 8
+	level: 6
 	autoload_files:
 		- tests/phpstan/bootstrap.php
 		- src/PocketMine.php
