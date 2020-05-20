@@ -52,6 +52,7 @@ use pocketmine\network\mcpe\handler\LoginPacketHandler;
 use pocketmine\network\mcpe\handler\PacketHandler;
 use pocketmine\network\mcpe\handler\PreSpawnPacketHandler;
 use pocketmine\network\mcpe\handler\ResourcePacksPacketHandler;
+use pocketmine\network\mcpe\handler\SpawnResponsePacketHandler;
 use pocketmine\network\mcpe\protocol\AdventureSettingsPacket;
 use pocketmine\network\mcpe\protocol\AvailableCommandsPacket;
 use pocketmine\network\mcpe\protocol\ChunkRadiusUpdatedPacket;
@@ -624,16 +625,22 @@ class NetworkSession{
 		$this->createPlayer();
 
 		$this->setHandler(new PreSpawnPacketHandler($this->server, $this->player, $this));
+		$this->player->setImmobile(); //TODO: HACK: fix client-side falling pre-spawn
+
 		$this->logger->debug("Waiting for spawn chunks");
 	}
 
 	public function onTerrainReady() : void{
 		$this->logger->debug("Sending spawn notification, waiting for spawn response");
 		$this->sendDataPacket(PlayStatusPacket::create(PlayStatusPacket::PLAYER_SPAWN));
+		$this->setHandler(new SpawnResponsePacketHandler(function() : void{
+			$this->onSpawn();
+		}));
 	}
 
-	public function onSpawn() : void{
+	private function onSpawn() : void{
 		$this->logger->debug("Received spawn response, entering in-game phase");
+		$this->player->setImmobile(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
 		$this->player->doFirstSpawn();
 		$this->setHandler(new InGamePacketHandler($this->player, $this));
 	}
@@ -680,7 +687,7 @@ class NetworkSession{
 	}
 
 	public function syncGameMode(GameMode $mode, bool $isRollback = false) : void{
-		$this->sendDataPacket(SetPlayerGameTypePacket::create(self::getClientFriendlyGamemode($mode)));
+		$this->sendDataPacket(SetPlayerGameTypePacket::create(TypeConverter::getInstance()->getClientFriendlyGamemode($mode)));
 		$this->syncAdventureSettings($this->player);
 		if(!$isRollback){
 			$this->invManager->syncCreative();
@@ -943,19 +950,5 @@ class NetworkSession{
 		}
 
 		return false;
-	}
-
-	/**
-	 * Returns a client-friendly gamemode of the specified real gamemode
-	 * This function takes care of handling gamemodes known to MCPE (as of 1.1.0.3, that includes Survival, Creative and Adventure)
-	 *
-	 * @internal
-	 */
-	public static function getClientFriendlyGamemode(GameMode $gamemode) : int{
-		if($gamemode->equals(GameMode::SPECTATOR())){
-			return GameMode::CREATIVE()->getMagicNumber();
-		}
-
-		return $gamemode->getMagicNumber();
 	}
 }
