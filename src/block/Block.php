@@ -163,7 +163,7 @@ class Block{
 			}
 		}
 		if($oldTile === null and $tileType !== null){
-			$this->pos->getWorldNonNull()->addTile(TileFactory::getInstance()->create($tileType, $this->pos->getWorld(), $this->pos->asVector3()));
+			$this->pos->getWorldNonNull()->addTile(TileFactory::getInstance()->create($tileType, $this->pos->getWorldNonNull(), $this->pos->asVector3()));
 		}
 	}
 
@@ -345,10 +345,7 @@ class Block{
 	 * @internal
 	 */
 	final public function position(World $world, int $x, int $y, int $z) : void{
-		$this->pos->x = $x;
-		$this->pos->y = $y;
-		$this->pos->z = $z;
-		$this->pos->world = $world;
+		$this->pos = new Position($x, $y, $z, $world);
 	}
 
 	/**

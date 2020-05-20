@@ -1329,7 +1329,7 @@ abstract class Entity{
 	}
 
 	public function getWorld() : World{
-		return $this->location->getWorld();
+		return $this->location->getWorldNonNull();
 	}
 
 	protected function setPosition(Vector3 $pos) : bool{
@@ -1337,7 +1337,7 @@ abstract class Entity{
 			return false;
 		}
 
-		if($pos instanceof Position and $pos->world !== null and $pos->world !== $this->getWorld()){
+		if($pos instanceof Position and $pos->isValid() and $pos->getWorldNonNull() !== $this->getWorld()){
 			if(!$this->switchWorld($pos->getWorldNonNull())){
 				return false;
 			}
@@ -1486,7 +1486,14 @@ abstract class Entity{
 			$this->despawnFromAll();
 		}
 
-		$this->location->setWorld($targetWorld);
+		$this->location = new Location(
+			$this->location->x,
+			$this->location->y,
+			$this->location->z,
+			$this->location->yaw,
+			$this->location->pitch,
+			$targetWorld
+		);
 		$this->getWorld()->addEntity($this);
 		$this->chunk = null;
 
@@ -1634,7 +1641,7 @@ abstract class Entity{
 	 */
 	protected function destroyCycles() : void{
 		$this->chunk = null;
-		$this->location->setWorld(null);
+		$this->location = null;
 		$this->lastDamageCause = null;
 	}
 
