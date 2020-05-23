@@ -59,6 +59,7 @@ use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\network\mcpe\raklib\RakLibInterface;
 use pocketmine\network\Network;
 use pocketmine\network\query\QueryHandler;
+use pocketmine\network\query\QueryInfo;
 use pocketmine\network\upnp\UPnP;
 use pocketmine\permission\BanList;
 use pocketmine\permission\DefaultPermissions;
@@ -265,8 +266,8 @@ class Server{
 	 */
 	private $uniquePlayers = [];
 
-	/** @var QueryRegenerateEvent */
-	private $queryRegenerateTask;
+	/** @var QueryInfo */
+	private $queryInfo;
 
 	/** @var Config */
 	private $properties;
@@ -994,20 +995,21 @@ class Server{
 			$this->pluginManager->registerInterface(new PharPluginLoader($this->autoloader));
 			$this->pluginManager->registerInterface(new ScriptPluginLoader());
 
-			WorldProviderManager::init();
+			$providerManager = WorldProviderManager::getInstance();
 			if(
-				($format = WorldProviderManager::getProviderByName($formatName = (string) $this->getProperty("level-settings.default-format"))) !== null and
+				($format = $providerManager->getProviderByName($formatName = (string) $this->getProperty("level-settings.default-format"))) !== null and
 				is_a($format, WritableWorldProvider::class, true)
 			){
-				WorldProviderManager::setDefault($format);
+				$providerManager->setDefault($format);
 			}elseif($formatName !== ""){
 				$this->logger->warning($this->language->translateString("pocketmine.level.badDefaultFormat", [$formatName]));
 			}
 
-			GeneratorManager::registerDefaultGenerators();
-			$this->worldManager = new WorldManager($this);
+			$this->worldManager = new WorldManager($this, $this->dataPath . "/worlds");
+			$this->worldManager->setAutoSave($this->getConfigBool("auto-save", $this->worldManager->getAutoSave()));
+			$this->worldManager->setAutoSaveInterval((int) $this->getProperty("ticks-per.autosave", 6000));
 
-			$this->queryRegenerateTask = new QueryRegenerateEvent($this);
+			$this->queryInfo = new QueryInfo($this);
 
 			register_shutdown_function([$this, "crashDump"]);
 
@@ -1023,7 +1025,7 @@ class Server{
 				if(!$this->worldManager->loadWorld($name, true)){
 					if(isset($options["generator"])){
 						$generatorOptions = explode(":", $options["generator"]);
-						$generator = GeneratorManager::getGenerator(array_shift($generatorOptions));
+						$generator = GeneratorManager::getInstance()->getGenerator(array_shift($generatorOptions));
 						if(count($options) > 0){
 							$options["preset"] = implode(":", $generatorOptions);
 						}
@@ -1046,7 +1048,7 @@ class Server{
 					$this->worldManager->generateWorld(
 						$default,
 						Generator::convertSeed($this->getConfigString("level-seed")),
-						GeneratorManager::getGenerator($this->getConfigString("level-type")),
+						GeneratorManager::getInstance()->getGenerator($this->getConfigString("level-type")),
 						["preset" => $this->getConfigString("generator-settings")]
 					);
 				}
@@ -1067,7 +1069,7 @@ class Server{
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.networkStart", [$this->getIp(), $this->getPort()]));
 
 			if($this->getConfigBool("enable-query", true)){
-				$this->network->registerRawPacketHandler(new QueryHandler());
+				$this->network->registerRawPacketHandler(new QueryHandler($this));
 			}
 
 			foreach($this->getIPBans()->getEntries() as $entry){
@@ -1096,7 +1098,7 @@ class Server{
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.startFinished", [round(microtime(true) - $this->startTime, 3)]));
 
 			//TODO: move console parts to a separate component
-			$consoleSender = new ConsoleCommandSender();
+			$consoleSender = new ConsoleCommandSender($this);
 			PermissionManager::getInstance()->subscribeToPermission(Server::BROADCAST_CHANNEL_ADMINISTRATIVE, $consoleSender);
 			PermissionManager::getInstance()->subscribeToPermission(Server::BROADCAST_CHANNEL_USERS, $consoleSender);
 
@@ -1408,10 +1410,10 @@ class Server{
 	}
 
 	/**
-	 * @return QueryRegenerateEvent
+	 * @return QueryInfo
 	 */
 	public function getQueryInformation(){
-		return $this->queryRegenerateTask;
+		return $this->queryInfo;
 	}
 
 	/**
@@ -1658,7 +1660,9 @@ class Server{
 			$this->currentTPS = 20;
 			$this->currentUse = 0;
 
-			($this->queryRegenerateTask = new QueryRegenerateEvent($this))->call();
+			$queryRegenerateEvent = new QueryRegenerateEvent(new QueryInfo($this));
+			$queryRegenerateEvent->call();
+			$this->queryInfo = $queryRegenerateEvent->getQueryInfo();
 
 			$this->network->updateName();
 			$this->network->resetStatistics();
