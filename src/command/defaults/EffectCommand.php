@@ -49,9 +49,9 @@ class EffectCommand extends VanillaCommand{
 				(new CommandOverload())
 					->target("player")
 					->addListParameter("effect", "Effect", [])
-					->int("seconds")
-					->int("amplifier")
-					->addListParameter("hideParticles", "Boolean", ["true", "false"])
+					->int("seconds", 0, true)
+					->int("amplifier", 0, true)
+					->addListParameter("hideParticles", "Boolean", ["true", "false"], 0, true)
 			]
 		);
 		$this->setPermission("pocketmine.command.effect");
