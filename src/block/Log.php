@@ -27,4 +27,18 @@ use pocketmine\block\utils\PillarRotationTrait;
 
 class Log extends Wood{
 	use PillarRotationTrait;
+
+	/** @var bool */
+	protected $fullBorked = false;
+
+	protected function writeStateToMeta() : int{
+		return ($this->fullBorked ? 0b1000 : $this->writeAxisToMeta());
+	}
+
+	public function readStateFromData(int $id, int $stateMeta) : void{
+		$this->fullBorked = ($stateMeta & 0b1000) !== 0;
+		if(!$this->fullBorked){
+			$this->readAxisFromMeta($stateMeta);
+		}
+	}
 }
