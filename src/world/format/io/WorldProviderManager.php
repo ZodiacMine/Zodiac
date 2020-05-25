@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace pocketmine\world\format\io;
 
-use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use pocketmine\world\format\io\leveldb\LevelDB;
 use pocketmine\world\format\io\region\Anvil;
@@ -33,8 +32,6 @@ use function strtolower;
 use function trim;
 
 final class WorldProviderManager{
-	use SingletonTrait;
-
 	/**
 	 * @var string[]
 	 * @phpstan-var array<string, class-string<WorldProvider>>
@@ -48,10 +45,10 @@ final class WorldProviderManager{
 	private $default = LevelDB::class;
 
 	public function __construct(){
-		self::addProvider(Anvil::class, "anvil");
-		self::addProvider(McRegion::class, "mcregion");
-		self::addProvider(PMAnvil::class, "pmanvil");
-		self::addProvider(LevelDB::class, "leveldb");
+		$this->addProvider(Anvil::class, "anvil");
+		$this->addProvider(McRegion::class, "mcregion");
+		$this->addProvider(PMAnvil::class, "pmanvil");
+		$this->addProvider(LevelDB::class, "leveldb");
 	}
 
 	/**
