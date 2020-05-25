@@ -75,7 +75,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		$connRequestReader = new BinaryStream($binary);
 
 		$chainDataJson = json_decode($connRequestReader->get($connRequestReader->getLInt()), true);
-		if(!is_object($chainDataJson)){
+		if(!is_array($chainDataJson)){
 			throw new PacketDecodeException("Failed decoding chain data JSON: " . json_last_error_msg());
 		}
 
