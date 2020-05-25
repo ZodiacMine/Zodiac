@@ -519,12 +519,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/Math.git",
-                "reference": "6d5af66a6c923bd8fad93258f3a1736091225aa1"
+                "reference": "9d8a73014725f57cf4bf5cbdb40e340fe4643169"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/Math/zipball/6d5af66a6c923bd8fad93258f3a1736091225aa1",
-                "reference": "6d5af66a6c923bd8fad93258f3a1736091225aa1",
+                "url": "https://api.github.com/repos/pmmp/Math/zipball/9d8a73014725f57cf4bf5cbdb40e340fe4643169",
+                "reference": "9d8a73014725f57cf4bf5cbdb40e340fe4643169",
                 "shasum": ""
             },
             "require": {
@@ -533,7 +533,7 @@
             },
             "require-dev": {
                 "irstea/phpunit-shim": "^7.5",
-                "phpstan/phpstan": "^0.12.8"
+                "phpstan/phpstan": "^0.12.25"
             },
             "type": "library",
             "autoload": {
@@ -546,7 +546,7 @@
                 "LGPL-3.0"
             ],
             "description": "PHP library containing math related code used in PocketMine-MP",
-            "time": "2020-05-19T11:19:57+00:00"
+            "time": "2020-05-19T12:13:12+00:00"
         },
         {
             "name": "pocketmine/nbt",
@@ -778,16 +778,16 @@
         },
         {
             "name": "respect/validation",
-            "version": "2.0.7",
+            "version": "2.0.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Respect/Validation.git",
-                "reference": "6f9213287416a34afe864ba0b203feeb8f318bbe"
+                "reference": "e0fbed32c90b408652bb30803647d90901f612f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Respect/Validation/zipball/6f9213287416a34afe864ba0b203feeb8f318bbe",
-                "reference": "6f9213287416a34afe864ba0b203feeb8f318bbe",
+                "url": "https://api.github.com/repos/Respect/Validation/zipball/e0fbed32c90b408652bb30803647d90901f612f1",
+                "reference": "e0fbed32c90b408652bb30803647d90901f612f1",
                 "shasum": ""
             },
             "require": {
@@ -840,7 +840,7 @@
                 "validation",
                 "validator"
             ],
-            "time": "2020-05-19T09:31:43+00:00"
+            "time": "2020-05-20T13:02:44+00:00"
         },
         {
             "name": "symfony/polyfill-mbstring",
@@ -905,11 +905,11 @@
     "packages-dev": [
         {
             "name": "irstea/phpunit-shim",
-            "version": "8.5.4",
+            "version": "8.5.5",
             "source": {
                 "type": "git",
                 "url": "https://gitlab.irstea.fr/pole-is/tools/phpunit-shim.git",
-                "reference": "25b3ffe1502bfd35d5cd23dc37f2f2e70cdf0b54"
+                "reference": "5b9425eb62f807517e8c96415b07fd35a65e8e7b"
             },
             "require": {
                 "ext-dom": "*",
@@ -955,7 +955,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2020-04-24T02:20:21+00:00"
+            "time": "2020-05-24T13:47:48+00:00"
         },
         {
             "name": "phpstan/phpstan",
