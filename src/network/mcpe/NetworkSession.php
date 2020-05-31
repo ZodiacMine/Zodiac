@@ -670,6 +670,7 @@ class NetworkSession{
 		$pk->headYaw = $yaw;
 		$pk->yaw = $yaw;
 		$pk->mode = $mode;
+		$pk->onGround = $this->player->onGround;
 
 		$this->sendDataPacket($pk);
 	}
