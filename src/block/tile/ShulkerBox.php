@@ -36,7 +36,6 @@ class ShulkerBox extends Spawnable implements Container, Nameable{
 		addAdditionalSpawnData as addNameSpawnData;
 	}
 	use ContainerTrait {
-		saveItems as saveItemsEx;
 		onBlockDestroyedHook as private;
 	}
 
@@ -64,11 +63,7 @@ class ShulkerBox extends Spawnable implements Container, Nameable{
 		$nbt->setByte(self::TAG_FACING, $this->facing);
 
 		$this->saveName($nbt);
-		$this->saveItemsEx($nbt);
-	}
-
-	public function saveItems(CompoundTag $nbt) : void{
-		$this->saveItemsEx($nbt);
+		$this->saveItems($nbt);
 	}
 
 	public function close() : void{
@@ -86,6 +81,13 @@ class ShulkerBox extends Spawnable implements Container, Nameable{
 
 	public function copyDataFromItem(Item $item) : void{
 		$this->loadItems($item->getNamedTag());
+	}
+
+	public function copyDataToItem(Item $item) : void{
+		$nbt = $item->getNamedTag();
+
+		$this->saveItems($nbt);
+		$item->setNamedTag($nbt);
 	}
 
 	/**

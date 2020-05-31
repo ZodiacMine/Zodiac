@@ -75,10 +75,7 @@ class ShulkerBox extends Transparent{
 
 		$tile = $this->pos->getWorldNonNull()->getTile($this->pos);
 		if($tile instanceof TileShulkerBox){
-			$nbt = $item->getNamedTag();
-			$tile->saveItems($nbt);
-
-			$item->setNamedTag($nbt);
+			$tile->copyDataToItem($item);
 		}
 
 		return $item;
