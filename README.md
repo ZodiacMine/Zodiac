@@ -10,6 +10,17 @@
 - Zodiac has a small number of features, that make it difficult to transfer changes with pmmp - that it is not easy to transfer files from one software weekly and then remake them so that they work on another.
 - Developers of Zodiac is dont really care about BC - we can edit/remove PMMP methods or add new methods to this software, BUT we make it so that break a least count of plugins.
 
+## Features
+API:
+- Advanced API for command parametters
+
+Inventory:
+- Offhand support
+
+Blocks:
+- ShulkerBoxes
+- Full-borked logs
+
 ## Communication
 - This software has not community on Discord or other social sites.
 - If you have questions - you can create issues with it.
