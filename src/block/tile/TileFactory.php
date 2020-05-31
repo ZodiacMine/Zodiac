@@ -66,6 +66,7 @@ final class TileFactory{
 		$this->register(Hopper::class, ["Hopper", "minecraft:hopper"]);
 		$this->register(ItemFrame::class, ["ItemFrame"]); //this is an entity in PC
 		$this->register(MonsterSpawner::class, ["MobSpawner", "minecraft:mob_spawner"]);
+		$this->register(ShulkerBox::class, ["ShulkerBox", "minecraft:shulker_box"]);
 		$this->register(Note::class, ["Music", "minecraft:noteblock"]);
 		$this->register(Sign::class, ["Sign", "minecraft:sign"]);
 		$this->register(Skull::class, ["Skull", "minecraft:skull"]);
@@ -90,7 +91,6 @@ final class TileFactory{
 		//TODO: MovingBlock
 		//TODO: NetherReactor
 		//TODO: PistonArm
-		//TODO: ShulkerBox
 		//TODO: Smoker
 		//TODO: StructureBlock
 	}

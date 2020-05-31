@@ -41,6 +41,7 @@ use pocketmine\block\tile\Hopper as TileHopper;
 use pocketmine\block\tile\ItemFrame as TileItemFrame;
 use pocketmine\block\tile\MonsterSpawner as TileMonsterSpawner;
 use pocketmine\block\tile\Note as TileNote;
+use pocketmine\block\tile\ShulkerBox as TileShulkerBox;
 use pocketmine\block\tile\Sign as TileSign;
 use pocketmine\block\tile\Skull as TileSkull;
 use pocketmine\block\utils\DyeColor;
@@ -537,6 +538,8 @@ class BlockFactory{
 		];
 		//endregion
 
+		$this->register(new ShulkerBox(new BID(Ids::UNDYED_SHULKER_BOX, 0, null, TileShulkerBox::class), "Undyed Shulker Box"));
+
 		foreach(DyeColor::getAll() as $color){
 			$this->register(new Carpet(new BID(Ids::CARPET, $color->getMagicNumber()), $color->getDisplayName() . " Carpet"));
 			$this->register(new Concrete(new BID(Ids::CONCRETE, $color->getMagicNumber()), $color->getDisplayName() . " Concrete"));
@@ -547,6 +550,7 @@ class BlockFactory{
 			$this->register(new HardenedClay(new BID(Ids::STAINED_CLAY, $color->getMagicNumber()), $color->getDisplayName() . " Stained Clay"));
 			$this->register(new HardenedGlass(new BID(Ids::HARD_STAINED_GLASS, $color->getMagicNumber()), "Hardened " . $color->getDisplayName() . " Stained Glass"));
 			$this->register(new HardenedGlassPane(new BID(Ids::HARD_STAINED_GLASS_PANE, $color->getMagicNumber()), "Hardened " . $color->getDisplayName() . " Stained Glass Pane"));
+			$this->register(new ShulkerBox(new BID(Ids::SHULKER_BOX, $color->getMagicNumber(), null, TileShulkerBox::class), $color->getDisplayName() . " Shulker Box"));
 			$this->register(new Wool(new BID(Ids::WOOL, $color->getMagicNumber()), $color->getDisplayName() . " Wool"));
 		}
 
@@ -619,7 +623,6 @@ class BlockFactory{
 		//TODO: minecraft:repeating_command_block
 		//TODO: minecraft:scaffolding
 		//TODO: minecraft:seagrass
-		//TODO: minecraft:shulker_box
 		//TODO: minecraft:slime
 		//TODO: minecraft:smithing_table
 		//TODO: minecraft:smoker
@@ -634,7 +637,6 @@ class BlockFactory{
 		//TODO: minecraft:structure_block
 		//TODO: minecraft:sweet_berry_bush
 		//TODO: minecraft:turtle_egg
-		//TODO: minecraft:undyed_shulker_box
 		//endregion
 	}
 
