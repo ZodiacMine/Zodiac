@@ -355,6 +355,12 @@ abstract class Living extends Entity{
 	 * to effects or armour.
 	 */
 	public function applyDamageModifiers(EntityDamageEvent $source) : void{
+		if($this->lastDamageCause !== null and $this->attackTime > 0){
+			if($this->lastDamageCause->getBaseDamage() >= $source->getBaseDamage()){
+				$source->setCancelled();
+			}
+			$source->setModifier(-$this->lastDamageCause->getBaseDamage(), EntityDamageEvent::MODIFIER_PREVIOUS_DAMAGE_COOLDOWN);
+		}
 		if($source->canBeReducedByArmor()){
 			//MCPE uses the same system as PC did pre-1.9
 			$source->setModifier(-$source->getFinalDamage() * $this->getArmorPoints() * 0.04, EntityDamageEvent::MODIFIER_ARMOR);
@@ -433,11 +439,6 @@ abstract class Living extends Entity{
 	public function attack(EntityDamageEvent $source) : void{
 		if($this->noDamageTicks > 0){
 			$source->setCancelled();
-		}elseif($this->attackTime > 0){
-			$lastCause = $this->getLastDamageCause();
-			if($lastCause !== null and $lastCause->getBaseDamage() >= $source->getBaseDamage()){
-				$source->setCancelled();
-			}
 		}
 
 		if($this->effectManager->has(VanillaEffects::FIRE_RESISTANCE()) and (
@@ -469,12 +470,14 @@ abstract class Living extends Entity{
 
 		$this->attackTime = $source->getAttackCooldown();
 
-		if($source instanceof EntityDamageByEntityEvent){
-			$e = $source->getDamager();
-			if($source instanceof EntityDamageByChildEntityEvent){
-				$e = $source->getChild();
+		if($source instanceof EntityDamageByChildEntityEvent){
+			$e = $source->getChild();
+			if($e !== null){
+				$motion = $e->getMotion();
+				$this->knockBack($motion->x, $motion->z, $source->getKnockBack());
 			}
-
+		}elseif($source instanceof EntityDamageByEntityEvent){
+			$e = $source->getDamager();
 			if($e !== null){
 				$deltaX = $this->location->x - $e->location->x;
 				$deltaZ = $this->location->z - $e->location->z;

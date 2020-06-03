@@ -27,6 +27,7 @@ use pocketmine\entity\Entity;
 use pocketmine\event\Cancellable;
 use pocketmine\event\CancellableTrait;
 use function array_sum;
+use function max;
 
 /**
  * Called when an entity takes damage.
@@ -43,6 +44,7 @@ class EntityDamageEvent extends EntityEvent implements Cancellable{
 	public const MODIFIER_CRITICAL = 7;
 	public const MODIFIER_TOTEM = 8;
 	public const MODIFIER_WEAPON_ENCHANTMENTS = 9;
+	public const MODIFIER_PREVIOUS_DAMAGE_COOLDOWN = 10;
 
 	public const CAUSE_CONTACT = 0;
 	public const CAUSE_ENTITY_ATTACK = 1;
@@ -146,7 +148,7 @@ class EntityDamageEvent extends EntityEvent implements Cancellable{
 	}
 
 	public function getFinalDamage() : float{
-		return $this->baseDamage + array_sum($this->modifiers);
+		return max(0, $this->baseDamage + array_sum($this->modifiers));
 	}
 
 	/**
