@@ -1582,9 +1582,7 @@ class World implements ChunkManager{
 			$ev = new BlockPlaceEvent($player, $hand, $blockReplace, $blockClicked, $item);
 			if($player->isSpectator()){
 				$ev->setCancelled();
-			}
-
-			if($player->isAdventure(true) and !$ev->isCancelled()){
+			}elseif($player->isAdventure(true) and !$ev->isCancelled()){
 				$canPlace = false;
 				$itemParser = LegacyStringToItemParser::getInstance();
 				foreach($item->getCanPlaceOn() as $v){
