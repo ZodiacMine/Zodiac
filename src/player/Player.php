@@ -68,6 +68,7 @@ use pocketmine\event\player\PlayerRespawnEvent;
 use pocketmine\event\player\PlayerToggleFlightEvent;
 use pocketmine\event\player\PlayerToggleSneakEvent;
 use pocketmine\event\player\PlayerToggleSprintEvent;
+use pocketmine\event\player\PlayerToggleSwimmingEvent;
 use pocketmine\event\player\PlayerTransferEvent;
 use pocketmine\form\Form;
 use pocketmine\form\FormValidationException;
@@ -1764,6 +1765,28 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 			return false;
 		}
 		$this->setSneaking($sneak);
+		return true;
+	}
+
+	public function toggleSwimming(bool $swimming) : bool{
+		if($this->isSwimming() !== $swimming){
+			$ev = new PlayerToggleSwimmingEvent($this, $swimming);
+			$ev->call();
+			if($ev->isCancelled()){
+				return false;
+			}
+
+			$this->setSwimming($swimming);
+
+			if($swimming){
+				$this->height = $this->width;
+			}else{
+				$this->height = 1.8 * $this->scale;
+			}
+
+			$this->recalculateBoundingBox();
+		}
+
 		return true;
 	}
 
