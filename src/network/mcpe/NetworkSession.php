@@ -103,6 +103,7 @@ use pocketmine\utils\TextFormat;
 use pocketmine\utils\Utils;
 use pocketmine\world\Position;
 use function array_map;
+use function array_values;
 use function assert;
 use function base64_encode;
 use function bin2hex;
@@ -688,7 +689,7 @@ class NetworkSession{
 	}
 
 	public function syncGameMode(GameMode $mode, bool $isRollback = false) : void{
-		$this->sendDataPacket(SetPlayerGameTypePacket::create(TypeConverter::getInstance()->getClientFriendlyGamemode($mode)));
+		$this->sendDataPacket(SetPlayerGameTypePacket::create(TypeConverter::getInstance()->coreGameModeToProtocol($mode)));
 		$this->syncAdventureSettings($this->player);
 		if(!$isRollback){
 			$this->invManager->syncCreative();
@@ -763,7 +764,7 @@ class NetworkSession{
 					//work around a client bug which makes the original name not show when aliases are used
 					$aliases[] = $lname;
 				}
-				$aliasObj = new CommandEnum(ucfirst($command->getName()) . "Aliases", $aliases);
+				$aliasObj = new CommandEnum(ucfirst($command->getName()) . "Aliases", array_values($aliases));
 			}
 
 			$data = new CommandData(
