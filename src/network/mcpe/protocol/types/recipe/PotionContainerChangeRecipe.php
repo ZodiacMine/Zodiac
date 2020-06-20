@@ -21,28 +21,31 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\network\mcpe\protocol\types\recipe;
 
-use pocketmine\entity\Location;
-use pocketmine\entity\projectile\EnderPearl as EnderPearlEntity;
-use pocketmine\entity\projectile\Throwable;
-use pocketmine\player\Player;
+class PotionContainerChangeRecipe{
+	/** @var int */
+	private $inputItemId;
+	/** @var int */
+	private $ingredientItemId;
+	/** @var int */
+	private $outputItemId;
 
-class EnderPearl extends ProjectileItem{
-
-	public function getMaxStackSize() : int{
-		return 16;
+	public function __construct(int $inputItemId, int $ingredientItemId, int $outputItemId){
+		$this->inputItemId = $inputItemId;
+		$this->ingredientItemId = $ingredientItemId;
+		$this->outputItemId = $outputItemId;
 	}
 
-	protected function createEntity(Location $location, Player $thrower) : Throwable{
-		return new EnderPearlEntity($location, $thrower);
+	public function getInputItemId() : int{
+		return $this->inputItemId;
 	}
 
-	public function getThrowForce() : float{
-		return 1.5;
+	public function getIngredientItemId() : int{
+		return $this->ingredientItemId;
 	}
 
-	public function getCooldownTicks() : int{
-		return 20;
+	public function getOutputItemId() : int{
+		return $this->outputItemId;
 	}
 }

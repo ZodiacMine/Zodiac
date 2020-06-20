@@ -23,29 +23,11 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol\types;
 
-class PotionTypeRecipe{
-	/** @var int */
-	private $inputPotionType;
-	/** @var int */
-	private $ingredientItemId;
-	/** @var int */
-	private $outputPotionType;
+use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
-	public function __construct(int $inputPotionType, int $ingredientItemId, int $outputPotionType){
-		$this->inputPotionType = $inputPotionType;
-		$this->ingredientItemId = $ingredientItemId;
-		$this->outputPotionType = $outputPotionType;
-	}
+abstract class GameRule{
 
-	public function getInputPotionType() : int{
-		return $this->inputPotionType;
-	}
+	abstract public function getType() : int;
 
-	public function getIngredientItemId() : int{
-		return $this->ingredientItemId;
-	}
-
-	public function getOutputPotionType() : int{
-		return $this->outputPotionType;
-	}
+	abstract public function encode(PacketSerializer $out) : void;
 }

@@ -28,7 +28,6 @@ namespace pocketmine\entity;
 
 use pocketmine\block\Block;
 use pocketmine\block\Water;
-use pocketmine\data\bedrock\LegacyEntityIdToStringIdMap;
 use pocketmine\entity\animation\Animation;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDespawnEvent;
@@ -76,6 +75,16 @@ use const M_PI_2;
 abstract class Entity{
 
 	public const MOTION_THRESHOLD = 0.00001;
+
+	/** @var int */
+	private static $entityCount = 1;
+
+	/**
+	 * Returns a new runtime entity ID for a new entity.
+	 */
+	public static function nextRuntimeId() : int{
+		return self::$entityCount++;
+	}
 
 	/** @var Player[] */
 	protected $hasSpawned = [];
@@ -221,7 +230,7 @@ abstract class Entity{
 			$this->eyeHeight = $this->height / 2 + 0.1;
 		}
 
-		$this->id = EntityFactory::nextRuntimeId();
+		$this->id = self::nextRuntimeId();
 		$this->server = $location->getWorldNonNull()->getServer();
 
 		$this->location = $location->asLocation();
@@ -240,7 +249,7 @@ abstract class Entity{
 		}
 
 		if($nbt !== null){
-			$this->motion = EntityFactory::parseVec3($nbt, "Motion", true);
+			$this->motion = EntityDataHelper::parseVec3($nbt, "Motion", true);
 		}else{
 			$this->motion = new Vector3(0, 0, 0);
 		}
@@ -451,7 +460,7 @@ abstract class Entity{
 	}
 
 	public function saveNBT() : CompoundTag{
-		$nbt = EntityFactory::createBaseNBT($this->location, $this->motion, $this->location->yaw, $this->location->pitch);
+		$nbt = EntityDataHelper::createBaseNBT($this->location, $this->motion, $this->location->yaw, $this->location->pitch);
 
 		if(!($this instanceof Player)){
 			$nbt->setString("id", EntityFactory::getInstance()->getSaveId(get_class($this)));
@@ -1465,7 +1474,7 @@ abstract class Entity{
 		return $this->hasSpawned;
 	}
 
-	abstract public static function getNetworkTypeId() : int;
+	abstract public static function getNetworkTypeId() : string;
 
 	/**
 	 * Called by spawnTo() to send whatever packets needed to spawn the entity to the client.
@@ -1473,7 +1482,7 @@ abstract class Entity{
 	protected function sendSpawnPacket(Player $player) : void{
 		$pk = new AddActorPacket();
 		$pk->entityRuntimeId = $this->getId();
-		$pk->type = LegacyEntityIdToStringIdMap::getInstance()->legacyToString(static::getNetworkTypeId());
+		$pk->type = static::getNetworkTypeId();
 		$pk->position = $this->location->asVector3();
 		$pk->motion = $this->getMotion();
 		$pk->yaw = $this->location->yaw;

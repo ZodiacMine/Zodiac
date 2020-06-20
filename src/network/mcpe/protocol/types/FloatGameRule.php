@@ -21,28 +21,31 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\entity\Location;
-use pocketmine\entity\projectile\EnderPearl as EnderPearlEntity;
-use pocketmine\entity\projectile\Throwable;
-use pocketmine\player\Player;
+use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
-class EnderPearl extends ProjectileItem{
+final class FloatGameRule extends GameRule{
+	/** @var float */
+	private $value;
 
-	public function getMaxStackSize() : int{
-		return 16;
+	public function __construct(float $value){
+		$this->value = $value;
 	}
 
-	protected function createEntity(Location $location, Player $thrower) : Throwable{
-		return new EnderPearlEntity($location, $thrower);
+	public function getType() : int{
+		return GameRuleType::FLOAT;
 	}
 
-	public function getThrowForce() : float{
-		return 1.5;
+	public function getValue() : float{
+		return $this->value;
 	}
 
-	public function getCooldownTicks() : int{
-		return 20;
+	public function encode(PacketSerializer $out) : void{
+		$out->putLFloat($this->value);
+	}
+
+	public static function decode(PacketSerializer $in) : self{
+		return new self($in->getLFloat());
 	}
 }
