@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace pocketmine\item;
 
 use pocketmine\block\Block;
-use pocketmine\entity\EntityFactory;
+use pocketmine\entity\Location;
 use pocketmine\entity\object\Painting;
 use pocketmine\entity\object\PaintingMotive;
 use pocketmine\math\Facing;
@@ -72,29 +72,10 @@ class PaintingItem extends Item{
 		/** @var PaintingMotive $motive */
 		$motive = $motives[array_rand($motives)];
 
-		static $directions = [
-			Facing::SOUTH => 0,
-			Facing::WEST => 1,
-			Facing::NORTH => 2,
-			Facing::EAST => 3
-		];
-
-		$direction = $directions[$face] ?? -1;
-		if($direction === -1){
-			return ItemUseResult::NONE();
-		}
-
 		$replacePos = $blockReplace->getPos();
 		$clickedPos = $blockClicked->getPos();
-		$nbt = EntityFactory::createBaseNBT($replacePos, null, $direction * 90, 0);
-		$nbt->setByte("Direction", $direction);
-		$nbt->setString("Motive", $motive->getName());
-		$nbt->setInt("TileX", $clickedPos->getFloorX());
-		$nbt->setInt("TileY", $clickedPos->getFloorY());
-		$nbt->setInt("TileZ", $clickedPos->getFloorZ());
 
-		/** @var Painting $entity */
-		$entity = EntityFactory::getInstance()->create(Painting::class, $replacePos->getWorldNonNull(), $nbt);
+		$entity = new Painting(Location::fromObject($replacePos, $replacePos->getWorldNonNull()), $clickedPos, $face, $motive);
 		$this->pop();
 		$entity->spawnToAll();
 

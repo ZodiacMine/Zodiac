@@ -23,7 +23,11 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
+use pocketmine\entity\Location;
 use pocketmine\entity\projectile\EnderPearl as EnderPearlEntity;
+use pocketmine\entity\projectile\Throwable;
+use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\player\Player;
 
 class EnderPearl extends ProjectileItem{
 
@@ -31,8 +35,8 @@ class EnderPearl extends ProjectileItem{
 		return 16;
 	}
 
-	public function getProjectileEntityClass() : string{
-		return EnderPearlEntity::class;
+	protected function createEntity(Location $location, Player $thrower) : Throwable{
+		return new EnderPearlEntity($location, $thrower, new CompoundTag());
 	}
 
 	public function getThrowForce() : float{

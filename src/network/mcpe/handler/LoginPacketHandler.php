@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\handler;
 use Mdanter\Ecc\Crypto\Key\PublicKeyInterface;
 use Particle\Validator\Failure;
 use Particle\Validator\Validator;
+use pocketmine\entity\InvalidSkinException;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\network\BadPacketException;
 use pocketmine\network\mcpe\auth\ProcessLoginTask;
@@ -38,14 +39,10 @@ use pocketmine\network\mcpe\protocol\PlayStatusPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\types\login\AuthenticationData;
 use pocketmine\network\mcpe\protocol\types\login\ClientData;
-use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaPieceTintColor;
-use pocketmine\network\mcpe\protocol\types\login\ClientDataPersonaSkinPiece;
+use pocketmine\network\mcpe\protocol\types\login\ClientDataToSkinDataHelper;
 use pocketmine\network\mcpe\protocol\types\login\JwtChain;
-use pocketmine\network\mcpe\protocol\types\PersonaPieceTintColor;
 use pocketmine\network\mcpe\protocol\types\PersonaSkinPiece;
-use pocketmine\network\mcpe\protocol\types\SkinAnimation;
 use pocketmine\network\mcpe\protocol\types\SkinData;
-use pocketmine\network\mcpe\protocol\types\SkinImage;
 use pocketmine\player\Player;
 use pocketmine\player\PlayerInfo;
 use pocketmine\Server;
@@ -60,56 +57,58 @@ use function is_array;
  */
 class LoginPacketHandler extends PacketHandler{
 
-	private const I_USERNAME = 'displayName';
-	private const I_UUID = 'identity';
-	private const I_TITLE_ID = 'titleId';
-	private const I_XUID = 'XUID';
+	//TODO: Move this constants to other place
 
-	private const I_CLIENT_RANDOM_ID = 'ClientRandomId';
-	private const I_SERVER_ADDRESS = 'ServerAddress';
-	private const I_LANGUAGE_CODE = 'LanguageCode';
+	public const I_USERNAME = 'displayName';
+	public const I_UUID = 'identity';
+	public const I_TITLE_ID = 'titleId';
+	public const I_XUID = 'XUID';
 
-	private const I_SKIN_RESOURCE_PATCH = 'SkinResourcePatch';
+	public const I_CLIENT_RANDOM_ID = 'ClientRandomId';
+	public const I_SERVER_ADDRESS = 'ServerAddress';
+	public const I_LANGUAGE_CODE = 'LanguageCode';
 
-	private const I_SKIN_ID = 'SkinId';
-	private const I_SKIN_HEIGHT = 'SkinImageHeight';
-	private const I_SKIN_WIDTH = 'SkinImageWidth';
-	private const I_SKIN_DATA = 'SkinData';
+	public const I_SKIN_RESOURCE_PATCH = 'SkinResourcePatch';
 
-	private const I_CAPE_ID = 'CapeId';
-	private const I_CAPE_HEIGHT = 'CapeImageHeight';
-	private const I_CAPE_WIDTH = 'CapeImageWidth';
-	private const I_CAPE_DATA = 'CapeData';
+	public const I_SKIN_ID = 'SkinId';
+	public const I_SKIN_HEIGHT = 'SkinImageHeight';
+	public const I_SKIN_WIDTH = 'SkinImageWidth';
+	public const I_SKIN_DATA = 'SkinData';
 
-	private const I_GEOMETRY_DATA = 'SkinGeometryData';
+	public const I_CAPE_ID = 'CapeId';
+	public const I_CAPE_HEIGHT = 'CapeImageHeight';
+	public const I_CAPE_WIDTH = 'CapeImageWidth';
+	public const I_CAPE_DATA = 'CapeData';
 
-	private const I_ANIMATION_DATA = 'SkinAnimationData';
-	private const I_ANIMATION_FRAMES = 'AnimatedImageData';
+	public const I_GEOMETRY_DATA = 'SkinGeometryData';
 
-	private const I_ANIMATION_IMAGE_HEIGHT = 'ImageHeight';
-	private const I_ANIMATION_IMAGE_WIDTH = 'ImageWidth';
-	private const I_ANIMATION_IMAGE_FRAMES = 'Frames';
-	private const I_ANIMATION_IMAGE_TYPE = 'Type';
-	private const I_ANIMATION_IMAGE_DATA = 'Image';
+	public const I_ANIMATION_DATA = 'SkinAnimationData';
+	public const I_ANIMATION_FRAMES = 'AnimatedImageData';
 
-	private const I_PREMIUM_SKIN = 'PremiumSkin';
-	private const I_PERSONA_SKIN = 'PersonaSkin';
-	private const I_PERSONA_CAPE_ON_CLASSIC_SKIN = 'CapeOnClassicSkin';
+	public const I_ANIMATION_IMAGE_HEIGHT = 'ImageHeight';
+	public const I_ANIMATION_IMAGE_WIDTH = 'ImageWidth';
+	public const I_ANIMATION_IMAGE_FRAMES = 'Frames';
+	public const I_ANIMATION_IMAGE_TYPE = 'Type';
+	public const I_ANIMATION_IMAGE_DATA = 'Image';
 
-	private const I_SKIN_ARM_SIZE = 'ArmSize';
-	private const I_SKIN_COLOR = 'SkinColor';
+	public const I_PREMIUM_SKIN = 'PremiumSkin';
+	public const I_PERSONA_SKIN = 'PersonaSkin';
+	public const I_PERSONA_CAPE_ON_CLASSIC_SKIN = 'CapeOnClassicSkin';
 
-	private const I_PERSONA_PIECES = 'PersonaPieces';
-	private const I_PIECE_TINT_COLORS = 'PieceTintColors';
+	public const I_SKIN_ARM_SIZE = 'ArmSize';
+	public const I_SKIN_COLOR = 'SkinColor';
 
-	private const I_PERSONA_PIECE_ID = 'PieceId';
-	private const I_PERSONA_PIECE_TYPE = 'PieceType';
-	private const I_PERSONA_PIECE_PACK_ID = 'PackId';
-	private const I_PERSONA_PIECE_IS_DEFAULT = 'IsDefault';
-	private const I_PERSONA_PIECE_PRODUCT_ID = 'ProductId';
+	public const I_PERSONA_PIECES = 'PersonaPieces';
+	public const I_PIECE_TINT_COLORS = 'PieceTintColors';
 
-	private const I_PIECE_TINT_COLOR_TYPE = 'PieceType';
-	private const I_PIECE_TINT_COLOR_COLORS = 'Colors';
+	public const I_PERSONA_PIECE_ID = 'PieceId';
+	public const I_PERSONA_PIECE_TYPE = 'PieceType';
+	public const I_PERSONA_PIECE_PACK_ID = 'PackId';
+	public const I_PERSONA_PIECE_IS_DEFAULT = 'IsDefault';
+	public const I_PERSONA_PIECE_PRODUCT_ID = 'ProductId';
+
+	public const I_PIECE_TINT_COLOR_TYPE = 'PieceType';
+	public const I_PIECE_TINT_COLOR_COLORS = 'Colors';
 
 	/** @var Server */
 	private $server;
@@ -163,69 +162,9 @@ class LoginPacketHandler extends PacketHandler{
 		}
 
 		$clientData = $this->parseClientData($packet->clientDataJwt);
-		$safeB64Decode = static function(string $base64, string $context) : string{
-			$result = base64_decode($base64, true);
-			if($result === false){
-				throw new \InvalidArgumentException("$context: Malformed base64, cannot be decoded");
-			}
-			return $result;
-		};
 		try{
-			/** @var SkinAnimation[] $animations */
-			$animations = [];
-			foreach($clientData[self::I_ANIMATION_FRAMES] as $k => $animation){
-				$animations[] = new SkinAnimation(
-					new SkinImage(
-						$animation[self::I_ANIMATION_IMAGE_HEIGHT],
-						$animation[self::I_ANIMATION_IMAGE_WIDTH],
-						$safeB64Decode($animation[self::I_ANIMATION_IMAGE_DATA], "AnimatedImageData.$k.Image")
-					),
-					$animation[self::I_ANIMATION_IMAGE_TYPE],
-					$animation[self::I_ANIMATION_IMAGE_FRAMES]
-				);
-			}
-			$skinData = new SkinData(
-				$clientData[self::I_SKIN_ID],
-				$safeB64Decode($clientData[self::I_SKIN_RESOURCE_PATCH], "SkinResourcePatch"),
-				new SkinImage(
-					$clientData[self::I_SKIN_HEIGHT],
-					$clientData[self::I_SKIN_WIDTH],
-					$safeB64Decode($clientData[self::I_SKIN_DATA], "SkinData")
-				),
-				$animations,
-				new SkinImage(
-					$clientData[self::I_CAPE_HEIGHT],
-					$clientData[self::I_CAPE_WIDTH],
-					$safeB64Decode($clientData[self::I_CAPE_DATA], "CapeData")
-				),
-				$safeB64Decode($clientData[self::I_GEOMETRY_DATA], "SkinGeometryData"),
-				$safeB64Decode($clientData[self::I_ANIMATION_DATA], "SkinAnimationData"),
-				$clientData[self::I_PREMIUM_SKIN],
-				$clientData[self::I_PERSONA_SKIN],
-				$clientData[self::I_PERSONA_CAPE_ON_CLASSIC_SKIN],
-				$clientData[self::I_CAPE_ID],
-				null,
-				$clientData[self::I_SKIN_ARM_SIZE],
-				$clientData[self::I_SKIN_COLOR],
-				array_map(function(array $piece) : PersonaSkinPiece{
-					return new PersonaSkinPiece(
-						$piece[self::I_PERSONA_PIECE_ID],
-						$piece[self::I_PERSONA_PIECE_TYPE],
-						$piece[self::I_PERSONA_PIECE_PACK_ID],
-						$piece[self::I_PERSONA_PIECE_IS_DEFAULT],
-						$piece[self::I_PERSONA_PIECE_PRODUCT_ID]
-					);
-				}, $clientData[self::I_PERSONA_PIECES]),
-				array_map(function(array $tint) : PersonaPieceTintColor{
-					return new PersonaPieceTintColor(
-						$tint[self::I_PIECE_TINT_COLOR_TYPE],
-						$tint[self::I_PIECE_TINT_COLOR_COLORS]
-					);
-				}, $clientData[self::I_PIECE_TINT_COLORS])
-			);
-
-			$skin = SkinAdapterSingleton::get()->fromSkinData($skinData);
-		}catch(\InvalidArgumentException $e){
+			$skin = SkinAdapterSingleton::get()->fromSkinData(ClientDataToSkinDataHelper::getInstance()->fromClientData($clientData, $packet->protocol));
+		}catch(\InvalidArgumentException | InvalidSkinException $e){
 			$this->session->getLogger()->debug("Invalid skin: " . $e->getMessage());
 			$this->session->disconnect("disconnectionScreen.invalidSkin");
 
@@ -237,17 +176,19 @@ class LoginPacketHandler extends PacketHandler{
 		}catch(\InvalidArgumentException $e){
 			throw BadPacketException::wrap($e, "Failed to parse login UUID");
 		}
-		($this->playerInfoConsumer)(new PlayerInfo(
+
+		$playerInfo = new PlayerInfo(
 			$extraData[self::I_USERNAME],
 			$uuid,
 			$skin,
 			$clientData[self::I_LANGUAGE_CODE],
 			$extraData[self::I_XUID],
 			$clientData
-		));
+		);
+		($this->playerInfoConsumer)($playerInfo);
 
 		$ev = new PlayerPreLoginEvent(
-			$this->session->getPlayerInfo(),
+			$playerInfo,
 			$this->session->getIp(),
 			$this->session->getPort(),
 			$this->server->requiresAuthentication()
@@ -255,10 +196,10 @@ class LoginPacketHandler extends PacketHandler{
 		if($this->server->getNetwork()->getConnectionCount() > $this->server->getMaxPlayers()){
 			$ev->setKickReason(PlayerPreLoginEvent::KICK_REASON_SERVER_FULL, "disconnectionScreen.serverFull");
 		}
-		if(!$this->server->isWhitelisted($this->session->getPlayerInfo()->getUsername())){
+		if(!$this->server->isWhitelisted($playerInfo->getUsername())){
 			$ev->setKickReason(PlayerPreLoginEvent::KICK_REASON_SERVER_WHITELISTED, "Server is whitelisted");
 		}
-		if($this->server->getNameBans()->isBanned($this->session->getPlayerInfo()->getUsername()) or $this->server->getIPBans()->isBanned($this->session->getIp())){
+		if($this->server->getNameBans()->isBanned($playerInfo->getUsername()) or $this->server->getIPBans()->isBanned($this->session->getIp())){
 			$ev->setKickReason(PlayerPreLoginEvent::KICK_REASON_BANNED, "You are banned");
 		}
 
@@ -402,7 +343,7 @@ class LoginPacketHandler extends PacketHandler{
 	 * @throws \InvalidArgumentException
 	 */
 	protected function processLogin(LoginPacket $packet, bool $authRequired) : void{
-		$this->server->getAsyncPool()->submitTask(new ProcessLoginTask($packet, $authRequired, $this->authCallback));
+		$this->server->getAsyncPool()->submitTask(new ProcessLoginTask($packet->chainDataJwt->chain, $packet->clientDataJwt, $authRequired, $this->authCallback));
 		$this->session->setHandler(null); //drop packets received during login verification
 	}
 

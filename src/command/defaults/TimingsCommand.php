@@ -126,7 +126,7 @@ class TimingsCommand extends VanillaCommand{
 				];
 				fclose($fileTimings);
 
-				$host = $sender->getServer()->getConfigGroup()->getProperty("timings.host", "timings.pmmp.io");
+				$host = (string) $sender->getServer()->getConfigGroup()->getProperty("timings.host", "timings.pmmp.io");
 
 				$sender->getServer()->getAsyncPool()->submitTask(new class($sender, $host, $agent, $data) extends BulkCurlTask{
 					private const TLS_KEY_SENDER = "sender";

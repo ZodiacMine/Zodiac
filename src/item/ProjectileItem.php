@@ -23,45 +23,24 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
-use pocketmine\entity\EntityFactory;
+use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Throwable;
 use pocketmine\event\entity\ProjectileLaunchEvent;
 use pocketmine\math\Vector3;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\Player;
-use pocketmine\utils\Utils;
 use pocketmine\world\sound\ThrowSound;
 
 abstract class ProjectileItem extends Item{
 
-	/**
-	 * Returns the entity type that this projectile creates. This should return a ::class extending Throwable.
-	 *
-	 * @return string class extends Throwable
-	 * @phpstan-return class-string<Throwable>
-	 */
-	abstract public function getProjectileEntityClass() : string;
-
 	abstract public function getThrowForce() : float;
 
-	/**
-	 * Helper function to apply extra NBT tags to pass to the created projectile.
-	 */
-	protected function addExtraTags(CompoundTag $tag) : void{
-
-	}
+	abstract protected function createEntity(Location $location, Player $thrower) : Throwable;
 
 	public function onClickAir(Player $player, Vector3 $directionVector) : ItemUseResult{
 		$location = $player->getLocation();
-		$nbt = EntityFactory::createBaseNBT($player->getEyePos(), $directionVector, $location->yaw, $location->pitch);
-		$this->addExtraTags($nbt);
 
-		$class = $this->getProjectileEntityClass();
-		Utils::testValidInstance($class, Throwable::class);
-
-		/** @var Throwable $projectile */
-		$projectile = EntityFactory::getInstance()->create($class, $location->getWorldNonNull(), $nbt, $player);
-		$projectile->setMotion($projectile->getMotion()->multiply($this->getThrowForce()));
+		$projectile = $this->createEntity(Location::fromObject($player->getEyePos(), $player->getWorld(), $location->yaw, $location->pitch), $player);
+		$projectile->setMotion($directionVector->multiply($this->getThrowForce()));
 
 		$projectileEv = new ProjectileLaunchEvent($projectile);
 		$projectileEv->call();

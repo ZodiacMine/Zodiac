@@ -23,11 +23,13 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\protocol;
 
-use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
+use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 
 interface Packet{
 
-	public function getBinaryStream() : NetworkBinaryStream;
+	public function getSerializer() : PacketSerializer;
+
+	public function setSerializer(PacketSerializer $serializer) : void;
 
 	public function pid() : int;
 
@@ -51,8 +53,6 @@ interface Packet{
 	 *
 	 * Typically this method returns the return value of the handler in the supplied PacketHandler. See other packets
 	 * for examples how to implement this.
-	 *
-	 * @param PacketHandlerInterface $handler
 	 *
 	 * @return bool true if the packet was handled successfully, false if not.
 	 * @throws PacketDecodeException if broken data was found in the packet

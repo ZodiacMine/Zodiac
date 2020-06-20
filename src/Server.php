@@ -51,7 +51,7 @@ use pocketmine\network\mcpe\compression\CompressBatchPromise;
 use pocketmine\network\mcpe\compression\CompressBatchTask;
 use pocketmine\network\mcpe\compression\Compressor;
 use pocketmine\network\mcpe\compression\ZlibCompressor;
-use pocketmine\network\mcpe\encryption\NetworkCipher;
+use pocketmine\network\mcpe\encryption\EncryptionContext;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
@@ -139,9 +139,12 @@ use function time;
 use function touch;
 use function trim;
 use function yaml_parse;
+use function zlib_decode;
+use function zlib_encode;
 use const DIRECTORY_SEPARATOR;
 use const PHP_INT_MAX;
 use const PTHREADS_INHERIT_NONE;
+use const ZLIB_ENCODING_GZIP;
 
 /**
  * The class that manages everything
@@ -487,24 +490,45 @@ class Server{
 		return $result;
 	}
 
+	private function getPlayerDataPath(string $username) : string{
+		return $this->getDataPath() . '/players/' . strtolower($username) . '.dat';
+	}
+
 	/**
 	 * Returns whether the server has stored any saved data for this player.
 	 */
 	public function hasOfflinePlayerData(string $name) : bool{
-		$name = strtolower($name);
-		return file_exists($this->getDataPath() . "players/$name.dat");
+		return file_exists($this->getPlayerDataPath($name));
+	}
+
+	private function handleCorruptedPlayerData(string $name) : void{
+		$path = $this->getPlayerDataPath($name);
+		rename($path, $path . '.bak');
+		$this->logger->error($this->getLanguage()->translateString("pocketmine.data.playerCorrupted", [$name]));
 	}
 
 	public function getOfflinePlayerData(string $name) : ?CompoundTag{
 		$name = strtolower($name);
-		$path = $this->getDataPath() . "players/";
+		$path = $this->getPlayerDataPath($name);
 
-		if(file_exists($path . "$name.dat")){
+		if(file_exists($path)){
+			$contents = @file_get_contents($path);
+			if($contents === false){
+				throw new \RuntimeException("Failed to read player data file \"$path\" (permission denied?)");
+			}
+			$decompressed = @zlib_decode($contents);
+			if($decompressed === false){
+				$this->logger->debug("Failed to decompress raw player data for \"$name\"");
+				$this->handleCorruptedPlayerData($name);
+				return null;
+			}
+
 			try{
-				return (new BigEndianNbtSerializer())->readCompressed(file_get_contents($path . "$name.dat"))->mustGetCompoundTag();
+				return (new BigEndianNbtSerializer())->read($decompressed)->mustGetCompoundTag();
 			}catch(NbtDataException $e){ //zlib decode error / corrupt data
-				rename($path . "$name.dat", $path . "$name.dat.bak");
-				$this->logger->error($this->getLanguage()->translateString("pocketmine.data.playerCorrupted", [$name]));
+				$this->logger->debug("Failed to decode NBT data for \"$name\": " . $e->getMessage());
+				$this->handleCorruptedPlayerData($name);
+				return null;
 			}
 		}
 		return null;
@@ -519,7 +543,7 @@ class Server{
 		if(!$ev->isCancelled()){
 			$nbt = new BigEndianNbtSerializer();
 			try{
-				file_put_contents($this->getDataPath() . "players/" . strtolower($name) . ".dat", $nbt->writeCompressed(new TreeRoot($ev->getSaveData())));
+				file_put_contents($this->getPlayerDataPath($name), zlib_encode($nbt->write(new TreeRoot($ev->getSaveData())), ZLIB_ENCODING_GZIP));
 			}catch(\ErrorException $e){
 				$this->logger->critical($this->getLanguage()->translateString("pocketmine.data.saveError", [$name, $e->getMessage()]));
 				$this->logger->logException($e);
@@ -842,7 +866,7 @@ class Server{
 
 			$this->networkCompressionAsync = (bool) $this->configGroup->getProperty("network.async-compression", true);
 
-			NetworkCipher::$ENABLED = (bool) $this->configGroup->getProperty("network.enable-encryption", true);
+			EncryptionContext::$ENABLED = (bool) $this->configGroup->getProperty("network.enable-encryption", true);
 
 			$this->doTitleTick = ((bool) $this->configGroup->getProperty("console.title-tick", true)) && Terminal::hasFormattingCodes();
 

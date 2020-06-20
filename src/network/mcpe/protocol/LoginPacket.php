@@ -26,7 +26,7 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use Particle\Validator\Validator;
-use pocketmine\network\mcpe\protocol\serializer\NetworkBinaryStream;
+use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
 use pocketmine\network\mcpe\protocol\types\login\JwtChain;
 use pocketmine\utils\BinaryStream;
 use function is_object;
@@ -50,7 +50,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		return true;
 	}
 
-	protected function decodePayload(NetworkBinaryStream $in) : void{
+	protected function decodePayload(PacketSerializer $in) : void{
 		$this->protocol = $in->getInt();
 		$this->decodeConnectionRequest($in->getString());
 	}
@@ -91,7 +91,7 @@ class LoginPacket extends DataPacket implements ServerboundPacket{
 		$this->clientDataJwt = $connRequestReader->get($connRequestReader->getLInt());
 	}
 
-	protected function encodePayload(NetworkBinaryStream $out) : void{
+	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putInt($this->protocol);
 		$out->putString($this->encodeConnectionRequest());
 	}

@@ -23,6 +23,10 @@ declare(strict_types=1);
 
 namespace pocketmine\entity;
 
+use DaveRandom\CallbackValidator\CallbackType;
+use DaveRandom\CallbackValidator\ParameterType;
+use DaveRandom\CallbackValidator\ReturnType;
+use pocketmine\block\BlockFactory;
 use pocketmine\entity\object\ExperienceOrb;
 use pocketmine\entity\object\FallingBlock;
 use pocketmine\entity\object\ItemEntity;
@@ -35,7 +39,11 @@ use pocketmine\entity\projectile\EnderPearl;
 use pocketmine\entity\projectile\ExperienceBottle;
 use pocketmine\entity\projectile\Snowball;
 use pocketmine\entity\projectile\SplashPotion;
+use pocketmine\item\Item;
+use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
+use pocketmine\nbt\NBT;
+use pocketmine\nbt\tag\ByteTag;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\DoubleTag;
 use pocketmine\nbt\tag\FloatTag;
@@ -47,18 +55,13 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use pocketmine\world\World;
 use function array_keys;
-use function assert;
+use function count;
 use function in_array;
-use function is_a;
 use function reset;
 
 /**
- * This class manages the creation of entities loaded from disk (and optionally entities created at runtime).
- *
- * You need to register your entity class into this factory if:
- * a) you want to load/save your entity on disk (saving with chunks)
- * b) you want to allow custom things to provide a custom class for your entity. Note that you must use
- *    create(MyEntity::class) instead of `new MyEntity()` if you want to allow this.
+ * This class manages the creation of entities loaded from disk.
+ * You need to register your entity into this factory if you want to load/save your entity on disk (saving with chunks).
  */
 final class EntityFactory{
 	use SingletonTrait;
@@ -67,10 +70,10 @@ final class EntityFactory{
 	private static $entityCount = 1;
 
 	/**
-	 * @var string[] base class => currently used class for construction
-	 * @phpstan-var array<class-string<Entity>, class-string<Entity>>
+	 * @var \Closure[] base class => creator function
+	 * @phpstan-var array<class-string<Entity>, \Closure(World, CompoundTag) : Entity>
 	 */
-	private $classMapping = [];
+	private $creationFuncs = [];
 	/**
 	 * @var string[]
 	 * @phpstan-var array<int|string, class-string<Entity>>
@@ -86,43 +89,125 @@ final class EntityFactory{
 		//define legacy save IDs first - use them for saving for maximum compatibility with Minecraft PC
 		//TODO: index them by version to allow proper multi-save compatibility
 
-		$this->register(Arrow::class, ['Arrow', 'minecraft:arrow'], EntityLegacyIds::ARROW);
-		$this->register(Egg::class, ['Egg', 'minecraft:egg'], EntityLegacyIds::EGG);
-		$this->register(EnderPearl::class, ['ThrownEnderpearl', 'minecraft:ender_pearl'], EntityLegacyIds::ENDER_PEARL);
-		$this->register(ExperienceBottle::class, ['ThrownExpBottle', 'minecraft:xp_bottle'], EntityLegacyIds::XP_BOTTLE);
-		$this->register(ExperienceOrb::class, ['XPOrb', 'minecraft:xp_orb'], EntityLegacyIds::XP_ORB);
-		$this->register(FallingBlock::class, ['FallingSand', 'minecraft:falling_block'], EntityLegacyIds::FALLING_BLOCK);
-		$this->register(ItemEntity::class, ['Item', 'minecraft:item'], EntityLegacyIds::ITEM);
-		$this->register(Painting::class, ['Painting', 'minecraft:painting'], EntityLegacyIds::PAINTING);
-		$this->register(PrimedTNT::class, ['PrimedTnt', 'PrimedTNT', 'minecraft:tnt'], EntityLegacyIds::TNT);
-		$this->register(Snowball::class, ['Snowball', 'minecraft:snowball'], EntityLegacyIds::SNOWBALL);
-		$this->register(SplashPotion::class, ['ThrownPotion', 'minecraft:potion', 'thrownpotion'], EntityLegacyIds::SPLASH_POTION);
-		$this->register(Squid::class, ['Squid', 'minecraft:squid'], EntityLegacyIds::SQUID);
-		$this->register(Villager::class, ['Villager', 'minecraft:villager'], EntityLegacyIds::VILLAGER);
-		$this->register(Zombie::class, ['Zombie', 'minecraft:zombie'], EntityLegacyIds::ZOMBIE);
+		$this->register(Arrow::class, function(World $world, CompoundTag $nbt) : Arrow{
+			return new Arrow(self::parseLocation($nbt, $world), null, false, $nbt); //TODO: missing critical flag
+		}, ['Arrow', 'minecraft:arrow'], EntityLegacyIds::ARROW);
 
-		$this->register(Human::class, ['Human']);
+		$this->register(Egg::class, function(World $world, CompoundTag $nbt) : Egg{
+			return new Egg(self::parseLocation($nbt, $world), null, $nbt);
+		}, ['Egg', 'minecraft:egg'], EntityLegacyIds::EGG);
+
+		$this->register(EnderPearl::class, function(World $world, CompoundTag $nbt) : EnderPearl{
+			return new EnderPearl(self::parseLocation($nbt, $world), null, $nbt);
+		}, ['ThrownEnderpearl', 'minecraft:ender_pearl'], EntityLegacyIds::ENDER_PEARL);
+
+		$this->register(ExperienceBottle::class, function(World $world, CompoundTag $nbt) : ExperienceBottle{
+			return new ExperienceBottle(self::parseLocation($nbt, $world), null, $nbt);
+		}, ['ThrownExpBottle', 'minecraft:xp_bottle'], EntityLegacyIds::XP_BOTTLE);
+
+		$this->register(ExperienceOrb::class, function(World $world, CompoundTag $nbt) : ExperienceOrb{
+			return new ExperienceOrb(self::parseLocation($nbt, $world), $nbt);
+		}, ['XPOrb', 'minecraft:xp_orb'], EntityLegacyIds::XP_ORB);
+
+		$this->register(FallingBlock::class, function(World $world, CompoundTag $nbt) : FallingBlock{
+			return new FallingBlock(self::parseLocation($nbt, $world), FallingBlock::parseBlockNBT(BlockFactory::getInstance(), $nbt), $nbt);
+		}, ['FallingSand', 'minecraft:falling_block'], EntityLegacyIds::FALLING_BLOCK);
+
+		$this->register(ItemEntity::class, function(World $world, CompoundTag $nbt) : ItemEntity{
+			$itemTag = $nbt->getCompoundTag("Item");
+			if($itemTag === null){
+				throw new \UnexpectedValueException("Expected \"Item\" NBT tag not found");
+			}
+
+			$item = Item::nbtDeserialize($itemTag);
+			if($item->isNull()){
+				throw new \UnexpectedValueException("Item is invalid");
+			}
+			return new ItemEntity(self::parseLocation($nbt, $world), $item, $nbt);
+		}, ['Item', 'minecraft:item'], EntityLegacyIds::ITEM);
+
+		$this->register(Painting::class, function(World $world, CompoundTag $nbt) : Painting{
+			$motive = PaintingMotive::getMotiveByName($nbt->getString("Motive"));
+			if($motive === null){
+				throw new \UnexpectedValueException("Unknown painting motive");
+			}
+			$blockIn = new Vector3($nbt->getInt("TileX"), $nbt->getInt("TileY"), $nbt->getInt("TileZ"));
+			if($nbt->hasTag("Direction", ByteTag::class)){
+				$facing = Painting::DATA_TO_FACING[$nbt->getByte("Direction")] ?? Facing::NORTH;
+			}elseif($nbt->hasTag("Facing", ByteTag::class)){
+				$facing = Painting::DATA_TO_FACING[$nbt->getByte("Facing")] ?? Facing::NORTH;
+			}else{
+				throw new \UnexpectedValueException("Missing facing info");
+			}
+
+			return new Painting(self::parseLocation($nbt, $world), $blockIn, $facing, $motive, $nbt);
+		}, ['Painting', 'minecraft:painting'], EntityLegacyIds::PAINTING);
+
+		$this->register(PrimedTNT::class, function(World $world, CompoundTag $nbt) : PrimedTNT{
+			return new PrimedTNT(self::parseLocation($nbt, $world), $nbt);
+		}, ['PrimedTnt', 'PrimedTNT', 'minecraft:tnt'], EntityLegacyIds::TNT);
+
+		$this->register(Snowball::class, function(World $world, CompoundTag $nbt) : Snowball{
+			return new Snowball(self::parseLocation($nbt, $world), null, $nbt);
+		}, ['Snowball', 'minecraft:snowball'], EntityLegacyIds::SNOWBALL);
+
+		$this->register(SplashPotion::class, function(World $world, CompoundTag $nbt) : SplashPotion{
+			return new SplashPotion(self::parseLocation($nbt, $world), null, $nbt);
+		}, ['ThrownPotion', 'minecraft:potion', 'thrownpotion'], EntityLegacyIds::SPLASH_POTION);
+
+		$this->register(Squid::class, function(World $world, CompoundTag $nbt) : Squid{
+			return new Squid(self::parseLocation($nbt, $world), $nbt);
+		}, ['Squid', 'minecraft:squid'], EntityLegacyIds::SQUID);
+
+		$this->register(Villager::class, function(World $world, CompoundTag $nbt) : Villager{
+			return new Villager(self::parseLocation($nbt, $world), $nbt);
+		}, ['Villager', 'minecraft:villager'], EntityLegacyIds::VILLAGER);
+
+		$this->register(Zombie::class, function(World $world, CompoundTag $nbt) : Zombie{
+			return new Zombie(self::parseLocation($nbt, $world), $nbt);
+		}, ['Zombie', 'minecraft:zombie'], EntityLegacyIds::ZOMBIE);
+
+		$this->register(Human::class, function(World $world, CompoundTag $nbt) : Human{
+			return new Human(self::parseLocation($nbt, $world), Human::parseSkinNBT($nbt), $nbt);
+		}, ['Human']);
 
 		PaintingMotive::init();
+	}
+
+	/**
+	 * @phpstan-param class-string<Entity> $baseClass
+	 * @phpstan-param \Closure(World, CompoundTag) : Entity $creationFunc
+	 */
+	private static function validateCreationFunc(string $baseClass, \Closure $creationFunc) : void{
+		$sig = new CallbackType(
+			new ReturnType($baseClass),
+			new ParameterType("world", World::class),
+			new ParameterType("nbt", CompoundTag::class)
+		);
+		if(!$sig->isSatisfiedBy($creationFunc)){
+			throw new \TypeError("Declaration of callable `" . CallbackType::createFromCallable($creationFunc) . "` must be compatible with `" . $sig . "`");
+		}
 	}
 
 	/**
 	 * Registers an entity type into the index.
 	 *
 	 * @param string   $className Class that extends Entity
+	 * @param \Closure $creationFunc
 	 * @param string[] $saveNames An array of save names which this entity might be saved under. Defaults to the short name of the class itself if empty.
-	 * @param int|null $legacyMcpeSaveId
 	 * @phpstan-param class-string<Entity> $className
+	 * @phpstan-param \Closure(World $world, CompoundTag $nbt) : Entity $creationFunc
 	 *
 	 * NOTE: The first save name in the $saveNames array will be used when saving the entity to disk. The reflection
 	 * name of the class will be appended to the end and only used if no other save names are specified.
 	 *
 	 * @throws \InvalidArgumentException
 	 */
-	public function register(string $className, array $saveNames, ?int $legacyMcpeSaveId = null) : void{
+	public function register(string $className, \Closure $creationFunc, array $saveNames, ?int $legacyMcpeSaveId = null) : void{
 		Utils::testValidInstance($className, Entity::class);
 
-		$this->classMapping[$className] = $className;
+		self::validateCreationFunc($className, $creationFunc);
+		$this->creationFuncs[$className] = $creationFunc;
 
 		$shortName = (new \ReflectionClass($className))->getShortName();
 		if(!in_array($shortName, $saveNames, true)){
@@ -140,35 +225,13 @@ final class EntityFactory{
 	}
 
 	/**
-	 * Registers a class override for the given class. When a new entity is constructed using the factory, the new class
-	 * will be used instead of the base class.
-	 *
-	 * @param string $baseClass Already-registered entity class to override
-	 * @param string $newClass Class which extends the base class
-	 *
-	 * TODO: use an explicit template for param1
-	 * @phpstan-param class-string<Entity> $baseClass
-	 * @phpstan-param class-string<Entity> $newClass
-	 *
-	 * @throws \InvalidArgumentException
-	 */
-	public function override(string $baseClass, string $newClass) : void{
-		if(!isset($this->classMapping[$baseClass])){
-			throw new \InvalidArgumentException("Class $baseClass is not a registered entity");
-		}
-
-		Utils::testValidInstance($newClass, $baseClass);
-		$this->classMapping[$baseClass] = $newClass;
-	}
-
-	/**
 	 * Returns an array of all registered entity classpaths.
 	 *
 	 * @return string[]
 	 * @return class-string<Entity>[]
 	 */
 	public function getKnownTypes() : array{
-		return array_keys($this->classMapping);
+		return array_keys($this->creationFuncs);
 	}
 
 	/**
@@ -176,39 +239,6 @@ final class EntityFactory{
 	 */
 	public static function nextRuntimeId() : int{
 		return self::$entityCount++;
-	}
-
-	/**
-	 * Creates an entity with the specified type, world and NBT, with optional additional arguments to pass to the
-	 * entity's constructor.
-	 *
-	 * TODO: make this NBT-independent
-	 *
-	 * @phpstan-template TEntity of Entity
-	 *
-	 * @param mixed       ...$args
-	 * @phpstan-param class-string<TEntity> $baseClass
-	 *
-	 * @return Entity instanceof $baseClass
-	 * @phpstan-return TEntity
-	 *
-	 * @throws \InvalidArgumentException if the class doesn't exist or is not registered
-	 */
-	public function create(string $baseClass, World $world, CompoundTag $nbt, ...$args) : Entity{
-		if(isset($this->classMapping[$baseClass])){
-			$class = $this->classMapping[$baseClass];
-			assert(is_a($class, $baseClass, true));
-			/**
-			 * @var Entity $entity
-			 * @phpstan-var TEntity $entity
-			 * @see Entity::__construct()
-			 */
-			$entity = new $class($world, $nbt, ...$args);
-
-			return $entity;
-		}
-
-		throw new \InvalidArgumentException("Class $baseClass is not a registered entity");
 	}
 
 	/**
@@ -228,13 +258,9 @@ final class EntityFactory{
 		if($baseClass === null){
 			return null;
 		}
-		$class = $this->classMapping[$baseClass];
-		assert(is_a($class, $baseClass, true));
-		/**
-		 * @var Entity $entity
-		 * @see Entity::__construct()
-		 */
-		$entity = new $class($world, $nbt);
+		$func = $this->creationFuncs[$baseClass];
+		/** @var Entity $entity */
+		$entity = $func($world, $nbt);
 
 		return $entity;
 	}
@@ -247,6 +273,37 @@ final class EntityFactory{
 			return reset($this->saveNames[$class]);
 		}
 		throw new \InvalidArgumentException("Entity $class is not registered");
+	}
+
+	public static function parseLocation(CompoundTag $nbt, World $world) : Location{
+		$pos = self::parseVec3($nbt, "Pos", false);
+
+		$yawPitch = $nbt->getTag("Rotation");
+		if(!($yawPitch instanceof ListTag) or $yawPitch->getTagType() !== NBT::TAG_Float){
+			throw new \UnexpectedValueException("'Rotation' should be a List<Float>");
+		}
+		$values = $yawPitch->getValue();
+		if(count($values) !== 2){
+			throw new \UnexpectedValueException("Expected exactly 2 entries for 'Rotation'");
+		}
+
+		return Location::fromObject($pos, $world, $values[0]->getValue(), $values[1]->getValue());
+	}
+
+	public static function parseVec3(CompoundTag $nbt, string $tagName, bool $optional) : Vector3{
+		$pos = $nbt->getTag($tagName);
+		if($pos === null and $optional){
+			return new Vector3(0, 0, 0);
+		}
+		if(!($pos instanceof ListTag) or $pos->getTagType() !== NBT::TAG_Double){
+			throw new \UnexpectedValueException("'$tagName' should be a List<Double>");
+		}
+		/** @var DoubleTag[] $values */
+		$values = $pos->getValue();
+		if(count($values) !== 3){
+			throw new \UnexpectedValueException("Expected exactly 3 entries in '$tagName' tag");
+		}
+		return new Vector3($values[0]->getValue(), $values[1]->getValue(), $values[2]->getValue());
 	}
 
 	/**

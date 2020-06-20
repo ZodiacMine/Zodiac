@@ -43,7 +43,7 @@ use pocketmine\network\mcpe\compression\DecompressionException;
 use pocketmine\network\mcpe\convert\SkinAdapterSingleton;
 use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\encryption\DecryptionException;
-use pocketmine\network\mcpe\encryption\NetworkCipher;
+use pocketmine\network\mcpe\encryption\EncryptionContext;
 use pocketmine\network\mcpe\encryption\PrepareEncryptionTask;
 use pocketmine\network\mcpe\handler\DeathPacketHandler;
 use pocketmine\network\mcpe\handler\HandshakePacketHandler;
@@ -104,7 +104,6 @@ use pocketmine\utils\Utils;
 use pocketmine\world\Position;
 use function array_map;
 use function array_values;
-use function assert;
 use function base64_encode;
 use function bin2hex;
 use function count;
@@ -150,13 +149,16 @@ class NetworkSession{
 	/** @var int */
 	private $connectTime;
 
-	/** @var NetworkCipher */
+	/** @var EncryptionContext */
 	private $cipher;
 
 	/** @var PacketBatch|null */
 	private $sendBuffer;
 
-	/** @var \SplQueue|CompressBatchPromise[] */
+	/**
+	 * @var \SplQueue|CompressBatchPromise[]
+	 * @phpstan-var \SplQueue<CompressBatchPromise>
+	 */
 	private $compressedQueue;
 	/** @var Compressor */
 	private $compressor;
@@ -345,7 +347,7 @@ class NetworkSession{
 			try{
 				$this->handleDataPacket($pk);
 			}catch(BadPacketException $e){
-				$this->logger->debug($pk->getName() . ": " . base64_encode($pk->getBinaryStream()->getBuffer()));
+				$this->logger->debug($pk->getName() . ": " . base64_encode($pk->getSerializer()->getBuffer()));
 				throw BadPacketException::wrap($e, "Error processing " . $pk->getName());
 			}
 		}
@@ -357,7 +359,7 @@ class NetworkSession{
 	public function handleDataPacket(Packet $packet) : void{
 		if(!($packet instanceof ServerboundPacket)){
 			if($packet instanceof GarbageServerboundPacket){
-				$this->logger->debug("Garbage serverbound " . $packet->getName() . ": " . base64_encode($packet->getBinaryStream()->getBuffer()));
+				$this->logger->debug("Garbage serverbound " . $packet->getName() . ": " . base64_encode($packet->getSerializer()->getBuffer()));
 				return;
 			}
 			throw new BadPacketException("Unexpected non-serverbound packet");
@@ -372,7 +374,7 @@ class NetworkSession{
 			}catch(PacketDecodeException $e){
 				throw BadPacketException::wrap($e);
 			}
-			$stream = $packet->getBinaryStream();
+			$stream = $packet->getSerializer();
 			if(!$stream->feof()){
 				$remains = substr($stream->getBuffer(), $stream->getOffset());
 				$this->logger->debug("Still " . strlen($remains) . " bytes unread in " . $packet->getName() . ": " . bin2hex($remains));
@@ -591,14 +593,14 @@ class NetworkSession{
 		$this->logger->debug("Xbox Live authenticated: " . ($this->authenticated ? "YES" : "NO"));
 
 		if($this->manager->kickDuplicates($this)){
-			if(NetworkCipher::$ENABLED){
+			if(EncryptionContext::$ENABLED){
 				$this->server->getAsyncPool()->submitTask(new PrepareEncryptionTask($clientPubKey, function(string $encryptionKey, string $handshakeJwt) : void{
 					if(!$this->connected){
 						return;
 					}
 					$this->sendDataPacket(ServerToClientHandshakePacket::create($handshakeJwt), true); //make sure this gets sent before encryption is enabled
 
-					$this->cipher = new NetworkCipher($encryptionKey);
+					$this->cipher = new EncryptionContext($encryptionKey);
 
 					$this->setHandler(new HandshakePacketHandler(function() : void{
 						$this->onLoginSuccess();
@@ -660,20 +662,22 @@ class NetworkSession{
 	}
 
 	public function syncMovement(Vector3 $pos, ?float $yaw = null, ?float $pitch = null, int $mode = MovePlayerPacket::MODE_NORMAL) : void{
-		$location = $this->player->getLocation();
-		$yaw = $yaw ?? $location->getYaw();
-		$pitch = $pitch ?? $location->getPitch();
+		if($this->player !== null){
+			$location = $this->player->getLocation();
+			$yaw = $yaw ?? $location->getYaw();
+			$pitch = $pitch ?? $location->getPitch();
 
-		$pk = new MovePlayerPacket();
-		$pk->entityRuntimeId = $this->player->getId();
-		$pk->position = $this->player->getOffsetPosition($pos);
-		$pk->pitch = $pitch;
-		$pk->headYaw = $yaw;
-		$pk->yaw = $yaw;
-		$pk->mode = $mode;
-		$pk->onGround = $this->player->onGround;
+			$pk = new MovePlayerPacket();
+			$pk->entityRuntimeId = $this->player->getId();
+			$pk->position = $this->player->getOffsetPosition($pos);
+			$pk->pitch = $pitch;
+			$pk->headYaw = $yaw;
+			$pk->yaw = $yaw;
+			$pk->mode = $mode;
+			$pk->onGround = $this->player->onGround;
 
-		$this->sendDataPacket($pk);
+			$this->sendDataPacket($pk);
+		}
 	}
 
 	public function syncViewAreaRadius(int $distance) : void{
