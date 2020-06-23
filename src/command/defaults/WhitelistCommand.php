@@ -56,10 +56,6 @@ class WhitelistCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) === 0){
-			throw new InvalidCommandSyntaxException();
-		}
-
 		if(count($args) === 1){
 			if($this->badPerm($sender, strtolower($args[0]))){
 				return false;
@@ -98,7 +94,7 @@ class WhitelistCommand extends VanillaCommand{
 					$sender->sendMessage(new TranslationContainer("commands.generic.usage", ["%commands.whitelist.remove.usage"]));
 					return true;
 			}
-		}elseif(count($args) === 2){
+		}elseif(count($args) > 1){
 			$subCommand = strtolower(array_shift($args));
 			if($this->badPerm($sender, $subCommand)){
 				return false;
@@ -121,7 +117,7 @@ class WhitelistCommand extends VanillaCommand{
 			}
 		}
 
-		return true;
+		throw new InvalidCommandSyntaxException();
 	}
 
 	private function badPerm(CommandSender $sender, string $subcommand) : bool{
@@ -130,7 +126,7 @@ class WhitelistCommand extends VanillaCommand{
 			"off" => "disable"
 		];
 		if(!$sender->hasPermission("pocketmine.command.whitelist." . ($map[$subcommand] ?? $subcommand))){
-			$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
+			$sender->sendMessage($sender->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 			return true;
 		}

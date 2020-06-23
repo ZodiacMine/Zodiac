@@ -56,7 +56,7 @@ class KillCommand extends VanillaCommand{
 
 		if(count($args) > 0){
 			if(!$sender->hasPermission("pocketmine.command.kill.other")){
-				$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
+				$sender->sendMessage($sender->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 				return true;
 			}
@@ -75,7 +75,7 @@ class KillCommand extends VanillaCommand{
 
 		if($sender instanceof Player){
 			if(!$sender->hasPermission("pocketmine.command.kill.self")){
-				$sender->sendMessage($sender->getServer()->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
+				$sender->sendMessage($sender->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 
 				return true;
 			}
