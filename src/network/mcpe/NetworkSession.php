@@ -86,6 +86,7 @@ use pocketmine\network\mcpe\protocol\TextPacket;
 use pocketmine\network\mcpe\protocol\TransferPacket;
 use pocketmine\network\mcpe\protocol\types\command\CommandData;
 use pocketmine\network\mcpe\protocol\types\command\CommandEnum;
+use pocketmine\network\mcpe\protocol\types\DimensionIds;
 use pocketmine\network\mcpe\protocol\types\entity\Attribute as NetworkAttribute;
 use pocketmine\network\mcpe\protocol\types\entity\MetadataProperty;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
@@ -689,7 +690,8 @@ class NetworkSession{
 	}
 
 	public function syncPlayerSpawnPoint(Position $newSpawn) : void{
-		$this->sendDataPacket(SetSpawnPositionPacket::playerSpawn($newSpawn->getFloorX(), $newSpawn->getFloorY(), $newSpawn->getFloorZ(), false)); //TODO: spawn forced
+		[$x, $y, $z] = [$newSpawn->getFloorX(), $newSpawn->getFloorY(), $newSpawn->getFloorZ()];
+		$this->sendDataPacket(SetSpawnPositionPacket::playerSpawn($x, $y, $z, DimensionIds::OVERWORLD, $x, $y, $z));
 	}
 
 	public function syncGameMode(GameMode $mode, bool $isRollback = false) : void{

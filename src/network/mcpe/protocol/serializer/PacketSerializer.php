@@ -222,9 +222,9 @@ class PacketSerializer extends BinaryStream{
 		/** @var CompoundTag|null $compound */
 		$compound = null;
 		if($nbtLen === 0xffff){
-			$c = $this->getByte();
-			if($c !== 1){
-				throw new PacketDecodeException("Unexpected NBT count $c");
+			$nbtDataVersion = $this->getByte();
+			if($nbtDataVersion !== 1){
+				throw new PacketDecodeException("Unexpected NBT data version $nbtDataVersion");
 			}
 			$compound = $this->getNbtCompoundRoot();
 		}elseif($nbtLen !== 0){
@@ -263,7 +263,7 @@ class PacketSerializer extends BinaryStream{
 		$nbt = $item->getNbt();
 		if($nbt !== null){
 			$this->putLShort(0xffff);
-			$this->putByte(1); //TODO: some kind of count field? always 1 as of 1.9.0
+			$this->putByte(1); //TODO: NBT data version (?)
 			$this->put((new NetworkNbtSerializer())->write(new TreeRoot($nbt)));
 		}else{
 			$this->putLShort(0);
@@ -412,7 +412,7 @@ class PacketSerializer extends BinaryStream{
 	 *
 	 * @throws BinaryDataException
 	 */
-	public function getEntityUniqueId() : int{
+	final public function getEntityUniqueId() : int{
 		return $this->getVarLong();
 	}
 
@@ -428,7 +428,7 @@ class PacketSerializer extends BinaryStream{
 	 *
 	 * @throws BinaryDataException
 	 */
-	public function getEntityRuntimeId() : int{
+	final public function getEntityRuntimeId() : int{
 		return $this->getUnsignedVarLong();
 	}
 
@@ -591,7 +591,8 @@ class PacketSerializer extends BinaryStream{
 		$toEntityUniqueId = $this->getEntityUniqueId();
 		$type = $this->getByte();
 		$immediate = $this->getBool();
-		return new EntityLink($fromEntityUniqueId, $toEntityUniqueId, $type, $immediate);
+		$causedByRider = $this->getBool();
+		return new EntityLink($fromEntityUniqueId, $toEntityUniqueId, $type, $immediate, $causedByRider);
 	}
 
 	public function putEntityLink(EntityLink $link) : void{
@@ -599,6 +600,7 @@ class PacketSerializer extends BinaryStream{
 		$this->putEntityUniqueId($link->toEntityUniqueId);
 		$this->putByte($link->type);
 		$this->putBool($link->immediate);
+		$this->putBool($link->causedByRider);
 	}
 
 	/**
@@ -711,5 +713,13 @@ class PacketSerializer extends BinaryStream{
 		}catch(NbtDataException $e){
 			throw PacketDecodeException::wrap($e, "Expected TAG_Compound NBT root");
 		}
+	}
+
+	public function readGenericTypeNetworkId() : int{
+		return $this->getVarInt();
+	}
+
+	public function writeGenericTypeNetworkId(int $id) : void{
+		$this->putVarInt($id);
 	}
 }

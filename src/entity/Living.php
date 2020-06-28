@@ -291,7 +291,7 @@ abstract class Living extends Entity{
 	 * Returns the initial upwards velocity of a jumping entity in blocks/tick, including additional velocity due to effects.
 	 */
 	public function getJumpVelocity() : float{
-		return $this->jumpVelocity + ($this->effectManager->has(VanillaEffects::JUMP_BOOST()) ? ($this->effectManager->get(VanillaEffects::JUMP_BOOST())->getEffectLevel() / 10) : 0);
+		return $this->jumpVelocity + ((($jumpBoost = $this->effectManager->get(VanillaEffects::JUMP_BOOST())) !== null ? $jumpBoost->getEffectLevel() : 0) / 10);
 	}
 
 	/**
@@ -304,7 +304,7 @@ abstract class Living extends Entity{
 	}
 
 	public function fall(float $fallDistance) : void{
-		$damage = ceil($fallDistance - 3 - ($this->effectManager->has(VanillaEffects::JUMP_BOOST()) ? $this->effectManager->get(VanillaEffects::JUMP_BOOST())->getEffectLevel() : 0));
+		$damage = ceil($fallDistance - 3 - (($jumpBoost = $this->effectManager->get(VanillaEffects::JUMP_BOOST())) !== null ? $jumpBoost->getEffectLevel() : 0));
 		if($damage > 0){
 			$ev = new EntityDamageEvent($this, EntityDamageEvent::CAUSE_FALL, $damage);
 			$this->attack($ev);
@@ -377,8 +377,8 @@ abstract class Living extends Entity{
 		}
 
 		$cause = $source->getCause();
-		if($this->effectManager->has(VanillaEffects::RESISTANCE()) and $cause !== EntityDamageEvent::CAUSE_VOID and $cause !== EntityDamageEvent::CAUSE_SUICIDE){
-			$source->setModifier(-$source->getFinalDamage() * min(1, 0.2 * $this->effectManager->get(VanillaEffects::RESISTANCE())->getEffectLevel()), EntityDamageEvent::MODIFIER_RESISTANCE);
+		if(($resistance = $this->effectManager->get(VanillaEffects::RESISTANCE())) !== null and $cause !== EntityDamageEvent::CAUSE_VOID and $cause !== EntityDamageEvent::CAUSE_SUICIDE){
+			$source->setModifier(-$source->getFinalDamage() * min(1, 0.2 * $resistance->getEffectLevel()), EntityDamageEvent::MODIFIER_RESISTANCE);
 		}
 
 		$totalEpf = 0;
@@ -401,7 +401,7 @@ abstract class Living extends Entity{
 		$this->setAbsorption(max(0, $this->getAbsorption() + $source->getModifier(EntityDamageEvent::MODIFIER_ABSORPTION)));
 		$this->damageArmor($source->getBaseDamage());
 
-		if($source instanceof EntityDamageByEntityEvent){
+		if($source instanceof EntityDamageByEntityEvent and ($attacker = $source->getDamager()) !== null){
 			$damage = 0;
 			foreach($this->armorInventory->getContents() as $k => $item){
 				if($item instanceof Armor and ($thornsLevel = $item->getEnchantmentLevel(Enchantment::THORNS())) > 0){
@@ -417,7 +417,7 @@ abstract class Living extends Entity{
 			}
 
 			if($damage > 0){
-				$source->getDamager()->attack(new EntityDamageByEntityEvent($this, $source->getDamager(), EntityDamageEvent::CAUSE_MAGIC, $damage));
+				$attacker->attack(new EntityDamageByEntityEvent($this, $attacker, EntityDamageEvent::CAUSE_MAGIC, $damage));
 			}
 		}
 	}
