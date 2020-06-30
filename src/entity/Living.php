@@ -39,7 +39,6 @@ use pocketmine\inventory\ArmorInventory;
 use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Armor;
-use pocketmine\item\Consumable;
 use pocketmine\item\Durable;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item;
@@ -513,20 +512,18 @@ abstract class Living extends Entity{
 		if(mt_rand() / mt_getrandmax() > $this->knockbackResistanceAttr->getValue()){
 			$f = 1 / $f;
 
-			$motion = clone $this->motion;
+			$motionX = $this->motion->x / 2;
+			$motionY = $this->motion->y / 2;
+			$motionZ = $this->motion->z / 2;
+			$motionX += $x * $f * $base;
+			$motionY += $base;
+			$motionZ += $z * $f * $base;
 
-			$motion->x /= 2;
-			$motion->y /= 2;
-			$motion->z /= 2;
-			$motion->x += $x * $f * $base;
-			$motion->y += $base;
-			$motion->z += $z * $f * $base;
-
-			if($motion->y > $base){
-				$motion->y = $base;
+			if($motionY > $base){
+				$motionY = $base;
 			}
 
-			$this->setMotion($motion);
+			$this->setMotion(new Vector3($motionX, $motionY, $motionZ));
 		}
 	}
 

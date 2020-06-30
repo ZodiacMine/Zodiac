@@ -21,23 +21,21 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\entity;
 
-class MushroomStew extends Food{
+use pocketmine\entity\effect\EffectInstance;
 
-	public function getMaxStackSize() : int{
-		return 1;
-	}
+/**
+ * Interface implemented by objects that can be consumed by mobs.
+ */
+interface Consumable{
+	/**
+	 * @return EffectInstance[]
+	 */
+	public function getAdditionalEffects() : array;
 
-	public function getFoodRestore() : int{
-		return 6;
-	}
-
-	public function getSaturationRestore() : float{
-		return 7.2;
-	}
-
-	public function getResidue() : Item{
-		return VanillaItems::BOWL();
-	}
+	/**
+	 * Called when this Consumable is consumed by mob, after standard resulting effects have been applied.
+	 */
+	public function onConsume(Living $consumer) : void;
 }

@@ -21,23 +21,17 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\block\utils;
 
-class MushroomStew extends Food{
+use PHPUnit\Framework\TestCase;
 
-	public function getMaxStackSize() : int{
-		return 1;
-	}
+class SignTextTest extends TestCase{
 
-	public function getFoodRestore() : int{
-		return 6;
-	}
-
-	public function getSaturationRestore() : float{
-		return 7.2;
-	}
-
-	public function getResidue() : Item{
-		return VanillaItems::BOWL();
+	public function testConstructorOmitLines() : void{
+		$text = new SignText([1 => "test"]);
+		self::assertSame("", $text->getLine(0));
+		self::assertSame("test", $text->getLine(1));
+		self::assertSame("", $text->getLine(2));
+		self::assertSame("", $text->getLine(3));
 	}
 }

@@ -23,30 +23,26 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
-use pocketmine\block\Block;
-use pocketmine\entity\effect\EffectInstance;
-use pocketmine\entity\Living;
+final class ItemIdentifier{
 
-/**
- * Interface implemented by objects that can be consumed by mobs.
- */
-interface Consumable{
+	/** @var int */
+	private $id;
+	/** @var int */
+	private $meta;
 
-	/**
-	 * Returns the leftover that this Consumable produces when it is consumed. For Items, this is usually air, but could
-	 * be an Item to add to a Player's inventory afterwards (such as a bowl).
-	 *
-	 * @return Item|Block|mixed
-	 */
-	public function getResidue();
+	public function __construct(int $id, int $meta){
+		if($id < -0x8000 or $id > 0x7fff){ //signed short range
+			throw new \InvalidArgumentException("ID must be in range " . -0x8000 . " - " . 0x7fff);
+		}
+		$this->id = $id;
+		$this->meta = $meta !== -1 ? $meta & 0x7FFF : -1;
+	}
 
-	/**
-	 * @return EffectInstance[]
-	 */
-	public function getAdditionalEffects() : array;
+	public function getId() : int{
+		return $this->id;
+	}
 
-	/**
-	 * Called when this Consumable is consumed by mob, after standard resulting effects have been applied.
-	 */
-	public function onConsume(Living $consumer) : void;
+	public function getMeta() : int{
+		return $this->meta;
+	}
 }

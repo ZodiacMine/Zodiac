@@ -21,19 +21,8 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\block\utils;
 
-/**
- * Interface implemented by objects that can be consumed by players, giving them food and saturation.
- */
-interface FoodSource extends Consumable{
+final class BlockStateBinaryEncoder{
 
-	public function getFoodRestore() : int;
-
-	public function getSaturationRestore() : float;
-
-	/**
-	 * Returns whether a Human eating this FoodSource must have a non-full hunger bar.
-	 */
-	public function requiresHunger() : bool;
 }

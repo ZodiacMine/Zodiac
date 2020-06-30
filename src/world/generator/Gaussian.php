@@ -21,23 +21,31 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\world\generator;
 
-class MushroomStew extends Food{
+use function exp;
 
-	public function getMaxStackSize() : int{
-		return 1;
-	}
+final class Gaussian{
 
-	public function getFoodRestore() : int{
-		return 6;
-	}
+	/** @var int */
+	public $smoothSize;
+	/** @var float[][] */
+	public $kernel = [];
 
-	public function getSaturationRestore() : float{
-		return 7.2;
-	}
+	public function __construct(int $smoothSize){
+		$this->smoothSize = $smoothSize;
 
-	public function getResidue() : Item{
-		return VanillaItems::BOWL();
+		$bellSize = 1 / $this->smoothSize;
+		$bellHeight = 2 * $this->smoothSize;
+
+		for($sx = -$this->smoothSize; $sx <= $this->smoothSize; ++$sx){
+			$this->kernel[$sx + $this->smoothSize] = [];
+
+			for($sz = -$this->smoothSize; $sz <= $this->smoothSize; ++$sz){
+				$bx = $bellSize * $sx;
+				$bz = $bellSize * $sz;
+				$this->kernel[$sx + $this->smoothSize][$sz + $this->smoothSize] = $bellHeight * exp(-($bx * $bx + $bz * $bz) / 2);
+			}
+		}
 	}
 }

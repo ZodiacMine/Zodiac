@@ -129,9 +129,6 @@ abstract class Entity{
 	public $width;
 
 	/** @var float */
-	protected $baseOffset = 0.0;
-
-	/** @var float */
 	private $health = 20.0;
 	/** @var int */
 	private $maxHealth = 20;
@@ -226,7 +223,7 @@ abstract class Entity{
 		}
 
 		$this->id = self::nextRuntimeId();
-		$this->server = $location->getWorldNonNull()->getServer();
+		$this->server = $location->getWorld()->getServer();
 
 		$this->location = $location->asLocation();
 		assert(
@@ -557,7 +554,7 @@ abstract class Entity{
 		}
 
 		if($amount <= 0){
-			if($this->isAlive()){
+			if($this->isAlive() and !$this->justCreated){
 				$this->kill();
 			}
 		}elseif($amount <= $this->getMaxHealth() or $amount < $this->health){
@@ -594,7 +591,12 @@ abstract class Entity{
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		//TODO: check vehicles
 
-		$this->justCreated = false;
+		if($this->justCreated){
+			$this->justCreated = false;
+			if(!$this->isAlive()){
+				$this->kill();
+			}
+		}
 
 		$changedProperties = $this->getSyncedNetworkData(true);
 		if(count($changedProperties) > 0){
@@ -724,7 +726,7 @@ abstract class Entity{
 	}
 
 	public function getOffsetPosition(Vector3 $vector3) : Vector3{
-		return new Vector3($vector3->x, $vector3->y + $this->baseOffset, $vector3->z);
+		return $vector3;
 	}
 
 	protected function broadcastMovement(bool $teleport = false) : void{
@@ -1262,19 +1264,19 @@ abstract class Entity{
 	}
 
 	protected function checkBlockCollision() : void{
-		$vector = new Vector3(0, 0, 0);
+		$vectors = [];
 
 		foreach($this->getBlocksAround() as $block){
 			$block->onEntityInside($this);
-			$block->addVelocityToEntity($this, $vector);
+			if(($v = $block->addVelocityToEntity($this)) !== null){
+				$vectors[] = $v;
+			}
 		}
 
+		$vector = Vector3::sum(...$vectors);
 		if($vector->lengthSquared() > 0){
-			$vector = $vector->normalize();
 			$d = 0.014;
-			$this->motion->x += $vector->x * $d;
-			$this->motion->y += $vector->y * $d;
-			$this->motion->z += $vector->z * $d;
+			$this->motion = $this->motion->addVector($vector->normalize()->multiply($d));
 		}
 	}
 
@@ -1287,7 +1289,7 @@ abstract class Entity{
 	}
 
 	public function getWorld() : World{
-		return $this->location->getWorldNonNull();
+		return $this->location->getWorld();
 	}
 
 	protected function setPosition(Vector3 $pos) : bool{
@@ -1295,8 +1297,8 @@ abstract class Entity{
 			return false;
 		}
 
-		if($pos instanceof Position and $pos->isValid() and $pos->getWorldNonNull() !== $this->getWorld()){
-			if(!$this->switchWorld($pos->getWorldNonNull())){
+		if($pos instanceof Position and $pos->isValid() and $pos->getWorld() !== $this->getWorld()){
+			if(!$this->switchWorld($pos->getWorld())){
 				return false;
 			}
 		}
@@ -1392,9 +1394,7 @@ abstract class Entity{
 	 * Adds the given values to the entity's motion vector.
 	 */
 	public function addMotion(float $x, float $y, float $z) : void{
-		$this->motion->x += $x;
-		$this->motion->y += $y;
-		$this->motion->z += $z;
+		$this->motion = $this->motion->add($x, $y, $z);
 	}
 
 	public function isOnGround() : bool{
@@ -1410,7 +1410,7 @@ abstract class Entity{
 			$pitch = $pitch ?? $pos->pitch;
 		}
 		$from = $this->location->asPosition();
-		$to = Position::fromObject($pos, $pos instanceof Position ? $pos->getWorldNonNull() : $this->getWorld());
+		$to = Position::fromObject($pos, $pos instanceof Position ? $pos->getWorld() : $this->getWorld());
 		$ev = new EntityTeleportEvent($this, $from, $to);
 		$ev->call();
 		if($ev->isCancelled()){

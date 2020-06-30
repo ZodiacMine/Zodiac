@@ -650,7 +650,9 @@ class NetworkSession{
 	}
 
 	public function onDeath() : void{
-		$this->setHandler(new DeathPacketHandler($this->player, $this));
+		if($this->handler instanceof InGamePacketHandler){ //TODO: this is a bad fix for pre-spawn death, this shouldn't be reachable at all at this stage :(
+			$this->setHandler(new DeathPacketHandler($this->player, $this));
+		}
 	}
 
 	public function onRespawn() : void{
@@ -825,7 +827,7 @@ class NetworkSession{
 	public function startUsingChunk(int $chunkX, int $chunkZ, \Closure $onCompletion) : void{
 		Utils::validateCallableSignature(function(int $chunkX, int $chunkZ) : void{}, $onCompletion);
 
-		$world = $this->player->getLocation()->getWorldNonNull();
+		$world = $this->player->getLocation()->getWorld();
 		ChunkCache::getInstance($world, $this->compressor)->request($chunkX, $chunkZ)->onResolve(
 
 			//this callback may be called synchronously or asynchronously, depending on whether the promise is resolved yet
@@ -833,7 +835,7 @@ class NetworkSession{
 				if(!$this->isConnected()){
 					return;
 				}
-				$currentWorld = $this->player->getLocation()->getWorldNonNull();
+				$currentWorld = $this->player->getLocation()->getWorld();
 				if($world !== $currentWorld or !$this->player->isUsingChunk($chunkX, $chunkZ)){
 					$this->logger->debug("Tried to send no-longer-active chunk $chunkX $chunkZ in world " . $world->getFolderName());
 					return;

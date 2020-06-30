@@ -74,7 +74,7 @@ use pocketmine\form\Form;
 use pocketmine\form\FormValidationException;
 use pocketmine\inventory\Inventory;
 use pocketmine\inventory\PlayerCursorInventory;
-use pocketmine\item\Consumable;
+use pocketmine\item\ConsumableItem;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\MeleeWeaponEnchantment;
 use pocketmine\item\Item;
@@ -348,12 +348,8 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		$this->setNameTagAlwaysVisible();
 		$this->setCanClimb();
 
-		if(!$this->hasValidSpawnPosition()){
-			if(($world = $this->server->getWorldManager()->getWorldByName($nbt->getString("SpawnLevel", ""))) instanceof World){
-				$this->spawnPosition = new Position($nbt->getInt("SpawnX"), $nbt->getInt("SpawnY"), $nbt->getInt("SpawnZ"), $world);
-			}else{
-				$this->spawnPosition = $this->getWorld()->getSafeSpawn();
-			}
+		if(($world = $this->server->getWorldManager()->getWorldByName($nbt->getString("SpawnLevel", ""))) instanceof World){
+			$this->spawnPosition = new Position($nbt->getInt("SpawnX"), $nbt->getInt("SpawnY"), $nbt->getInt("SpawnZ"), $world);
 		}
 	}
 
@@ -714,7 +710,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	}
 
 	protected function switchWorld(World $targetWorld) : bool{
-		$oldWorld = $this->location->getWorld();
+		$oldWorld = $this->location->isValid() ? $this->location->getWorld() : null;
 		if(parent::switchWorld($targetWorld)){
 			if($oldWorld !== null){
 				foreach($this->usedChunks as $index => $status){
@@ -933,7 +929,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	 * @return Position
 	 */
 	public function getSpawn(){
-		if($this->hasValidSpawnPosition()){
+		if($this->hasValidCustomSpawn()){
 			return $this->spawnPosition;
 		}else{
 			$world = $this->server->getWorldManager()->getDefaultWorld();
@@ -942,7 +938,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		}
 	}
 
-	public function hasValidSpawnPosition() : bool{
+	public function hasValidCustomSpawn() : bool{
 		return $this->spawnPosition !== null and $this->spawnPosition->isValid();
 	}
 
@@ -950,16 +946,20 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	 * Sets the spawnpoint of the player (and the compass direction) to a Vector3, or set it on another world with a
 	 * Position object
 	 *
-	 * @param Vector3|Position $pos
+	 * @param Vector3|Position|null $pos
 	 */
-	public function setSpawn(Vector3 $pos) : void{
-		if(!($pos instanceof Position)){
-			$world = $this->getWorld();
+	public function setSpawn(?Vector3 $pos) : void{
+		if($pos !== null){
+			if(!($pos instanceof Position)){
+				$world = $this->getWorld();
+			}else{
+				$world = $pos->getWorld();
+			}
+			$this->spawnPosition = new Position($pos->x, $pos->y, $pos->z, $world);
 		}else{
-			$world = $pos->getWorldNonNull();
+			$this->spawnPosition = null;
 		}
-		$this->spawnPosition = new Position($pos->x, $pos->y, $pos->z, $world);
-		$this->networkSession->syncPlayerSpawnPoint($this->spawnPosition);
+		$this->networkSession->syncPlayerSpawnPoint($this->getSpawn());
 	}
 
 	public function isSleeping() : bool{
@@ -1337,7 +1337,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 
 		if($this->spawned){
 			$this->processMostRecentMovements();
-			$this->motion->x = $this->motion->y = $this->motion->z = 0; //TODO: HACK! (Fixes player knockback being messed up)
+			$this->motion = new Vector3(0, 0, 0); //TODO: HACK! (Fixes player knockback being messed up)
 			if($this->onGround){
 				$this->inAirTicks = 0;
 			}else{
@@ -1486,7 +1486,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	 */
 	public function consumeHeldItem() : bool{
 		$slot = $this->inventory->getItemInHand();
-		if($slot instanceof Consumable){
+		if($slot instanceof ConsumableItem){
 			$ev = new PlayerItemConsumeEvent($this, $slot);
 			if($this->hasItemCooldown($slot)){
 				$ev->setCancelled();
@@ -2100,20 +2100,22 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 			$nbt->setString("Level", $this->getWorld()->getFolderName());
 		}
 
-		if($this->hasValidSpawnPosition()){
-			$nbt->setString("SpawnLevel", $this->spawnPosition->getWorldNonNull()->getFolderName());
-			$nbt->setInt("SpawnX", $this->spawnPosition->getFloorX());
-			$nbt->setInt("SpawnY", $this->spawnPosition->getFloorY());
-			$nbt->setInt("SpawnZ", $this->spawnPosition->getFloorZ());
+		if($this->hasValidCustomSpawn()){
+			$spawn = $this->getSpawn();
+			$nbt->setString("SpawnLevel", $spawn->getWorld()->getFolderName());
+			$nbt->setInt("SpawnX", $spawn->getFloorX());
+			$nbt->setInt("SpawnY", $spawn->getFloorY());
+			$nbt->setInt("SpawnZ", $spawn->getFloorZ());
+		}
 
-			if(!$this->isAlive()){
-				//hack for respawn after quit
-				$nbt->setTag("Pos", new ListTag([
-					new DoubleTag($this->spawnPosition->x),
-					new DoubleTag($this->spawnPosition->y),
-					new DoubleTag($this->spawnPosition->z)
-				]));
-			}
+		if(!$this->isAlive()){
+			$spawn = $this->getSpawn();
+			//hack for respawn after quit
+			$nbt->setTag("Pos", new ListTag([
+				new DoubleTag($spawn->getFloorX()),
+				new DoubleTag($spawn->getFloorY()),
+				new DoubleTag($spawn->getFloorZ())
+			]));
 		}
 
 		$nbt->setInt("playerGameType", $this->gamemode->getMagicNumber());
@@ -2124,9 +2126,6 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	}
 
 	protected function onDeath() : void{
-		if(!$this->spawned){ //TODO: drop this hack
-			return;
-		}
 		//Crafting grid must always be evacuated even if keep-inventory is true. This dumps the contents into the
 		//main inventory and drops the rest on the ground.
 		$this->doCloseInventory();
@@ -2177,7 +2176,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		$ev = new PlayerRespawnEvent($this, $this->getSpawn());
 		$ev->call();
 
-		$realSpawn = Position::fromObject($ev->getRespawnPosition()->add(0.5, 0, 0.5), $ev->getRespawnPosition()->getWorldNonNull());
+		$realSpawn = Position::fromObject($ev->getRespawnPosition()->add(0.5, 0, 0.5), $ev->getRespawnPosition()->getWorld());
 		$this->teleport($realSpawn);
 
 		$this->setSprinting(false);
@@ -2239,12 +2238,6 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 			$targets[] = $this;
 		}
 		parent::broadcastAnimation($animation, $targets);
-	}
-
-	public function getOffsetPosition(Vector3 $vector3) : Vector3{
-		$result = parent::getOffsetPosition($vector3);
-		$result->y += 0.001; //Hack for MCPE falling underground for no good reason (TODO: find out why it's doing this)
-		return $result;
 	}
 
 	/**

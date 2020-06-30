@@ -73,7 +73,7 @@ class Explosion{
 			throw new \InvalidArgumentException("Position does not have a valid world");
 		}
 		$this->source = $center;
-		$this->world = $center->getWorldNonNull();
+		$this->world = $center->getWorld();
 
 		if($size <= 0){
 			throw new \InvalidArgumentException("Explosion radius must be greater than 0, got $size");
@@ -134,6 +134,7 @@ class Explosion{
 								if($blastForce > 0){
 									if(!isset($this->affectedBlocks[World::blockHash($vBlockX, $vBlockY, $vBlockZ)])){
 										$_block = $blockFactory->fromFullBlock($state);
+										$_block->position($this->world, $vBlockX, $vBlockY, $vBlockZ);
 										foreach($_block->getAffectedBlocks() as $_affectedBlock){
 											$_affectedBlockPos = $_affectedBlock->getPos();
 											$this->affectedBlocks[World::blockHash($_affectedBlockPos->x, $_affectedBlockPos->y, $_affectedBlockPos->z)] = $_affectedBlock;

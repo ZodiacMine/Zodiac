@@ -25,8 +25,8 @@ namespace pocketmine\block;
 
 use pocketmine\block\utils\BlockDataSerializer;
 use pocketmine\entity\effect\EffectInstance;
+use pocketmine\entity\FoodSource;
 use pocketmine\entity\Living;
-use pocketmine\item\FoodSource;
 use pocketmine\item\Item;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
@@ -78,7 +78,7 @@ class Cake extends Transparent implements FoodSource{
 
 	public function onNearbyBlockChange() : void{
 		if($this->getSide(Facing::DOWN)->getId() === BlockLegacyIds::AIR){ //Replace with common break method
-			$this->pos->getWorldNonNull()->setBlock($this->pos, VanillaBlocks::AIR());
+			$this->pos->getWorld()->setBlock($this->pos, VanillaBlocks::AIR());
 		}
 	}
 
@@ -127,6 +127,6 @@ class Cake extends Transparent implements FoodSource{
 	}
 
 	public function onConsume(Living $consumer) : void{
-		$this->pos->getWorldNonNull()->setBlock($this->pos, $this->getResidue());
+		$this->pos->getWorld()->setBlock($this->pos, $this->getResidue());
 	}
 }

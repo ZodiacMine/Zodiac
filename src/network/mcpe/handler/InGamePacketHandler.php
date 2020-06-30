@@ -82,7 +82,6 @@ use pocketmine\network\mcpe\protocol\ShowCreditsPacket;
 use pocketmine\network\mcpe\protocol\SpawnExperienceOrbPacket;
 use pocketmine\network\mcpe\protocol\SubClientLoginPacket;
 use pocketmine\network\mcpe\protocol\TextPacket;
-use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\MismatchTransactionData;
 use pocketmine\network\mcpe\protocol\types\inventory\NetworkInventoryAction;
 use pocketmine\network\mcpe\protocol\types\inventory\NormalTransactionData;
@@ -360,7 +359,7 @@ class InGamePacketHandler extends PacketHandler{
 			}else{
 				$blocks[] = $blockPos;
 			}
-			$this->player->getLocation()->getWorldNonNull()->sendBlocks([$this->player], $blocks);
+			$this->player->getLocation()->getWorld()->sendBlocks([$this->player], $blocks);
 		}
 	}
 
@@ -568,7 +567,7 @@ class InGamePacketHandler extends PacketHandler{
 			return false;
 		}
 
-		$block = $this->player->getLocation()->getWorldNonNull()->getBlock($pos);
+		$block = $this->player->getLocation()->getWorld()->getBlock($pos);
 		$nbt = $packet->namedtag->getRoot();
 		if(!($nbt instanceof CompoundTag)) throw new AssumptionFailedError("PHPStan should ensure this is a CompoundTag"); //for phpstorm's benefit
 
