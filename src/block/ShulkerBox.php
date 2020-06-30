@@ -39,7 +39,7 @@ class ShulkerBox extends Transparent{
 
 	public function readStateFromWorld() : void{
 		parent::readStateFromWorld();
-		$tile = $this->pos->getWorldNonNull()->getTile($this->pos);
+		$tile = $this->pos->getWorld()->getTile($this->pos);
 		if($tile instanceof TileShulkerBox){
 			$this->facing = $tile->getFacing();
 		}
@@ -48,7 +48,7 @@ class ShulkerBox extends Transparent{
 	public function writeStateToWorld() : void{
 		parent::writeStateToWorld();
 		//extra block properties storage hack
-		$tile = $this->pos->getWorldNonNull()->getTile($this->pos);
+		$tile = $this->pos->getWorld()->getTile($this->pos);
 		assert($tile instanceof TileShulkerBox);
 		$tile->setFacing($this->facing);
 	}
@@ -61,7 +61,7 @@ class ShulkerBox extends Transparent{
 
 	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
 		if($player instanceof Player){
-			$shulkerBox = $this->pos->getWorldNonNull()->getTile($this->pos);
+			$shulkerBox = $this->pos->getWorld()->getTile($this->pos);
 			if($shulkerBox instanceof TileShulkerBox){
 				$player->setCurrentWindow($shulkerBox->getInventory());
 			}
@@ -73,7 +73,7 @@ class ShulkerBox extends Transparent{
 	public function asItem() : Item{
 		$item = parent::asItem();
 
-		$tile = $this->pos->getWorldNonNull()->getTile($this->pos);
+		$tile = $this->pos->getWorld()->getTile($this->pos);
 		if($tile instanceof TileShulkerBox){
 			$tile->copyDataToItem($item);
 		}
