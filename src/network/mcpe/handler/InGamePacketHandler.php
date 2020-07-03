@@ -33,7 +33,7 @@ use pocketmine\event\player\PlayerEditBookEvent;
 use pocketmine\inventory\transaction\action\InventoryAction;
 use pocketmine\inventory\transaction\CraftingTransaction;
 use pocketmine\inventory\transaction\InventoryTransaction;
-use pocketmine\inventory\transaction\TransactionValidationException;
+use pocketmine\inventory\transaction\TransactionException;
 use pocketmine\item\VanillaItems;
 use pocketmine\item\WritableBook;
 use pocketmine\item\WrittenBook;
@@ -237,7 +237,7 @@ class InGamePacketHandler extends PacketHandler{
 			//trying to execute it
 
 			if($this->craftingTransaction === null){
-				$this->craftingTransaction = new CraftingTransaction($this->player, $actions);
+				$this->craftingTransaction = new CraftingTransaction($this->player, $this->player->getServer()->getCraftingManager(), $actions);
 			}else{
 				foreach($actions as $action){
 					$this->craftingTransaction->addAction($action);
@@ -248,9 +248,13 @@ class InGamePacketHandler extends PacketHandler{
 				try{
 					$this->session->getInvManager()->onTransactionStart($this->craftingTransaction);
 					$this->craftingTransaction->execute();
-				}catch(TransactionValidationException $e){
+				}catch(TransactionException $e){
 					$this->session->getLogger()->debug("Failed to execute crafting transaction: " . $e->getMessage());
 
+					//TODO: only sync slots that the client tried to change
+					foreach($this->craftingTransaction->getInventories() as $inventory){
+						$this->session->getInvManager()->syncContents($inventory);
+					}
 					/*
 					 * TODO: HACK!
 					 * we can't resend the contents of the crafting window, so we force the client to close it instead.
@@ -281,10 +285,14 @@ class InGamePacketHandler extends PacketHandler{
 			$this->session->getInvManager()->onTransactionStart($transaction);
 			try{
 				$transaction->execute();
-			}catch(TransactionValidationException $e){
+			}catch(TransactionException $e){
 				$logger = $this->session->getLogger();
 				$logger->debug("Failed to execute inventory transaction: " . $e->getMessage());
 				$logger->debug("Actions: " . json_encode($data->getActions()));
+
+				foreach($transaction->getInventories() as $inventory){
+					$this->session->getInvManager()->syncContents($inventory);
+				}
 
 				return false;
 			}
