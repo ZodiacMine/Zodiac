@@ -212,6 +212,8 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	protected $spawnChunkLoadCount = 0;
 	/** @var int */
 	protected $chunksPerTick;
+	/** @var ChunkSelector */
+	protected $chunkSelector;
 
 	/** @var bool[] map: raw UUID (string) => bool */
 	protected $hiddenPlayers = [];
@@ -262,7 +264,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	/** @var SurvivalBlockBreakHandler|null */
 	protected $blockBreakHandler = null;
 
-	public function __construct(Server $server, NetworkSession $session, PlayerInfo $playerInfo, bool $authenticated){
+	public function __construct(Server $server, NetworkSession $session, PlayerInfo $playerInfo, bool $authenticated, ?CompoundTag $namedtag){
 		$username = TextFormat::clean($playerInfo->getUsername());
 		$this->logger = new \PrefixedLogger($server->getLogger(), "Player: $username");
 
@@ -281,8 +283,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		$this->perm = new PermissibleBase($this);
 		$this->chunksPerTick = (int) $this->server->getConfigGroup()->getProperty("chunk-sending.per-tick", 4);
 		$this->spawnThreshold = (int) (($this->server->getConfigGroup()->getProperty("chunk-sending.spawn-radius", 4) ** 2) * M_PI);
-
-		$namedtag = $this->server->getOfflinePlayerData($this->username); //TODO: make this async
+		$this->chunkSelector = new ChunkSelector();
 
 		if($namedtag !== null and ($world = $this->server->getWorldManager()->getWorldByName($namedtag->getString("Level", ""))) !== null){
 			$spawn = EntityDataHelper::parseLocation($namedtag, $world);
@@ -788,10 +789,10 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 
 			$this->networkSession->startUsingChunk($X, $Z, function(int $chunkX, int $chunkZ) use ($index) : void{
 				$this->usedChunks[$index] = UsedChunkStatus::SENT();
-				if($this->spawned){
+				if($this->spawnChunkLoadCount === -1){
 					$this->spawnEntitiesOnChunk($chunkX, $chunkZ);
 				}elseif($this->spawnChunkLoadCount++ === $this->spawnThreshold){
-					$this->spawned = true;
+					$this->spawnChunkLoadCount = -1;
 
 					foreach($this->usedChunks as $chunkHash => $status){
 						if($status->equals(UsedChunkStatus::SENT())){
@@ -809,6 +810,10 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 	}
 
 	public function doFirstSpawn() : void{
+		if($this->spawned){
+			return;
+		}
+		$this->spawned = true;
 		if($this->hasPermission(Server::BROADCAST_CHANNEL_USERS)){
 			PermissionManager::getInstance()->subscribeToPermission(Server::BROADCAST_CHANNEL_USERS, $this);
 		}
@@ -835,43 +840,6 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		}
 	}
 
-	/**
-	 * @return \Generator<int, int, void, void>
-	 */
-	protected function selectChunks(int $radius, int $centerX, int $centerZ) : \Generator{
-		$radiusSquared = $radius ** 2;
-
-		for($x = 0; $x < $radius; ++$x){
-			for($z = 0; $z <= $x; ++$z){
-				if(($x ** 2 + $z ** 2) > $radiusSquared){
-					break; //skip to next band
-				}
-
-				//If the chunk is in the radius, others at the same offsets in different quadrants are also guaranteed to be.
-
-				/* Top right quadrant */
-				yield World::chunkHash($centerX + $x, $centerZ + $z);
-				/* Top left quadrant */
-				yield World::chunkHash($centerX - $x - 1, $centerZ + $z);
-				/* Bottom right quadrant */
-				yield World::chunkHash($centerX + $x, $centerZ - $z - 1);
-				/* Bottom left quadrant */
-				yield World::chunkHash($centerX - $x - 1, $centerZ - $z - 1);
-
-				if($x !== $z){
-					/* Top right quadrant mirror */
-					yield World::chunkHash($centerX + $z, $centerZ + $x);
-					/* Top left quadrant mirror */
-					yield World::chunkHash($centerX - $z - 1, $centerZ + $x);
-					/* Bottom right quadrant mirror */
-					yield World::chunkHash($centerX + $z, $centerZ - $x - 1);
-					/* Bottom left quadrant mirror */
-					yield World::chunkHash($centerX - $z - 1, $centerZ - $x - 1);
-				}
-			}
-		}
-	}
-
 	protected function orderChunks() : void{
 		if(!$this->isConnected() or $this->viewDistance === -1){
 			return;
@@ -882,7 +850,7 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 		$newOrder = [];
 		$unloadChunks = $this->usedChunks;
 
-		foreach($this->selectChunks(
+		foreach($this->chunkSelector->selectChunks(
 			$this->server->getAllowedViewDistance($this->viewDistance),
 			$this->location->getFloorX() >> 4,
 			$this->location->getFloorZ() >> 4
@@ -2264,6 +2232,9 @@ class Player extends Human implements CommandSender, ChunkLoader, ChunkListener,
 
 			$this->resetFallDistance();
 			$this->nextChunkOrderRun = 0;
+			if($this->spawnChunkLoadCount !== -1){
+				$this->spawnChunkLoadCount = 0;
+			}
 			$this->stopSleep();
 			$this->blockBreakHandler = null;
 

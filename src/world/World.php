@@ -52,6 +52,7 @@ use pocketmine\item\ItemUseResult;
 use pocketmine\item\LegacyStringToItemParser;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
@@ -829,7 +830,7 @@ class World implements ChunkManager{
 			}
 
 			$fullBlock = $this->getBlockAt($b->x, $b->y, $b->z);
-			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, $fullBlock->getRuntimeId());
+			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, RuntimeBlockMapping::getInstance()->toRuntimeId($fullBlock->getId(), $fullBlock->getMeta()));
 
 			$tile = $this->getTileAt($b->x, $b->y, $b->z);
 			if($tile instanceof Spawnable){
@@ -2232,6 +2233,7 @@ class World implements ChunkManager{
 		$v = $spawn->floor();
 		$chunk = $this->getChunkAtPosition($v, false);
 		$x = (int) $v->x;
+		$y = $v->y;
 		$z = (int) $v->z;
 		if($chunk !== null and $chunk->isGenerated()){
 			$y = (int) min($max - 2, $v->y);
@@ -2256,11 +2258,9 @@ class World implements ChunkManager{
 					++$y;
 				}
 			}
-
-			$v->y = $y;
 		}
 
-		return new Position($spawn->x, $v->y, $spawn->z, $this);
+		return new Position($spawn->x, $y, $spawn->z, $this);
 	}
 
 	/**
