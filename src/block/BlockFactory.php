@@ -466,7 +466,7 @@ class BlockFactory{
 			$this->register(new HardenedClay(new BID(Ids::STAINED_CLAY, $colorIdMap->toId($color)), $color->getDisplayName() . " Stained Clay"));
 			$this->register(new HardenedGlass(new BID(Ids::HARD_STAINED_GLASS, $colorIdMap->toId($color)), "Hardened " . $color->getDisplayName() . " Stained Glass"));
 			$this->register(new HardenedGlassPane(new BID(Ids::HARD_STAINED_GLASS_PANE, $colorIdMap->toId($color)), "Hardened " . $color->getDisplayName() . " Stained Glass Pane"));
-			$this->register(new ShulkerBox(new BID(Ids::SHULKER_BOX, $colorIdMap->toId($color)), null, TileShulkerBox::class), $color->getDisplayName() . " Shulker Box"));
+			$this->register(new ShulkerBox(new BID(Ids::SHULKER_BOX, $colorIdMap->toId($color), null, TileShulkerBox::class), $color->getDisplayName() . " Shulker Box"));
 			$this->register(new Wool(new BID(Ids::WOOL, $colorIdMap->toId($color)), $color->getDisplayName() . " Wool"));
 		}
 

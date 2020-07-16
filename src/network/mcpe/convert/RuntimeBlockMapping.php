@@ -48,15 +48,17 @@ final class RuntimeBlockMapping{
 	private $legacyToRuntimeMap = [];
 	/** @var int[] */
 	private $runtimeToLegacyMap = [];
-	/** @var CompoundTag[] */
-	private $bedrockKnownStates;
 	/**
-	 * @var CacheableNbt|null
-	 * @phpstan-var CacheableNbt<\pocketmine\nbt\tag\ListTag>|null
+	 * @var CacheableNbt
+	 * @phpstan-var CacheableNbt<\pocketmine\nbt\tag\ListTag>
 	 */
-	private $startGamePaletteCache = null;
+	private $startGamePaletteCache;
 
 	private function __construct(){
+		$this->setupLegacyMappings();
+	}
+
+	private function setupLegacyMappings() : void{
 		$tag = (new NetworkNbtSerializer())->read(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/required_block_states.nbt"))->getTag();
 		if(!($tag instanceof ListTag) or $tag->getTagType() !== NBT::TAG_Compound){ //this is a little redundant currently, but good for auto complete and makes phpstan happy
 			throw new \RuntimeException("Invalid blockstates table, expected TAG_List<TAG_Compound> root");
@@ -64,12 +66,8 @@ final class RuntimeBlockMapping{
 
 		/** @var CompoundTag[] $list */
 		$list = $tag->getValue();
-		$this->bedrockKnownStates = self::randomizeTable($list);
+		$bedrockKnownStates = self::randomizeTable($list);
 
-		$this->setupLegacyMappings();
-	}
-
-	private function setupLegacyMappings() : void{
 		$legacyIdMap = LegacyBlockIdToStringIdMap::getInstance();
 		/** @var R12ToCurrentBlockMapEntry[] $legacyStateMap */
 		$legacyStateMap = [];
@@ -89,7 +87,7 @@ final class RuntimeBlockMapping{
 		 * @var int[][] $idToStatesMap string id -> int[] list of candidate state indices
 		 */
 		$idToStatesMap = [];
-		foreach($this->bedrockKnownStates as $k => $state){
+		foreach($bedrockKnownStates as $k => $state){
 			$idToStatesMap[$state->getCompoundTag("block")->getString("name")][] = $k;
 		}
 		foreach($legacyStateMap as $pair){
@@ -108,7 +106,7 @@ final class RuntimeBlockMapping{
 				throw new \RuntimeException("Mapped new state does not appear in network table");
 			}
 			foreach($idToStatesMap[$mappedName] as $k){
-				$networkState = $this->bedrockKnownStates[$k];
+				$networkState = $bedrockKnownStates[$k];
 				if($mappedState->equals($networkState->getCompoundTag("block"))){
 					$this->registerMapping($k, $id, $data);
 					continue 2;
@@ -116,6 +114,8 @@ final class RuntimeBlockMapping{
 			}
 			throw new \RuntimeException("Mapped new state does not appear in network table");
 		}
+
+		$this->startGamePaletteCache = new CacheableNbt(new ListTag($bedrockKnownStates));
 	}
 
 	/**
@@ -155,20 +155,12 @@ final class RuntimeBlockMapping{
 	private function registerMapping(int $staticRuntimeId, int $legacyId, int $legacyMeta) : void{
 		$this->legacyToRuntimeMap[($legacyId << 4) | $legacyMeta] = $staticRuntimeId;
 		$this->runtimeToLegacyMap[$staticRuntimeId] = ($legacyId << 4) | $legacyMeta;
-		$this->startGamePaletteCache = null;
-	}
-
-	/**
-	 * @return CompoundTag[]
-	 */
-	public function getBedrockKnownStates() : array{
-		return $this->bedrockKnownStates;
 	}
 
 	/**
 	 * @phpstan-return CacheableNbt<\pocketmine\nbt\tag\ListTag>
 	 */
 	public function getStartGamePaletteCache() : CacheableNbt{
-		return $this->startGamePaletteCache ?? ($this->startGamePaletteCache = new CacheableNbt(new ListTag($this->bedrockKnownStates)));
+		return $this->startGamePaletteCache;
 	}
 }
