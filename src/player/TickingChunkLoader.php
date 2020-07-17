@@ -21,31 +21,29 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\event\player;
+namespace pocketmine\player;
 
-use pocketmine\player\Player;
-use pocketmine\world\Position;
+use pocketmine\math\Vector3;
+use pocketmine\world\ChunkLoader;
 
-/**
- * Called when a player is respawned
- */
-class PlayerRespawnEvent extends PlayerEvent{
-	/** @var Position */
-	protected $position;
+final class TickingChunkLoader implements ChunkLoader{
 
-	public function __construct(Player $player, Position $position){
-		$this->player = $player;
-		$this->position = $position;
+	/** @var Vector3 */
+	private $currentLocation;
+
+	public function __construct(Vector3 $currentLocation){
+		$this->currentLocation = $currentLocation;
 	}
 
-	public function getRespawnPosition() : Position{
-		return $this->position;
+	public function setCurrentLocation(Vector3 $currentLocation) : void{
+		$this->currentLocation = $currentLocation;
 	}
 
-	public function setRespawnPosition(Position $position) : void{
-		if(!$position->isValid()){
-			throw new \InvalidArgumentException("Spawn position must reference a valid and loaded World");
-		}
-		$this->position = $position;
+	public function getX(){
+		return $this->currentLocation->getFloorX();
+	}
+
+	public function getZ(){
+		return $this->currentLocation->getFloorZ();
 	}
 }

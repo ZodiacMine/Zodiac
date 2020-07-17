@@ -404,33 +404,19 @@ class MemoryManager{
 					"properties" => []
 				];
 
-				if(($parent = $reflection->getParentClass()) !== false){
-					$info["parent"] = $parent->getName();
-				}
-
-				if(count($reflection->getInterfaceNames()) > 0){
-					$info["implements"] = implode(", ", $reflection->getInterfaceNames());
-				}
-
-				for($original = $reflection; $reflection !== false; $reflection = $reflection->getParentClass()){
-					foreach($reflection->getProperties() as $property){
-						if($property->isStatic()){
-							continue;
-						}
-
-						$name = $property->getName();
-						if($reflection !== $original and !$property->isPublic()){
-							$name = $reflection->getName() . ":" . $name;
-						}
-						if(!$property->isPublic()){
-							$property->setAccessible(true);
-						}
-
-						$info["properties"][$name] = self::continueDump($property->getValue($object), $objects, $refCounts, 0, $maxNesting, $maxStringSize);
+				foreach($reflection->getProperties() as $property){
+					if($property->isStatic()){
+						continue;
 					}
+
+					if(!$property->isPublic()){
+						$property->setAccessible(true);
+					}
+
+					$info["properties"][$property->getName()] = self::continueDump($property->getValue($object), $objects, $refCounts, 0, $maxNesting, $maxStringSize);
 				}
 
-				fwrite($obData, "$hash@$className: " . json_encode($info, JSON_UNESCAPED_SLASHES) . "\n");
+				fwrite($obData, json_encode($info, JSON_UNESCAPED_SLASHES) . "\n");
 			}
 
 		}while($continue);
@@ -473,7 +459,7 @@ class MemoryManager{
 
 			++$refCounts[$hash];
 
-			$data = "(object) $hash@" . get_class($from);
+			$data = "(object) $hash";
 		}elseif(is_array($from)){
 			if($recursion >= 5){
 				return "(error) ARRAY RECURSION LIMIT REACHED";
