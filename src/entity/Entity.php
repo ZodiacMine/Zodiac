@@ -29,6 +29,7 @@ namespace pocketmine\entity;
 use pocketmine\block\Block;
 use pocketmine\block\Water;
 use pocketmine\entity\animation\Animation;
+use pocketmine\entity\animation\SendableAnimation;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDespawnEvent;
 use pocketmine\event\entity\EntityMotionEvent;
@@ -1672,7 +1673,11 @@ abstract class Entity{
 	 * @param Player[]|null $targets
 	 */
 	public function broadcastAnimation(Animation $animation, ?array $targets = null) : void{
-		$this->server->broadcastPackets($targets ?? $this->getViewers(), $animation->encode());
+		if($animation instanceof SendableAnimation){
+			$animation->send($this->server, $targets ?? $this->getViewers());
+		}else{
+			$this->server->broadcastPackets($targets ?? $this->getViewers(), $animation->encode());
+		}
 	}
 
 	public function __destruct(){

@@ -75,7 +75,9 @@ use pocketmine\world\light\LightPopulationTask;
 use pocketmine\world\light\SkyLightUpdate;
 use pocketmine\world\particle\DestroyBlockParticle;
 use pocketmine\world\particle\Particle;
+use pocketmine\world\particle\SendableParticle;
 use pocketmine\world\sound\BlockPlaceSound;
+use pocketmine\world\sound\SendableSound;
 use pocketmine\world\sound\Sound;
 use function abs;
 use function array_fill_keys;
@@ -448,16 +450,18 @@ class World implements ChunkManager{
 	 * @param Player[]|null $players
 	 */
 	public function addSound(Vector3 $pos, Sound $sound, ?array $players = null) : void{
-		$pk = $sound->encode($pos);
-		if(!is_array($pk)){
-			$pk = [$pk];
+		if($players === null){
+			$players = $this->getViewersForPosition($pos);
 		}
-		if(count($pk) > 0){
-			if($players === null){
-				foreach($pk as $e){
-					$this->broadcastPacketToViewers($pos, $e);
-				}
-			}else{
+
+		if($sound instanceof SendableSound){
+			$sound->send($this->server, $pos, $players);
+		}else{
+			$pk = $sound->encode($pos);
+			if(!is_array($pk)){
+				$pk = [$pk];
+			}
+			if(count($pk) > 0){
 				$this->server->broadcastPackets($players, $pk);
 			}
 		}
@@ -467,16 +471,18 @@ class World implements ChunkManager{
 	 * @param Player[]|null $players
 	 */
 	public function addParticle(Vector3 $pos, Particle $particle, ?array $players = null) : void{
-		$pk = $particle->encode($pos);
-		if(!is_array($pk)){
-			$pk = [$pk];
+		if($players === null){
+			$players = $this->getViewersForPosition($pos);
 		}
-		if(count($pk) > 0){
-			if($players === null){
-				foreach($pk as $e){
-					$this->broadcastPacketToViewers($pos, $e);
-				}
-			}else{
+
+		if($particle instanceof SendableParticle){
+			$particle->send($this->server, $pos, $players);
+		}else{
+			$pk = $particle->encode($pos);
+			if(!is_array($pk)){
+				$pk = [$pk];
+			}
+			if(count($pk) > 0){
 				$this->server->broadcastPackets($players, $pk);
 			}
 		}
