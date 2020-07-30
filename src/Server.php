@@ -274,7 +274,7 @@ class Server{
 	private $playerList = [];
 
 	public function getName() : string{
-		return \pocketmine\NAME;
+		return VersionInfo::NAME;
 	}
 
 	public function isRunning() : bool{
@@ -282,7 +282,7 @@ class Server{
 	}
 
 	public function getPocketMineVersion() : string{
-		return \pocketmine\VERSION;
+		return VersionInfo::getVersionObj()->getFullVersion(true);
 	}
 
 	public function getVersion() : string{
@@ -290,7 +290,7 @@ class Server{
 	}
 
 	public function getApiVersion() : string{
-		return \pocketmine\BASE_VERSION;
+		return VersionInfo::BASE_VERSION;
 	}
 
 	public function getFilePath() : string{
@@ -379,7 +379,7 @@ class Server{
 	}
 
 	public function getMotd() : string{
-		return $this->configGroup->getConfigString("motd", \pocketmine\NAME . " Server");
+		return $this->configGroup->getConfigString("motd", VersionInfo::NAME . " Server");
 	}
 
 	/**
@@ -765,7 +765,7 @@ class Server{
 			$this->logger->info("Loading server configuration");
 			if(!file_exists($this->dataPath . "pocketmine.yml")){
 				$content = file_get_contents(\pocketmine\RESOURCE_PATH . "pocketmine.yml");
-				if(\pocketmine\IS_DEVELOPMENT_BUILD){
+				if(VersionInfo::IS_DEVELOPMENT_BUILD){
 					$content = str_replace("preferred-channel: stable", "preferred-channel: beta", $content);
 				}
 				@file_put_contents($this->dataPath . "pocketmine.yml", $content);
@@ -774,7 +774,7 @@ class Server{
 			$this->configGroup = new ServerConfigGroup(
 				new Config($this->dataPath . "pocketmine.yml", Config::YAML, []),
 				new Config($this->dataPath . "server.properties", Config::PROPERTIES, [
-					"motd" => \pocketmine\NAME . " Server",
+					"motd" => VersionInfo::NAME . " Server",
 					"server-port" => 19132,
 					"white-list" => false,
 					"max-players" => 20,
@@ -816,9 +816,9 @@ class Server{
 
 			$this->logger->info($this->getLanguage()->translateString("language.selected", [$this->getLanguage()->getName(), $this->getLanguage()->getLang()]));
 
-			if(\pocketmine\IS_DEVELOPMENT_BUILD){
+			if(VersionInfo::IS_DEVELOPMENT_BUILD){
 				if(!((bool) $this->configGroup->getProperty("settings.enable-dev-builds", false))){
-					$this->logger->emergency($this->language->translateString("pocketmine.server.devBuild.error1", [\pocketmine\NAME]));
+					$this->logger->emergency($this->language->translateString("pocketmine.server.devBuild.error1", [VersionInfo::NAME]));
 					$this->logger->emergency($this->language->translateString("pocketmine.server.devBuild.error2"));
 					$this->logger->emergency($this->language->translateString("pocketmine.server.devBuild.error3"));
 					$this->logger->emergency($this->language->translateString("pocketmine.server.devBuild.error4", ["settings.enable-dev-builds"]));
@@ -829,7 +829,7 @@ class Server{
 				}
 
 				$this->logger->warning(str_repeat("-", 40));
-				$this->logger->warning($this->language->translateString("pocketmine.server.devBuild.warning1", [\pocketmine\NAME]));
+				$this->logger->warning($this->language->translateString("pocketmine.server.devBuild.warning1", [VersionInfo::NAME]));
 				$this->logger->warning($this->language->translateString("pocketmine.server.devBuild.warning2"));
 				$this->logger->warning($this->language->translateString("pocketmine.server.devBuild.warning3"));
 				$this->logger->warning(str_repeat("-", 40));
@@ -910,7 +910,7 @@ class Server{
 
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.info", [
 				$this->getName(),
-				(\pocketmine\IS_DEVELOPMENT_BUILD ? TextFormat::YELLOW : "") . $this->getPocketMineVersion() . TextFormat::RESET
+				(VersionInfo::IS_DEVELOPMENT_BUILD ? TextFormat::YELLOW : "") . $this->getPocketMineVersion() . TextFormat::RESET
 			]));
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.license", [$this->getName()]));
 
@@ -1440,7 +1440,7 @@ class Server{
 					$report = false;
 				}
 
-				if(strrpos(\pocketmine\GIT_COMMIT, "-dirty") !== false or \pocketmine\GIT_COMMIT === str_repeat("00", 20)){
+				if(strrpos(VersionInfo::getGitHash(), "-dirty") !== false or VersionInfo::getGitHash() === str_repeat("00", 20)){
 					$this->logger->debug("Not sending crashdump due to locally modified");
 					$report = false; //Don't send crashdumps for locally modified builds
 				}
@@ -1566,14 +1566,15 @@ class Server{
 
 		$online = count($this->playerList);
 		$connecting = $this->network->getConnectionCount() - $online;
+		$bandwidthStats = $this->network->getBandwidthTracker();
 
 		echo "\x1b]0;" . $this->getName() . " " .
 			$this->getPocketMineVersion() .
 			" | Online $online/" . $this->getMaxPlayers() .
 			($connecting > 0 ? " (+$connecting connecting)" : "") .
 			" | Memory " . $usage .
-			" | U " . round($this->network->getUpload() / 1024, 2) .
-			" D " . round($this->network->getDownload() / 1024, 2) .
+			" | U " . round($bandwidthStats->getSend()->getAverageBytes() / 1024, 2) .
+			" D " . round($bandwidthStats->getReceive()->getAverageBytes() / 1024, 2) .
 			" kB/s | TPS " . $this->getTicksPerSecondAverage() .
 			" | Load " . $this->getTickUsageAverage() . "%\x07";
 
@@ -1619,7 +1620,7 @@ class Server{
 			$this->queryInfo = $queryRegenerateEvent->getQueryInfo();
 
 			$this->network->updateName();
-			$this->network->resetStatistics();
+			$this->network->getBandwidthTracker()->rotateAverageHistory();
 		}
 
 		if($this->sendUsageTicker > 0 and --$this->sendUsageTicker === 0){

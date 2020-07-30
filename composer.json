@@ -59,8 +59,7 @@
          "pocketmine\\": "src/"
       },
       "files": [
-         "src/CoreConstants.php",
-         "src/VersionInfo.php"
+         "src/CoreConstants.php"
       ]
    },
    "autoload-dev": {

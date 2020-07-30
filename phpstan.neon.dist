@@ -36,7 +36,7 @@ parameters:
 		- src/world/generator/noise/Simplex.php
 		- src/utils/Random.php
 	dynamicConstantNames:
-		- pocketmine\IS_DEVELOPMENT_BUILD
+		- pocketmine\VersionInfo::IS_DEVELOPMENT_BUILD
 		- pocketmine\DEBUG
 	stubFiles:
 		- tests/phpstan/stubs/pthreads.stub
