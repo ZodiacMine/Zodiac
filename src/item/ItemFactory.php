@@ -89,6 +89,7 @@ class ItemFactory{
 		$this->register(new Cookie(new ItemIdentifier(ItemIds::COOKIE, 0), "Cookie"));
 		$this->register(new DriedKelp(new ItemIdentifier(ItemIds::DRIED_KELP, 0), "Dried Kelp"));
 		$this->register(new Egg(new ItemIdentifier(ItemIds::EGG, 0), "Egg"));
+		$this->register(new Elytra(new ItemIdentifier(ItemIds::ELYTRA, 0), "Elytra"));
 		$this->register(new EnderPearl(new ItemIdentifier(ItemIds::ENDER_PEARL, 0), "Ender Pearl"));
 		$this->register(new ExperienceBottle(new ItemIdentifier(ItemIds::EXPERIENCE_BOTTLE, 0), "Bottle o' Enchanting"));
 		$this->register(new Fertilizer(new ItemIdentifier(ItemIds::DYE, 15), "Bone Meal"));
@@ -218,6 +219,7 @@ class ItemFactory{
 		$this->register(new Redstone(new ItemIdentifier(ItemIds::REDSTONE, 0), "Redstone"));
 		$this->register(new RottenFlesh(new ItemIdentifier(ItemIds::ROTTEN_FLESH, 0), "Rotten Flesh"));
 		$this->register(new Shears(new ItemIdentifier(ItemIds::SHEARS, 0), "Shears"));
+		$this->register(new Shield(new ItemIdentifier(ItemIds::SHIELD, 0), "Shield"));
 		$this->register(new Sign(BlockLegacyIds::STANDING_SIGN, 0, new ItemIdentifier(ItemIds::SIGN, 0)));
 		$this->register(new Sign(BlockLegacyIds::SPRUCE_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::SPRUCE_SIGN, 0)));
 		$this->register(new Sign(BlockLegacyIds::BIRCH_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::BIRCH_SIGN, 0)));
@@ -271,7 +273,6 @@ class ItemFactory{
 		//TODO: minecraft:chest_minecart
 		//TODO: minecraft:command_block_minecart
 		//TODO: minecraft:crossbow
-		//TODO: minecraft:elytra
 		//TODO: minecraft:emptyMap
 		//TODO: minecraft:enchanted_book
 		//TODO: minecraft:end_crystal
@@ -307,7 +308,6 @@ class ItemFactory{
 		//TODO: minecraft:record_wait
 		//TODO: minecraft:record_ward
 		//TODO: minecraft:saddle
-		//TODO: minecraft:shield
 		//TODO: minecraft:sparkler
 		//TODO: minecraft:spawn_egg
 		//TODO: minecraft:sweet_berries
