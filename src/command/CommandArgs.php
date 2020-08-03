@@ -46,6 +46,9 @@ class CommandArgs implements \Countable{
 	/** @var int */
 	protected $current = 0;
 
+	/**
+	 * @param string[] $args
+	 */
 	public function __construct(array $args){
 		$this->args = $args;
 	}
@@ -97,7 +100,7 @@ class CommandArgs implements \Countable{
 		return (int) $input;
 	}
 
-	public function readDouble() : int{
+	public function readDouble() : float{
 		$input = $this->readString();
 		//TODO: Validate?
 
@@ -163,30 +166,30 @@ class CommandArgs implements \Countable{
 	public function readTargets(CommandSender $sender) : array{
 		$input = $this->readPlayerName();
 
-		$expectedPlayer = static function() use ($sender) : void{
-			if(!$sender instanceof Player){
-				throw new InvalidCommandSyntaxException();
-			}
-		};
-
 		switch($input){
 			case self::TARGET_SELECTOR_ALL_PLAYERS:
-				$targets = $player->getServer()->getOnlinePlayers();
+				$targets = $sender->getServer()->getOnlinePlayers();
 				break;
 			case self::TARGET_SELECTOR_ALL_ENTITIES:
-				$expectedPlayer();
-				$targets = $player->getWorld()->getEntities();
+				if(!$sender instanceof Player){
+					throw new InvalidCommandSyntaxException();
+				}
+				$targets = $sender->getWorld()->getEntities();
 				break;
 			case self::TARGET_SELECTOR_CLOSEST_PLAYER:
-				$expectedPlayer();
-				$targets = [$player->getWorld()->getNearestEntity($player->getPosition(), 100, Player::class)];
+				if(!$sender instanceof Player){
+					throw new InvalidCommandSyntaxException();
+				}
+				$targets = [$sender->getWorld()->getNearestEntity($sender->getPosition(), 100, Player::class)];
 				break;
 			case self::TARGET_SELECTOR_RANDOM_PLAYER:
 				$players = array_values($sender->getServer()->getOnlinePlayers());
 				$targets = (count($players) === 0 ? [] : [$players[array_rand($players)]]);
 				break;
 			case self::TARGET_SELECTOR_YOURSELF:
-				$expectedPlayer();
+				if(!$sender instanceof Player){
+					throw new InvalidCommandSyntaxException();
+				}
 				$targets = [$sender];
 				break;
 			default:
