@@ -123,6 +123,14 @@ class Armor extends Durable{
 	}
 
 	public function onActivate(Player $player, Block $blockReplace, Block $blockClicked, int $face, Vector3 $clickVector) : ItemUseResult{
+		return $this->equipArmor($player);
+	}
+
+	public function onClickAir(Player $player, Vector3 $directionVector) : ItemUseResult{
+		return $this->equipArmor($player);
+	}
+
+	public function equipArmor(Player $player) : ItemUseResult{
 		$existing = $player->getArmorInventory()->getItem($this->getArmorSlot());
 		if(!$existing->isNull()){
 			return ItemUseResult::FAIL();
