@@ -26,6 +26,7 @@ namespace pocketmine\item;
 use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\utils\DyeColor;
+use pocketmine\block\utils\RecordType;
 use pocketmine\block\utils\SkullType;
 use pocketmine\block\utils\TreeType;
 use pocketmine\block\VanillaBlocks;
@@ -63,6 +64,7 @@ class ItemFactory{
 		$this->register(new Arrow(new ItemIdentifier(ItemIds::ARROW, 0), "Arrow"));
 
 		$this->register(new BakedPotato(new ItemIdentifier(ItemIds::BAKED_POTATO, 0), "Baked Potato"));
+		$this->register(new Bamboo(new ItemIdentifier(ItemIds::BAMBOO, 0), "Bamboo"), true);
 		$this->register(new Beetroot(new ItemIdentifier(ItemIds::BEETROOT, 0), "Beetroot"));
 		$this->register(new BeetrootSeeds(new ItemIdentifier(ItemIds::BEETROOT_SEEDS, 0), "Beetroot Seeds"));
 		$this->register(new BeetrootSoup(new ItemIdentifier(ItemIds::BEETROOT_SOUP, 0), "Beetroot Soup"));
@@ -216,6 +218,18 @@ class ItemFactory{
 		$this->register(new RawPorkchop(new ItemIdentifier(ItemIds::RAW_PORKCHOP, 0), "Raw Porkchop"));
 		$this->register(new RawRabbit(new ItemIdentifier(ItemIds::RAW_RABBIT, 0), "Raw Rabbit"));
 		$this->register(new RawSalmon(new ItemIdentifier(ItemIds::RAW_SALMON, 0), "Raw Salmon"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_13, 0), RecordType::DISK_13(), "Record 13"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_CAT, 0), RecordType::DISK_CAT(), "Record Cat"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_BLOCKS, 0), RecordType::DISK_BLOCKS(), "Record Blocks"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_CHIRP, 0), RecordType::DISK_CHIRP(), "Record Chirp"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_FAR, 0), RecordType::DISK_FAR(), "Record Far"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_MALL, 0), RecordType::DISK_MALL(), "Record Mall"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_MELLOHI, 0), RecordType::DISK_MELLOHI(), "Record Mellohi"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_STAL, 0), RecordType::DISK_STAL(), "Record Stal"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_STRAD, 0), RecordType::DISK_STRAD(), "Record Strad"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_WARD, 0), RecordType::DISK_WARD(), "Record Ward"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_11, 0), RecordType::DISK_11(), "Record 11"));
+		$this->register(new Record(new ItemIdentifier(ItemIds::RECORD_WAIT, 0), RecordType::DISK_WAIT(), "Record Wait"));
 		$this->register(new Redstone(new ItemIdentifier(ItemIds::REDSTONE, 0), "Redstone"));
 		$this->register(new RottenFlesh(new ItemIdentifier(ItemIds::ROTTEN_FLESH, 0), "Rotten Flesh"));
 		$this->register(new Shears(new ItemIdentifier(ItemIds::SHEARS, 0), "Shears"));
@@ -295,18 +309,7 @@ class ItemFactory{
 		//TODO: minecraft:name_tag
 		//TODO: minecraft:phantom_membrane
 		//TODO: minecraft:rapid_fertilizer
-		//TODO: minecraft:record_11
-		//TODO: minecraft:record_13
-		//TODO: minecraft:record_blocks
-		//TODO: minecraft:record_cat
-		//TODO: minecraft:record_chirp
-		//TODO: minecraft:record_far
-		//TODO: minecraft:record_mall
-		//TODO: minecraft:record_mellohi
-		//TODO: minecraft:record_stal
-		//TODO: minecraft:record_strad
-		//TODO: minecraft:record_wait
-		//TODO: minecraft:record_ward
+		//TODO: minecraft:record_pigstep
 		//TODO: minecraft:saddle
 		//TODO: minecraft:sparkler
 		//TODO: minecraft:spawn_egg

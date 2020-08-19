@@ -33,8 +33,8 @@ use pocketmine\entity\Entity;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
+use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
-use pocketmine\math\Facing;
 use pocketmine\math\RayTraceResult;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -485,7 +485,7 @@ class Block{
 	 */
 	public function getHorizontalSides() : \Generator{
 		$world = $this->pos->getWorld();
-		foreach($this->pos->sidesAroundAxis(Facing::AXIS_Y) as $vector3){
+		foreach($this->pos->sidesAroundAxis(Axis::Y) as $vector3){
 			yield $world->getBlock($vector3);
 		}
 	}
@@ -547,12 +547,22 @@ class Block{
 	final public function getCollisionBoxes() : array{
 		if($this->collisionBoxes === null){
 			$this->collisionBoxes = $this->recalculateCollisionBoxes();
+			$extraOffset = $this->getPosOffset();
+			$offset = $extraOffset !== null ? $this->pos->addVector($extraOffset) : $this->pos;
 			foreach($this->collisionBoxes as $bb){
-				$bb->offset($this->pos->x, $this->pos->y, $this->pos->z);
+				$bb->offset($offset->x, $offset->y, $offset->z);
 			}
 		}
 
 		return $this->collisionBoxes;
+	}
+
+	/**
+	 * Returns an additional fractional vector to shift the block's effective position by based on the current position.
+	 * Used to randomize position of things like bamboo canes and tall grass.
+	 */
+	public function getPosOffset() : ?Vector3{
+		return null;
 	}
 
 	/**

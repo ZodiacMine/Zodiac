@@ -427,10 +427,6 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		return parent::getUniqueId();
 	}
 
-	public function getPlayer() : ?Player{
-		return $this;
-	}
-
 	/**
 	 * TODO: not sure this should be nullable
 	 */
@@ -951,6 +947,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		if($b instanceof Bed){
 			$b->setOccupied();
+			$this->getWorld()->setBlock($pos, $b);
 		}
 
 		$this->sleeping = $pos;
@@ -967,6 +964,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 			$b = $this->getWorld()->getBlock($this->sleeping);
 			if($b instanceof Bed){
 				$b->setOccupied(false);
+				$this->getWorld()->setBlock($this->sleeping, $b);
 			}
 			(new PlayerBedLeaveEvent($this, $b))->call();
 
@@ -1869,6 +1867,15 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 			$this->networkSession->onTranslatedChatMessage($this->getLanguage()->translateString($message, $parameters, "pocketmine."), $parameters);
 		}else{
 			$this->sendMessage($this->getLanguage()->translateString($message, $parameters));
+		}
+	}
+
+	/**
+	 * @param string[] $args
+	 */
+	public function sendJukeboxPopup(string $key, array $args) : void{
+		if($this->networkSession !== null){
+			$this->networkSession->onJukeboxPopup($key, $args);
 		}
 	}
 

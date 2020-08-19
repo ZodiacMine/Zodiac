@@ -21,28 +21,14 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\player;
+namespace pocketmine\world\sound;
 
-use pocketmine\permission\ServerOperator;
+use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 
-interface IPlayer extends ServerOperator{
+class RecordStopSound implements Sound{
 
-	public function isOnline() : bool;
-
-	public function getName() : string;
-
-	public function isBanned() : bool;
-
-	public function setBanned(bool $banned) : void;
-
-	public function isWhitelisted() : bool;
-
-	public function setWhitelisted(bool $value) : void;
-
-	public function getFirstPlayed() : ?int;
-
-	public function getLastPlayed() : ?int;
-
-	public function hasPlayedBefore() : bool;
-
+	public function encode(?Vector3 $pos){
+		return LevelSoundEventPacket::create(LevelSoundEventPacket::SOUND_STOP_RECORD, $pos);
+	}
 }

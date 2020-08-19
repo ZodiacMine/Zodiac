@@ -21,28 +21,24 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\player;
+namespace pocketmine\item;
 
-use pocketmine\permission\ServerOperator;
+use pocketmine\block\utils\RecordType;
 
-interface IPlayer extends ServerOperator{
+class Record extends Item{
+	/** @var RecordType */
+	private $recordType;
 
-	public function isOnline() : bool;
+	public function __construct(ItemIdentifier $identifier, RecordType $recordType, string $name){
+		$this->recordType = $recordType;
+		parent::__construct($identifier, $name);
+	}
 
-	public function getName() : string;
+	public function getRecordType() : RecordType{
+		return $this->recordType;
+	}
 
-	public function isBanned() : bool;
-
-	public function setBanned(bool $banned) : void;
-
-	public function isWhitelisted() : bool;
-
-	public function setWhitelisted(bool $value) : void;
-
-	public function getFirstPlayed() : ?int;
-
-	public function getLastPlayed() : ?int;
-
-	public function hasPlayedBefore() : bool;
-
+	public function getMaxStackSize() : int{
+		return 1;
+	}
 }

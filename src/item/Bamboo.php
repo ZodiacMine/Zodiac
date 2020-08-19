@@ -21,28 +21,18 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\player;
+namespace pocketmine\item;
 
-use pocketmine\permission\ServerOperator;
+use pocketmine\block\Block;
+use pocketmine\block\VanillaBlocks;
 
-interface IPlayer extends ServerOperator{
+final class Bamboo extends Item{
 
-	public function isOnline() : bool;
+	public function getFuelTime() : int{
+		return 50;
+	}
 
-	public function getName() : string;
-
-	public function isBanned() : bool;
-
-	public function setBanned(bool $banned) : void;
-
-	public function isWhitelisted() : bool;
-
-	public function setWhitelisted(bool $value) : void;
-
-	public function getFirstPlayed() : ?int;
-
-	public function getLastPlayed() : ?int;
-
-	public function hasPlayedBefore() : bool;
-
+	public function getBlock() : Block{
+		return VanillaBlocks::BAMBOO_SAPLING();
+	}
 }

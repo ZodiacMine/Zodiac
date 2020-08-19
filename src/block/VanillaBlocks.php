@@ -24,13 +24,12 @@ declare(strict_types=1);
 namespace pocketmine\block;
 
 use pocketmine\utils\CloningRegistryTrait;
-use pocketmine\utils\RegistryTrait;
 use function assert;
 
 /**
  * This doc-block is generated automatically, do not modify it manually.
  * This must be regenerated whenever registry members are added, removed or changed.
- * @see RegistryTrait::_generateMethodAnnotations()
+ * @see \pocketmine\utils\RegistryUtils::_generateMethodAnnotations()
  *
  * @method static WoodenButton ACACIA_BUTTON()
  * @method static WoodenDoor ACACIA_DOOR()
@@ -55,6 +54,8 @@ use function assert;
  * @method static Wall ANDESITE_WALL()
  * @method static Anvil ANVIL()
  * @method static Flower AZURE_BLUET()
+ * @method static Bamboo BAMBOO()
+ * @method static BambooSapling BAMBOO_SAPLING()
  * @method static Banner BANNER()
  * @method static Transparent BARRIER()
  * @method static Bed BED()
@@ -397,6 +398,7 @@ use function assert;
  * @method static Opaque IRON_ORE()
  * @method static Trapdoor IRON_TRAPDOOR()
  * @method static ItemFrame ITEM_FRAME()
+ * @method static Jukebox JUKEBOX()
  * @method static WoodenButton JUNGLE_BUTTON()
  * @method static WoodenDoor JUNGLE_DOOR()
  * @method static WoodenFence JUNGLE_FENCE()
@@ -720,6 +722,8 @@ final class VanillaBlocks{
 		self::register("andesite_wall", $factory->get(139, 4));
 		self::register("anvil", $factory->get(145));
 		self::register("azure_bluet", $factory->get(38, 3));
+		self::register("bamboo", $factory->get(418));
+		self::register("bamboo_sapling", $factory->get(419));
 		self::register("banner", $factory->get(176));
 		self::register("barrier", $factory->get(416));
 		self::register("bed", $factory->get(26));
@@ -1062,6 +1066,7 @@ final class VanillaBlocks{
 		self::register("iron_ore", $factory->get(15));
 		self::register("iron_trapdoor", $factory->get(167));
 		self::register("item_frame", $factory->get(199));
+		self::register("jukebox", $factory->get(84));
 		self::register("jungle_button", $factory->get(398));
 		self::register("jungle_door", $factory->get(195));
 		self::register("jungle_fence", $factory->get(85, 3));
