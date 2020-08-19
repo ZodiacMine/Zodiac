@@ -21,6 +21,9 @@ Blocks:
 - ShulkerBoxes
 - Full-borked logs
 
+Items:
+- Armor can be equiped by air-clicking
+
 ## Communication
 - This software has not community on Discord or other social sites.
 - If you have questions - you can create issues with it.
