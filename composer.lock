@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dffaeafa6adfb0c16d2fb0e74d1674b5",
+    "content-hash": "9810d448bb0f8c4db7d35155d9a83f05",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -291,16 +291,16 @@
         },
         {
             "name": "pocketmine/callback-validator",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
-                "url": "https://github.com/pmmp/CallbackValidator.git",
-                "reference": "4aef6bb25f97d0b830ba0b4f66834b1a9c86fc9a"
+                "url": "git@github.com:pmmp/CallbackValidator.git",
+                "reference": "8321aa3ccfe63639b0d08f0cbf270755cfc99fe2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/CallbackValidator/zipball/4aef6bb25f97d0b830ba0b4f66834b1a9c86fc9a",
-                "reference": "4aef6bb25f97d0b830ba0b4f66834b1a9c86fc9a",
+                "url": "https://api.github.com/repos/pmmp/CallbackValidator/zipball/8321aa3ccfe63639b0d08f0cbf270755cfc99fe2",
+                "reference": "8321aa3ccfe63639b0d08f0cbf270755cfc99fe2",
                 "shasum": ""
             },
             "require": {
@@ -311,6 +311,9 @@
                 "daverandom/callback-validator": "*"
             },
             "require-dev": {
+                "phpstan/extension-installer": "^1.0",
+                "phpstan/phpstan": "0.12.38",
+                "phpstan/phpstan-strict-rules": "^0.12.4",
                 "phpunit/phpunit": "^7.5 || ^8.5 || ^9.0"
             },
             "type": "library",
@@ -330,7 +333,7 @@
                 }
             ],
             "description": "Fork of daverandom/callback-validator - Tools for validating callback signatures",
-            "time": "2020-03-17T12:04:22+00:00"
+            "time": "2020-08-21T19:51:42+00:00"
         },
         {
             "name": "pocketmine/classloader",
@@ -338,12 +341,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/ClassLoader.git",
-                "reference": "70ab2a59217c4ebd33a58388ce87c86d770edfc3"
+                "reference": "5915407bc240b18080f9cca1bafc675a028a5eef"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/ClassLoader/zipball/70ab2a59217c4ebd33a58388ce87c86d770edfc3",
-                "reference": "70ab2a59217c4ebd33a58388ce87c86d770edfc3",
+                "url": "https://api.github.com/repos/pmmp/ClassLoader/zipball/5915407bc240b18080f9cca1bafc675a028a5eef",
+                "reference": "5915407bc240b18080f9cca1bafc675a028a5eef",
                 "shasum": ""
             },
             "require": {
@@ -355,7 +358,9 @@
                 "pocketmine/spl": "<0.4"
             },
             "require-dev": {
-                "phpstan/phpstan": "^0.12.8"
+                "phpstan/extension-installer": "^1.0",
+                "phpstan/phpstan": "0.12.39",
+                "phpstan/phpstan-strict-rules": "^0.12.4"
             },
             "type": "library",
             "autoload": {
@@ -368,7 +373,7 @@
                 "LGPL-3.0"
             ],
             "description": "Ad-hoc autoloading components used by PocketMine-MP",
-            "time": "2020-01-31T14:26:22+00:00"
+            "time": "2020-08-25T10:23:23+00:00"
         },
         {
             "name": "pocketmine/color",
@@ -444,12 +449,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/Log.git",
-                "reference": "23895dce020076e0217b2fbee50b39f523080b4f"
+                "reference": "fc599a4fe0033c524a99583262147760302903c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/Log/zipball/23895dce020076e0217b2fbee50b39f523080b4f",
-                "reference": "23895dce020076e0217b2fbee50b39f523080b4f",
+                "url": "https://api.github.com/repos/pmmp/Log/zipball/fc599a4fe0033c524a99583262147760302903c9",
+                "reference": "fc599a4fe0033c524a99583262147760302903c9",
                 "shasum": ""
             },
             "require": {
@@ -459,7 +464,7 @@
                 "pocketmine/spl": "<0.4"
             },
             "require-dev": {
-                "phpstan/phpstan": "^0.12.8",
+                "phpstan/phpstan": "0.12.39",
                 "phpstan/phpstan-strict-rules": "^0.12.2"
             },
             "type": "library",
@@ -473,7 +478,7 @@
                 "LGPL-3.0"
             ],
             "description": "Logging components used by PocketMine-MP and related projects",
-            "time": "2020-03-31T17:06:15+00:00"
+            "time": "2020-08-25T10:22:14+00:00"
         },
         {
             "name": "pocketmine/log-pthreads",
@@ -481,12 +486,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/LogPthreads.git",
-                "reference": "88ea500715908dfc5c99a0bbde8e823bae0534df"
+                "reference": "343333f45a1041641de36d9f9285fbc5349a2571"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/LogPthreads/zipball/88ea500715908dfc5c99a0bbde8e823bae0534df",
-                "reference": "88ea500715908dfc5c99a0bbde8e823bae0534df",
+                "url": "https://api.github.com/repos/pmmp/LogPthreads/zipball/343333f45a1041641de36d9f9285fbc5349a2571",
+                "reference": "343333f45a1041641de36d9f9285fbc5349a2571",
                 "shasum": ""
             },
             "require": {
@@ -498,7 +503,9 @@
                 "pocketmine/spl": "<0.4"
             },
             "require-dev": {
-                "phpstan/phpstan": "^0.12.18"
+                "phpstan/extension-installer": "^1.0",
+                "phpstan/phpstan": "0.12.38",
+                "phpstan/phpstan-strict-rules": "^0.12.4"
             },
             "type": "library",
             "autoload": {
@@ -511,7 +518,7 @@
                 "LGPL-3.0"
             ],
             "description": "Logging components specialized for pthreads used by PocketMine-MP and related projects",
-            "time": "2020-03-31T18:31:56+00:00"
+            "time": "2020-08-22T12:07:54+00:00"
         },
         {
             "name": "pocketmine/math",
@@ -590,12 +597,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/RakLib.git",
-                "reference": "9e66d5b194d2d483854d791c54409057855810f3"
+                "reference": "d20db2fc790d1a45492455ae0be4d9f59d56d45e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/RakLib/zipball/9e66d5b194d2d483854d791c54409057855810f3",
-                "reference": "9e66d5b194d2d483854d791c54409057855810f3",
+                "url": "https://api.github.com/repos/pmmp/RakLib/zipball/d20db2fc790d1a45492455ae0be4d9f59d56d45e",
+                "reference": "d20db2fc790d1a45492455ae0be4d9f59d56d45e",
                 "shasum": ""
             },
             "require": {
@@ -621,7 +628,7 @@
                 "GPL-3.0"
             ],
             "description": "A RakNet server implementation written in PHP",
-            "time": "2020-08-02T14:51:48+00:00"
+            "time": "2020-08-21T21:03:31+00:00"
         },
         {
             "name": "pocketmine/snooze",
