@@ -76,6 +76,7 @@ use const M_PI_2;
 abstract class Entity{
 
 	public const MOTION_THRESHOLD = 0.00001;
+	protected const STEP_CLIP_MULTIPLIER = 0.4;
 
 	/** @var int */
 	private static $entityCount = 1;
@@ -138,6 +139,8 @@ abstract class Entity{
 	/** @var int */
 	private $maxHealth = 20;
 
+	/** @var float */
+	protected $ySize = 0.0;
 	/** @var float */
 	protected $stepHeight = 0.0;
 	/** @var bool */
@@ -330,10 +333,10 @@ abstract class Entity{
 
 		$this->boundingBox = new AxisAlignedBB(
 			$this->location->x - $halfWidth,
-			$this->location->y,
+			$this->location->y + $this->ySize,
 			$this->location->z - $halfWidth,
 			$this->location->x + $halfWidth,
-			$this->location->y + $this->height,
+			$this->location->y + $this->height + $this->ySize,
 			$this->location->z + $halfWidth
 		);
 	}
@@ -1082,6 +1085,7 @@ abstract class Entity{
 		if($this->keepMovement){
 			$this->boundingBox->offset($dx, $dy, $dz);
 		}else{
+			$this->ySize *= self::STEP_CLIP_MULTIPLIER;
 
 			/*
 			if($this->isColliding){ //With cobweb?
@@ -1176,7 +1180,12 @@ abstract class Entity{
 
 				$stepBB->offset(0, 0, $dz);
 
-				//TODO: here we need to shift back down on the Y-axis to the top of the target block (we don't want to jump into the air when walking onto carpet)
+				$reverseDY = -$dy;
+				foreach($list as $bb){
+					$reverseDY = $bb->calculateYOffset($stepBB, $reverseDY);
+				}
+				$dy += $reverseDY;
+				$stepBB->offset(0, $reverseDY, 0);
 
 				if(($cx ** 2 + $cz ** 2) >= ($dx ** 2 + $dz ** 2)){
 					$dx = $cx;
@@ -1184,6 +1193,7 @@ abstract class Entity{
 					$dz = $cz;
 				}else{
 					$moveBB = $stepBB;
+					$this->ySize += $dy;
 				}
 			}
 
@@ -1191,7 +1201,7 @@ abstract class Entity{
 		}
 
 		$this->location->x = ($this->boundingBox->minX + $this->boundingBox->maxX) / 2;
-		$this->location->y = $this->boundingBox->minY;
+		$this->location->y = $this->boundingBox->minY - $this->ySize;
 		$this->location->z = ($this->boundingBox->minZ + $this->boundingBox->maxZ) / 2;
 
 		$this->checkChunks();
@@ -1421,6 +1431,7 @@ abstract class Entity{
 		if($ev->isCancelled()){
 			return false;
 		}
+		$this->ySize = 0;
 		$pos = $ev->getTo();
 
 		$this->setMotion(new Vector3(0, 0, 0));
@@ -1635,6 +1646,7 @@ abstract class Entity{
 
 	/**
 	 * @return MetadataProperty[]
+	 * @phpstan-return array<int, MetadataProperty>
 	 */
 	final protected function getSyncedNetworkData(bool $dirtyOnly) : array{
 		$this->syncNetworkData($this->networkProperties);

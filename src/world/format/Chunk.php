@@ -266,9 +266,38 @@ class Chunk{
 	 * @phpstan-param \SplFixedArray<bool> $lightDiffusers
 	 */
 	public function recalculateHeightMap(\SplFixedArray $lightFilters, \SplFixedArray $lightDiffusers) : void{
+		$maxSubChunkY = $this->subChunks->count() - 1;
+		for(; $maxSubChunkY >= 0; $maxSubChunkY--){
+			if(!$this->getSubChunk($maxSubChunkY)->isEmptyFast()){
+				break;
+			}
+		}
+		if($maxSubChunkY === -1){ //whole column is definitely empty
+			$this->setHeightMapArray(array_fill(0, 256, 0));
+			return;
+		}
+
 		for($z = 0; $z < 16; ++$z){
 			for($x = 0; $x < 16; ++$x){
-				$this->recalculateHeightMapColumn($x, $z, $lightFilters, $lightDiffusers);
+				$y = null;
+				for($subChunkY = $maxSubChunkY; $subChunkY >= 0; $subChunkY--){
+					$subHighestBlockY = $this->getSubChunk($subChunkY)->getHighestBlockAt($x, $z);
+					if($subHighestBlockY !== -1){
+						$y = ($subChunkY * 16) + $subHighestBlockY;
+						break;
+					}
+				}
+
+				if($y === null){ //no blocks in the column
+					$this->setHeightMap($x, $z, 0);
+				}else{
+					for(; $y >= 0; --$y){
+						if($lightFilters[$state = $this->getFullBlock($x, $y, $z)] > 1 or $lightDiffusers[$state]){
+							$this->setHeightMap($x, $z, $y + 1);
+							break;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -308,11 +337,18 @@ class Chunk{
 	 * TODO: fast adjacent light spread
 	 */
 	public function populateSkyLight(\SplFixedArray $lightFilters) : void{
-		$this->setAllBlockSkyLight(0);
+		$highestHeightMap = max($this->heightMap->getValues());
+		$lowestFullyLitSubChunk = ($highestHeightMap >> 4) + (($highestHeightMap & 0xf) !== 0 ? 1 : 0);
+		for($y = 0; $y < $lowestFullyLitSubChunk; $y++){
+			$this->getSubChunk($y)->setBlockSkyLightArray(LightArray::fill(0));
+		}
+		for($y = $lowestFullyLitSubChunk, $yMax = $this->subChunks->count(); $y < $yMax; $y++){
+			$this->getSubChunk($y)->setBlockSkyLightArray(LightArray::fill(15));
+		}
 
 		for($x = 0; $x < 16; ++$x){
 			for($z = 0; $z < 16; ++$z){
-				$y = ($this->subChunks->count() * 16) - 1;
+				$y = ($lowestFullyLitSubChunk * 16) - 1;
 				$heightMap = $this->getHeightMap($x, $z);
 
 				for(; $y >= $heightMap; --$y){

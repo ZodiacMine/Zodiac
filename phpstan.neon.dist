@@ -22,6 +22,8 @@ parameters:
 #	checkExplicitMixed: true
 	bootstrapFiles:
 		- tests/phpstan/bootstrap.php
+	scanDirectories:
+	    - tests/plugins/TesterPlugin
 	scanFiles:
 		- src/PocketMine.php
 		- build/make-release.php
@@ -35,6 +37,7 @@ parameters:
 	excludes_analyse:
 		- src/world/generator/noise/Simplex.php
 		- src/utils/Random.php
+		- tests/plugins/TesterPlugin
 	dynamicConstantNames:
 		- pocketmine\VersionInfo::IS_DEVELOPMENT_BUILD
 		- pocketmine\DEBUG
