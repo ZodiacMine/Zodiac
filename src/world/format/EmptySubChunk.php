@@ -47,10 +47,6 @@ class EmptySubChunk implements SubChunkInterface{
 		return 0;
 	}
 
-	public function setFullBlock(int $x, int $y, int $z, int $block) : void{
-
-	}
-
 	public function getBlockLayers() : array{
 		return [];
 	}
@@ -60,18 +56,10 @@ class EmptySubChunk implements SubChunkInterface{
 	}
 
 	public function getBlockLightArray() : LightArray{
-		return new LightArray(LightArray::ZERO);
-	}
-
-	public function setBlockLightArray(LightArray $data) : void{
-
+		return LightArray::fill(0);
 	}
 
 	public function getBlockSkyLightArray() : LightArray{
-		return new LightArray(LightArray::FIFTEEN);
-	}
-
-	public function setBlockSkyLightArray(LightArray $data) : void{
-
+		return LightArray::fill(15);
 	}
 }

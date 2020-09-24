@@ -23,37 +23,56 @@ declare(strict_types=1);
 
 namespace pocketmine\world\light;
 
-use pocketmine\block\BlockFactory;
+use pocketmine\world\utils\SubChunkExplorer;
 use pocketmine\world\World;
 use function max;
 
 class SkyLightUpdate extends LightUpdate{
+
+	/**
+	 * @var \SplFixedArray|bool[]
+	 * @phpstan-var \SplFixedArray<bool>
+	 */
+	private $directSkyLightBlockers;
+
+	/**
+	 * @param \SplFixedArray|int[]  $lightFilters
+	 * @param \SplFixedArray|bool[] $directSkyLightBlockers
+	 * @phpstan-param \SplFixedArray<int>  $lightFilters
+	 * @phpstan-param \SplFixedArray<bool> $directSkyLightBlockers
+	 */
+	public function __construct(SubChunkExplorer $subChunkExplorer, \SplFixedArray $lightFilters, \SplFixedArray $directSkyLightBlockers){
+		parent::__construct($subChunkExplorer, $lightFilters);
+		$this->directSkyLightBlockers = $directSkyLightBlockers;
+	}
+
 	protected function updateLightArrayRef() : void{
-		$this->currentLightArray = $this->subChunkHandler->currentSubChunk->getBlockSkyLightArray();
+		$this->currentLightArray = $this->subChunkExplorer->currentSubChunk->getBlockSkyLightArray();
 	}
 
 	protected function getEffectiveLight(int $x, int $y, int $z) : int{
 		if($y >= World::Y_MAX){
-			$this->subChunkHandler->invalidate();
+			$this->subChunkExplorer->invalidate();
 			return 15;
 		}
 		return parent::getEffectiveLight($x, $y, $z);
 	}
 
 	public function recalculateNode(int $x, int $y, int $z) : void{
-		$chunk = $this->world->getChunk($x >> 4, $z >> 4);
-		if($chunk === null){
+		if(!$this->subChunkExplorer->moveTo($x, $y, $z, false)){
 			return;
 		}
+		$chunk = $this->subChunkExplorer->currentChunk;
+
 		$oldHeightMap = $chunk->getHeightMap($x & 0xf, $z & 0xf);
-		$source = $this->world->getBlockAt($x, $y, $z);
+		$source = $this->subChunkExplorer->currentSubChunk->getFullBlock($x & 0xf, $y & 0xf, $z & 0xf);
 
 		$yPlusOne = $y + 1;
 
 		if($yPlusOne === $oldHeightMap){ //Block changed directly beneath the heightmap. Check if a block was removed or changed to a different light-filter.
-			$newHeightMap = $chunk->recalculateHeightMapColumn($x & 0x0f, $z & 0x0f, BlockFactory::getInstance()->lightFilter, BlockFactory::getInstance()->diffusesSkyLight);
+			$newHeightMap = $chunk->recalculateHeightMapColumn($x & 0x0f, $z & 0x0f, $this->directSkyLightBlockers);
 		}elseif($yPlusOne > $oldHeightMap){ //Block changed above the heightmap.
-			if($source->getLightFilter() > 0 or $source->diffusesSkyLight()){
+			if($this->directSkyLightBlockers[$source]){
 				$chunk->setHeightMap($x & 0xf, $z & 0xf, $yPlusOne);
 				$newHeightMap = $yPlusOne;
 			}else{ //Block changed which has no effect on direct sky light, for example placing or removing glass.
@@ -72,7 +91,7 @@ class SkyLightUpdate extends LightUpdate{
 				$this->setAndUpdateLight($x, $i, $z, 15);
 			}
 		}else{ //No heightmap change, block changed "underground"
-			$this->setAndUpdateLight($x, $y, $z, max(0, $this->getHighestAdjacentLight($x, $y, $z) - BlockFactory::getInstance()->lightFilter[$source->getFullId()]));
+			$this->setAndUpdateLight($x, $y, $z, max(0, $this->getHighestAdjacentLight($x, $y, $z) - $this->lightFilters[$source]));
 		}
 	}
 }

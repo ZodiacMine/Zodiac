@@ -63,13 +63,13 @@ class Leaves extends Transparent{
 		return 0b1100;
 	}
 
-	public function diffusesSkyLight() : bool{
+	public function blocksDirectSkyLight() : bool{
 		return true;
 	}
 
 	/**
 	 * @param true[] $visited reference parameter
-	 * @phpstan-param array<string, true> $visited
+	 * @phpstan-param array<int, true> $visited
 	 */
 	protected function findLog(Vector3 $pos, array &$visited = [], int $distance = 0) : bool{
 		$index = World::blockHash($pos->x, $pos->y, $pos->z);

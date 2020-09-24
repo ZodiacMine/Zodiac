@@ -21,30 +21,34 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\world\sound;
+namespace pocketmine\world\light;
 
-use pocketmine\block\Block;
-use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
-use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
+final class LightPropagationContext{
 
-/**
- * Played when a player attacks a block in survival, attempting to break it.
- */
-class BlockPunchSound implements Sound{
+	/**
+	 * @var \SplQueue
+	 * @phpstan-var \SplQueue<array{int, int, int}>
+	 */
+	public $spreadQueue;
+	/**
+	 * @var true[]
+	 * @phpstan-var array<int, true>
+	 */
+	public $spreadVisited = [];
 
-	/** @var Block */
-	private $block;
+	/**
+	 * @var \SplQueue
+	 * @phpstan-var \SplQueue<array{int, int, int, int}>
+	 */
+	public $removalQueue;
+	/**
+	 * @var true[]
+	 * @phpstan-var array<int, true>
+	 */
+	public $removalVisited = [];
 
-	public function __construct(Block $block){
-		$this->block = $block;
-	}
-
-	public function encode(?Vector3 $pos){
-		return LevelSoundEventPacket::create(
-			LevelSoundEventPacket::SOUND_HIT,
-			$pos,
-			RuntimeBlockMapping::getInstance()->toRuntimeId($this->block->getFullId())
-		);
+	public function __construct(){
+		$this->removalQueue = new \SplQueue();
+		$this->spreadQueue = new \SplQueue();
 	}
 }

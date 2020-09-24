@@ -39,18 +39,18 @@ if(!defined(__NAMESPACE__ . '\FIFTEEN_NIBBLE_ARRAY')){
 
 final class LightArray{
 
-	public const ZERO = ZERO_NIBBLE_ARRAY;
-	public const FIFTEEN = FIFTEEN_NIBBLE_ARRAY;
+	private const ZERO = ZERO_NIBBLE_ARRAY;
+	private const FIFTEEN = FIFTEEN_NIBBLE_ARRAY;
 
 	/** @var string */
 	private $data;
 
-	public function __construct(?string $payload){
-		if($payload !== null and ($len = strlen($payload)) !== 2048){
+	public function __construct(string $payload){
+		if(($len = strlen($payload)) !== 2048){
 			throw new \InvalidArgumentException("Payload size must be 2048 bytes, but got $len bytes");
 		}
 
-		$this->data = $payload ?? self::ZERO;
+		$this->data = $payload;
 		$this->collectGarbage();
 	}
 

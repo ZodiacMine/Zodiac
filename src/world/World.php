@@ -79,6 +79,7 @@ use pocketmine\world\particle\SendableParticle;
 use pocketmine\world\sound\BlockPlaceSound;
 use pocketmine\world\sound\SendableSound;
 use pocketmine\world\sound\Sound;
+use pocketmine\world\utils\SubChunkExplorer;
 use function abs;
 use function array_fill_keys;
 use function array_map;
@@ -835,7 +836,7 @@ class World implements ChunkManager{
 			}
 
 			$fullBlock = $this->getBlockAt($b->x, $b->y, $b->z);
-			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, RuntimeBlockMapping::getInstance()->toRuntimeId($fullBlock->getId(), $fullBlock->getMeta()));
+			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, RuntimeBlockMapping::getInstance()->toRuntimeId($fullBlock->getFullId()));
 
 			$tile = $this->getTileAt($b->x, $b->y, $b->z);
 			if($tile instanceof Spawnable){
@@ -1168,16 +1169,17 @@ class World implements ChunkManager{
 	}
 
 	public function updateAllLight(int $x, int $y, int $z) : void{
+		$blockFactory = BlockFactory::getInstance();
 		$this->timings->doBlockSkyLightUpdates->startTiming();
 		if($this->skyLightUpdate === null){
-			$this->skyLightUpdate = new SkyLightUpdate($this);
+			$this->skyLightUpdate = new SkyLightUpdate(new SubChunkExplorer($this), $blockFactory->lightFilter, $blockFactory->blocksDirectSkyLight);
 		}
 		$this->skyLightUpdate->recalculateNode($x, $y, $z);
 		$this->timings->doBlockSkyLightUpdates->stopTiming();
 
 		$this->timings->doBlockLightUpdates->startTiming();
 		if($this->blockLightUpdate === null){
-			$this->blockLightUpdate = new BlockLightUpdate($this);
+			$this->blockLightUpdate = new BlockLightUpdate(new SubChunkExplorer($this), $blockFactory->lightFilter, $blockFactory->light);
 		}
 		$this->blockLightUpdate->recalculateNode($x, $y, $z);
 		$this->timings->doBlockLightUpdates->stopTiming();
@@ -1245,7 +1247,7 @@ class World implements ChunkManager{
 	 * @return int bitmap, (id << 4) | data
 	 */
 	public function getFullBlock(int $x, int $y, int $z) : int{
-		return $this->getChunk($x >> 4, $z >> 4, false)->getFullBlock($x & 0x0f, $y, $z & 0x0f);
+		return $this->getOrLoadChunk($x >> 4, $z >> 4, false)->getFullBlock($x & 0x0f, $y, $z & 0x0f);
 	}
 
 	public function isInWorld(int $x, int $y, int $z) : bool{
@@ -1655,7 +1657,7 @@ class World implements ChunkManager{
 					if(!$this->isChunkLoaded($x, $z)){
 						continue;
 					}
-					foreach($this->getChunk($x, $z)->getEntities() as $ent){
+					foreach($this->getOrLoadChunk($x, $z)->getEntities() as $ent){
 						/** @var Entity|null $entity */
 						if($ent->canBeCollidedWith() and ($entity === null or ($ent !== $entity and $entity->canCollideWith($ent))) and $ent->boundingBox->intersectsWith($bb)){
 							$nearby[] = $ent;
@@ -1686,7 +1688,7 @@ class World implements ChunkManager{
 				if(!$this->isChunkLoaded($x, $z)){
 					continue;
 				}
-				foreach($this->getChunk($x, $z)->getEntities() as $ent){
+				foreach($this->getOrLoadChunk($x, $z)->getEntities() as $ent){
 					if($ent !== $entity and $ent->boundingBox->intersectsWith($bb)){
 						$nearby[] = $ent;
 					}
@@ -1729,7 +1731,7 @@ class World implements ChunkManager{
 				if(!$this->isChunkLoaded($x, $z)){
 					continue;
 				}
-				foreach($this->getChunk($x, $z)->getEntities() as $entity){
+				foreach($this->getOrLoadChunk($x, $z)->getEntities() as $entity){
 					if(!($entity instanceof $entityType) or $entity->isFlaggedForDespawn() or (!$includeDead and !$entity->isAlive())){
 						continue;
 					}
@@ -1775,7 +1777,7 @@ class World implements ChunkManager{
 	 * Returns the tile at the specified x,y,z coordinates, or null if it does not exist.
 	 */
 	public function getTileAt(int $x, int $y, int $z) : ?Tile{
-		return ($chunk = $this->getChunk($x >> 4, $z >> 4)) !== null ? $chunk->getTile($x & 0x0f, $y, $z & 0x0f) : null;
+		return ($chunk = $this->getOrLoadChunk($x >> 4, $z >> 4)) !== null ? $chunk->getTile($x & 0x0f, $y, $z & 0x0f) : null;
 	}
 
 	/**
@@ -1784,7 +1786,7 @@ class World implements ChunkManager{
 	 * @return int 0-15
 	 */
 	public function getBlockSkyLightAt(int $x, int $y, int $z) : int{
-		return $this->getChunk($x >> 4, $z >> 4, true)->getBlockSkyLight($x & 0x0f, $y, $z & 0x0f);
+		return $this->getOrLoadChunk($x >> 4, $z >> 4, true)->getBlockSkyLight($x & 0x0f, $y, $z & 0x0f);
 	}
 
 	/**
@@ -1793,11 +1795,11 @@ class World implements ChunkManager{
 	 * @return int 0-15
 	 */
 	public function getBlockLightAt(int $x, int $y, int $z) : int{
-		return $this->getChunk($x >> 4, $z >> 4, true)->getBlockLight($x & 0x0f, $y, $z & 0x0f);
+		return $this->getOrLoadChunk($x >> 4, $z >> 4, true)->getBlockLight($x & 0x0f, $y, $z & 0x0f);
 	}
 
 	public function getBiomeId(int $x, int $z) : int{
-		return $this->getChunk($x >> 4, $z >> 4, true)->getBiomeId($x & 0x0f, $z & 0x0f);
+		return $this->getOrLoadChunk($x >> 4, $z >> 4, true)->getBiomeId($x & 0x0f, $z & 0x0f);
 	}
 
 	public function getBiome(int $x, int $z) : Biome{
@@ -1805,7 +1807,7 @@ class World implements ChunkManager{
 	}
 
 	public function setBiomeId(int $x, int $z, int $biomeId) : void{
-		$this->getChunk($x >> 4, $z >> 4, true)->setBiomeId($x & 0x0f, $z & 0x0f, $biomeId);
+		$this->getOrLoadChunk($x >> 4, $z >> 4, true)->setBiomeId($x & 0x0f, $z & 0x0f, $biomeId);
 	}
 
 	/**
@@ -1821,7 +1823,7 @@ class World implements ChunkManager{
 	 *
 	 * @param bool $create Whether to create an empty chunk as a placeholder if the chunk does not exist
 	 */
-	public function getChunk(int $chunkX, int $chunkZ, bool $create = false) : ?Chunk{
+	public function getOrLoadChunk(int $chunkX, int $chunkZ, bool $create = false) : ?Chunk{
 		if(isset($this->chunks[$index = World::chunkHash($chunkX, $chunkZ)])){
 			return $this->chunks[$index];
 		}elseif($this->loadChunk($chunkX, $chunkZ, $create)){
@@ -1831,11 +1833,19 @@ class World implements ChunkManager{
 		return null;
 	}
 
+	public function getChunk(int $chunkX, int $chunkZ, bool $create = false) : ?Chunk{
+		$hash = World::chunkHash($chunkX, $chunkZ);
+		if(isset($this->chunks[$hash])){
+			return $this->chunks[$hash];
+		}
+		return $create ? ($this->chunks[$hash] = new Chunk($chunkX, $chunkZ)) : null;
+	}
+
 	/**
 	 * Returns the chunk containing the given Vector3 position.
 	 */
 	public function getChunkAtPosition(Vector3 $pos, bool $create = false) : ?Chunk{
-		return $this->getChunk($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4, $create);
+		return $this->getOrLoadChunk($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4, $create);
 	}
 
 	/**
@@ -1851,7 +1861,7 @@ class World implements ChunkManager{
 				if($i === 4){
 					continue; //center chunk
 				}
-				$result[$i] = $this->getChunk($x + $xx - 1, $z + $zz - 1, false);
+				$result[$i] = $this->getOrLoadChunk($x + $xx - 1, $z + $zz - 1, false);
 			}
 		}
 
@@ -1885,7 +1895,7 @@ class World implements ChunkManager{
 			unset($this->chunkPopulationQueue[$index]);
 
 			if($chunk !== null){
-				$oldChunk = $this->getChunk($x, $z, false);
+				$oldChunk = $this->getOrLoadChunk($x, $z, false);
 				$this->setChunk($x, $z, $chunk, false);
 				if(($oldChunk === null or !$oldChunk->isPopulated()) and $chunk->isPopulated()){
 					(new ChunkPopulateEvent($this, $chunk))->call();
@@ -1918,7 +1928,7 @@ class World implements ChunkManager{
 		$chunk->setZ($chunkZ);
 
 		$chunkHash = World::chunkHash($chunkX, $chunkZ);
-		$oldChunk = $this->getChunk($chunkX, $chunkZ, false);
+		$oldChunk = $this->getOrLoadChunk($chunkX, $chunkZ, false);
 		if($oldChunk !== null and $oldChunk !== $chunk){
 			if($deleteEntitiesAndTiles){
 				foreach($oldChunk->getEntities() as $player){
@@ -1966,7 +1976,7 @@ class World implements ChunkManager{
 	 * @return int 0-255
 	 */
 	public function getHighestBlockAt(int $x, int $z) : int{
-		return $this->getChunk($x >> 4, $z >> 4, true)->getHighestBlockAt($x & 0x0f, $z & 0x0f);
+		return $this->getOrLoadChunk($x >> 4, $z >> 4, true)->getHighestBlockAt($x & 0x0f, $z & 0x0f);
 	}
 
 	/**
@@ -1981,12 +1991,12 @@ class World implements ChunkManager{
 	}
 
 	public function isChunkGenerated(int $x, int $z) : bool{
-		$chunk = $this->getChunk($x, $z);
+		$chunk = $this->getOrLoadChunk($x, $z);
 		return $chunk !== null ? $chunk->isGenerated() : false;
 	}
 
 	public function isChunkPopulated(int $x, int $z) : bool{
-		$chunk = $this->getChunk($x, $z);
+		$chunk = $this->getOrLoadChunk($x, $z);
 		return $chunk !== null ? $chunk->isPopulated() : false;
 	}
 
@@ -2362,7 +2372,7 @@ class World implements ChunkManager{
 			}
 		}
 
-		$chunk = $this->getChunk($x, $z, true);
+		$chunk = $this->getOrLoadChunk($x, $z, true);
 		if(!$chunk->isPopulated()){
 			Timings::$populationTimer->startTiming();
 
