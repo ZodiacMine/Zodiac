@@ -21,29 +21,27 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\event;
+namespace pocketmine\block\utils;
+
+use pocketmine\utils\EnumTrait;
 
 /**
- * This trait provides a basic boolean-setter-style implementation for `Cancellable` to reduce boilerplate.
- * The precise meaning of `setCancelled` is subject to definition by the class using this trait.
+ * This doc-block is generated automatically, do not modify it manually.
+ * This must be regenerated whenever registry members are added, removed or changed.
+ * @see \pocketmine\utils\RegistryUtils::_generateMethodAnnotations()
  *
- * Implementors of `Cancellable` are not required to use this trait.
- *
- * @see Cancellable
+ * @method static BrewingStandSlot EAST()
+ * @method static BrewingStandSlot NORTHWEST()
+ * @method static BrewingStandSlot SOUTHWEST()
  */
-trait CancellableTrait{
-	/** @var bool */
-	private $isCancelled = false;
+final class BrewingStandSlot{
+	use EnumTrait;
 
-	public function isCancelled() : bool{
-		return $this->isCancelled;
-	}
-
-	public function cancel() : void{
-		$this->isCancelled = true;
-	}
-
-	public function uncancel() : void{
-		$this->isCancelled = false;
+	protected static function setup() : void{
+		self::registerAll(
+			new self("east"),
+			new self("northwest"),
+			new self("southwest")
+		);
 	}
 }

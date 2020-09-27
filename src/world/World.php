@@ -901,7 +901,13 @@ class World implements ChunkManager{
 				$dz = mt_rand(-$randRange, $randRange);
 				$hash = World::chunkHash($dx + $chunkX, $dz + $chunkZ);
 				if(!isset($chunkTickList[$hash]) and isset($this->chunks[$hash])){
-					if(!$this->chunks[$hash]->isLightPopulated()){
+					//TODO: this might need to be checked after adjacent chunks are loaded in future
+					$lightPopulatedState = $this->chunks[$hash]->isLightPopulated();
+					if($lightPopulatedState !== true){
+						if($lightPopulatedState === false){
+							$this->chunks[$hash]->setLightPopulated(null);
+							$this->server->getAsyncPool()->submitTask(new LightPopulationTask($this, $this->chunks[$hash]));
+						}
 						continue;
 					}
 					//check adjacent chunks are loaded
@@ -1448,7 +1454,7 @@ class World implements ChunkManager{
 			$ev = new BlockBreakEvent($player, $target, $item, $player->isCreative(), $drops, $xpDrop);
 
 			if($target instanceof Air or ($player->isSurvival() and !$target->getBreakInfo()->isBreakable()) or $player->isSpectator()){
-				$ev->setCancelled();
+				$ev->cancel();
 			}
 
 			if($player->isAdventure(true) and !$ev->isCancelled()){
@@ -1462,7 +1468,9 @@ class World implements ChunkManager{
 					}
 				}
 
-				$ev->setCancelled(!$canBreak);
+				if(!$canBreak){
+					$ev->cancel();
+				}
 			}
 
 			$ev->call();
@@ -1538,7 +1546,7 @@ class World implements ChunkManager{
 		if($player !== null){
 			$ev = new PlayerInteractEvent($player, $item, $blockClicked, $clickVector, $face, PlayerInteractEvent::RIGHT_CLICK_BLOCK);
 			if($player->isSpectator()){
-				$ev->setCancelled(); //set it to cancelled so plugins can bypass this
+				$ev->cancel(); //set it to cancelled so plugins can bypass this
 			}
 
 			$ev->call();
@@ -1581,8 +1589,10 @@ class World implements ChunkManager{
 		if($player !== null){
 			$ev = new BlockPlaceEvent($player, $hand, $blockReplace, $blockClicked, $item);
 			if($player->isSpectator()){
-				$ev->setCancelled();
-			}elseif($player->isAdventure(true) and !$ev->isCancelled()){
+				$ev->cancel();
+			}
+
+			if($player->isAdventure(true) and !$ev->isCancelled()){
 				$canPlace = false;
 				$itemParser = LegacyStringToItemParser::getInstance();
 				foreach($item->getCanPlaceOn() as $v){
@@ -1593,7 +1603,9 @@ class World implements ChunkManager{
 					}
 				}
 
-				$ev->setCancelled(!$canPlace);
+				if(!$canPlace){
+					$ev->cancel();
+				}
 			}
 
 			$ev->call();
@@ -2146,10 +2158,6 @@ class World implements ChunkManager{
 		$chunk->initChunk($this);
 
 		(new ChunkLoadEvent($this, $chunk, !$chunk->isGenerated()))->call();
-
-		if(!$chunk->isLightPopulated() and $chunk->isPopulated()){
-			$this->getServer()->getAsyncPool()->submitTask(new LightPopulationTask($this, $chunk));
-		}
 
 		if(!$this->isChunkInUse($x, $z)){
 			$this->logger->debug("Newly loaded chunk $x $z has no loaders registered, will be unloaded at next available opportunity");

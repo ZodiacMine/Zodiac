@@ -1425,7 +1425,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		$ev = new PlayerItemUseEvent($this, $item, $directionVector);
 		if($this->hasItemCooldown($item) or $this->isSpectator()){
-			$ev->setCancelled();
+			$ev->cancel();
 		}
 
 		$ev->call();
@@ -1459,7 +1459,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		if($slot instanceof ConsumableItem){
 			$ev = new PlayerItemConsumeEvent($this, $slot);
 			if($this->hasItemCooldown($slot)){
-				$ev->setCancelled();
+				$ev->cancel();
 			}
 			$ev->call();
 
@@ -1518,7 +1518,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		$ev = new PlayerBlockPickEvent($this, $block, $item);
 		$existingSlot = $this->inventory->first($item);
 		if($existingSlot === -1 and $this->hasFiniteResources()){
-			$ev->setCancelled();
+			$ev->cancel();
 		}
 		$ev->call();
 
@@ -1560,7 +1560,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		$ev = new PlayerInteractEvent($this, $this->inventory->getItemInHand(), $target, null, $face, PlayerInteractEvent::LEFT_CLICK_BLOCK);
 		if($this->isSpectator()){
-			$ev->setCancelled();
+			$ev->cancel();
 		}
 		$ev->call();
 		if($ev->isCancelled()){
@@ -1666,7 +1666,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		$ev = new EntityDamageByEntityEvent($this, $entity, EntityDamageEvent::CAUSE_ENTITY_ATTACK, $heldItem->getAttackPoints());
 		if($this->isSpectator() or !$this->canInteract($entity->getLocation(), 8) or ($entity instanceof Player and !$this->server->getConfigGroup()->getConfigBool("pvp"))){
-			$ev->setCancelled();
+			$ev->cancel();
 		}
 
 		$meleeEnchantmentDamage = 0;
@@ -1770,7 +1770,9 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 	public function toggleFlight(bool $fly) : bool{
 		$ev = new PlayerToggleFlightEvent($this, $fly);
-		$ev->setCancelled(!$this->allowFlight);
+		if(!$this->allowFlight){
+			$ev->cancel();
+		}
 		$ev->call();
 		if($ev->isCancelled()){
 			return false;
@@ -2197,9 +2199,9 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 			and $source->getCause() !== EntityDamageEvent::CAUSE_SUICIDE
 			and $source->getCause() !== EntityDamageEvent::CAUSE_VOID
 		){
-			$source->setCancelled();
+			$source->cancel();
 		}elseif($this->allowFlight and $source->getCause() === EntityDamageEvent::CAUSE_FALL){
-			$source->setCancelled();
+			$source->cancel();
 		}
 
 		parent::attack($source);

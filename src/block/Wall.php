@@ -24,13 +24,12 @@ declare(strict_types=1);
 namespace pocketmine\block;
 
 use pocketmine\item\ToolTier;
-use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
 
 class Wall extends Transparent{
 
-	/** @var bool[] facing => dummy */
+	/** @var int[] facing => facing */
 	protected $connections = [];
 	/** @var bool */
 	protected $up = false;
@@ -45,7 +44,7 @@ class Wall extends Transparent{
 		foreach(Facing::HORIZONTAL as $facing){
 			$block = $this->getSide($facing);
 			if($block instanceof static or $block instanceof FenceGate or ($block->isSolid() and !$block->isTransparent())){
-				$this->connections[$facing] = true;
+				$this->connections[$facing] = $facing;
 			}else{
 				unset($this->connections[$facing]);
 			}

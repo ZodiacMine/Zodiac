@@ -773,31 +773,28 @@ abstract class Entity{
 		return false;
 	}
 
-	protected function applyGravity() : void{
-		$this->motion->y -= $this->gravity;
-	}
-
 	protected function tryChangeMovement() : void{
 		$friction = 1 - $this->drag;
 
+		$mY = $this->motion->y;
+
 		if($this->applyDragBeforeGravity()){
-			$this->motion->y *= $friction;
+			$mY *= $friction;
 		}
 
 		if($this->gravityEnabled){
-			$this->applyGravity();
+			$mY -= $this->gravity;
 		}
 
 		if(!$this->applyDragBeforeGravity()){
-			$this->motion->y *= $friction;
+			$mY *= $friction;
 		}
 
 		if($this->onGround){
 			$friction *= $this->getWorld()->getBlockAt((int) floor($this->location->x), (int) floor($this->location->y - 1), (int) floor($this->location->z))->getFrictionFactor();
 		}
 
-		$this->motion->x *= $friction;
-		$this->motion->z *= $friction;
+		$this->motion = new Vector3($this->motion->x * $friction, $mY, $this->motion->z * $friction);
 	}
 
 	protected function checkObstruction(float $x, float $y, float $z) : bool{
@@ -857,37 +854,37 @@ abstract class Entity{
 			$force = lcg_value() * 0.2 + 0.1;
 
 			if($direction === Facing::WEST){
-				$this->motion->x = -$force;
+				$this->motion = $this->motion->withComponents(-$force, null, null);
 
 				return true;
 			}
 
 			if($direction === Facing::EAST){
-				$this->motion->x = $force;
+				$this->motion = $this->motion->withComponents($force, null, null);
 
 				return true;
 			}
 
 			if($direction === Facing::DOWN){
-				$this->motion->y = -$force;
+				$this->motion = $this->motion->withComponents(null, -$force, null);
 
 				return true;
 			}
 
 			if($direction === Facing::UP){
-				$this->motion->y = $force;
+				$this->motion = $this->motion->withComponents(null, $force, null);
 
 				return true;
 			}
 
 			if($direction === Facing::NORTH){
-				$this->motion->z = -$force;
+				$this->motion = $this->motion->withComponents(null, null, -$force);
 
 				return true;
 			}
 
 			if($direction === Facing::SOUTH){
-				$this->motion->z = $force;
+				$this->motion = $this->motion->withComponents(null, null, $force);
 
 				return true;
 			}
@@ -897,7 +894,7 @@ abstract class Entity{
 	}
 
 	public function getHorizontalFacing() : int{
-		$angle = $this->location->yaw % 360;
+		$angle = fmod($this->location->yaw, 360);
 		if($angle < 0){
 			$angle += 360.0;
 		}
@@ -957,15 +954,11 @@ abstract class Entity{
 		if($this->hasMovementUpdate()){
 			$this->tryChangeMovement();
 
-			if(abs($this->motion->x) <= self::MOTION_THRESHOLD){
-				$this->motion->x = 0;
-			}
-			if(abs($this->motion->y) <= self::MOTION_THRESHOLD){
-				$this->motion->y = 0;
-			}
-			if(abs($this->motion->z) <= self::MOTION_THRESHOLD){
-				$this->motion->z = 0;
-			}
+			$this->motion = $this->motion->withComponents(
+				abs($this->motion->x) <= self::MOTION_THRESHOLD ? 0 : null,
+				abs($this->motion->y) <= self::MOTION_THRESHOLD ? 0 : null,
+				abs($this->motion->z) <= self::MOTION_THRESHOLD ? 0 : null
+			);
 
 			if($this->motion->x != 0 or $this->motion->y != 0 or $this->motion->z != 0){
 				$this->move($this->motion->x, $this->motion->y, $this->motion->z);
@@ -1200,26 +1193,25 @@ abstract class Entity{
 			$this->boundingBox = $moveBB;
 		}
 
-		$this->location->x = ($this->boundingBox->minX + $this->boundingBox->maxX) / 2;
-		$this->location->y = $this->boundingBox->minY - $this->ySize;
-		$this->location->z = ($this->boundingBox->minZ + $this->boundingBox->maxZ) / 2;
+		$this->location = new Location(
+			($this->boundingBox->minX + $this->boundingBox->maxX) / 2,
+			$this->boundingBox->minY - $this->ySize,
+			($this->boundingBox->minZ + $this->boundingBox->maxZ) / 2,
+			$this->location->yaw,
+			$this->location->pitch,
+			$this->location->world
+		);
 
 		$this->checkChunks();
 		$this->checkBlockCollision();
 		$this->checkGroundState($movX, $movY, $movZ, $dx, $dy, $dz);
 		$this->updateFallState($dy, $this->onGround);
 
-		if($movX != $dx){
-			$this->motion->x = 0;
-		}
-
-		if($movY != $dy){
-			$this->motion->y = 0;
-		}
-
-		if($movZ != $dz){
-			$this->motion->z = 0;
-		}
+		$this->motion = $this->motion->withComponents(
+			$movX != $dx ? 0 : null,
+			$movY != $dy ? 0 : null,
+			$movZ != $dz ? 0 : null
+		);
 
 		//TODO: vehicle collision events (first we need to spawn them!)
 
@@ -1234,12 +1226,9 @@ abstract class Entity{
 	}
 
 	/**
-	 * @deprecated WARNING: Despite what its name implies, this function DOES NOT return all the blocks around the entity.
-	 * Instead, it returns blocks which have reactions for an entity intersecting with them.
-	 *
 	 * @return Block[]
 	 */
-	public function getBlocksAround() : array{
+	protected function getBlocksAroundWithEntityInsideActions() : array{
 		if($this->blocksAround === null){
 			$inset = 0.001; //Offset against floating-point errors
 
@@ -1279,8 +1268,10 @@ abstract class Entity{
 	protected function checkBlockCollision() : void{
 		$vectors = [];
 
-		foreach($this->getBlocksAround() as $block){
-			$block->onEntityInside($this);
+		foreach($this->getBlocksAroundWithEntityInsideActions() as $block){
+			if(!$block->onEntityInside($this)){
+				$this->blocksAround = null;
+			}
 			if(($v = $block->addVelocityToEntity($this)) !== null){
 				$vectors[] = $v;
 			}
@@ -1316,9 +1307,12 @@ abstract class Entity{
 			}
 		}
 
-		$this->location->x = $pos->x;
-		$this->location->y = $pos->y;
-		$this->location->z = $pos->z;
+		$this->location = Location::fromObject(
+			$pos,
+			$this->location->world,
+			$this->location->yaw,
+			$this->location->pitch
+		);
 
 		$this->recalculateBoundingBox();
 
