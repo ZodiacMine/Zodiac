@@ -827,7 +827,7 @@ class World implements ChunkManager{
 	 * @param Player[]  $target
 	 * @param Vector3[] $blocks
 	 */
-	public function sendBlocks(array $target, array $blocks) : void{
+	public function sendBlocks(array $target, array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL) : void{
 		$packets = [];
 
 		foreach($blocks as $b){
@@ -836,7 +836,7 @@ class World implements ChunkManager{
 			}
 
 			$fullBlock = $this->getBlockAt($b->x, $b->y, $b->z);
-			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, RuntimeBlockMapping::getInstance()->toRuntimeId($fullBlock->getFullId()));
+			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, RuntimeBlockMapping::getInstance()->toRuntimeId($fullBlock->getFullId()), $dataLayerId);
 
 			$tile = $this->getTileAt($b->x, $b->y, $b->z);
 			if($tile instanceof Spawnable){
