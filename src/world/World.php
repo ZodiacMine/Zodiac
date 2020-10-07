@@ -174,9 +174,6 @@ class World implements ChunkManager{
 	/** @var Player[][] */
 	private $playerChunkListeners = [];
 
-	/** @var ClientboundPacket[][] */
-	private $chunkPackets = [];
-
 	/** @var float[] */
 	private $unloadQueue = [];
 
@@ -531,11 +528,7 @@ class World implements ChunkManager{
 	 * Broadcasts a packet to every player who has the target position within their view distance.
 	 */
 	public function broadcastPacketToViewers(Vector3 $pos, ClientboundPacket $packet) : void{
-		if(!isset($this->chunkPackets[$index = World::chunkHash($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4)])){
-			$this->chunkPackets[$index] = [$packet];
-		}else{
-			$this->chunkPackets[$index][] = $packet;
-		}
+		$this->server->broadcastPackets($this->getChunkPlayers($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4), [$packet]);
 	}
 
 	public function registerChunkLoader(ChunkLoader $loader, int $chunkX, int $chunkZ, bool $autoLoad = true) : void{
@@ -781,16 +774,6 @@ class World implements ChunkManager{
 		if($this->sleepTicks > 0 and --$this->sleepTicks <= 0){
 			$this->checkSleep();
 		}
-
-		foreach($this->chunkPackets as $index => $entries){
-			World::getXZ($index, $chunkX, $chunkZ);
-			$chunkPlayers = $this->getChunkPlayers($chunkX, $chunkZ);
-			if(count($chunkPlayers) > 0){
-				$this->server->broadcastPackets($chunkPlayers, $entries);
-			}
-		}
-
-		$this->chunkPackets = [];
 	}
 
 	public function checkSleep() : void{
@@ -1567,7 +1550,7 @@ class World implements ChunkManager{
 		}
 
 		if($item->canBePlaced()){
-			$hand = $item->getBlock();
+			$hand = $item->getBlock($face);
 			$hand->position($this, $blockReplace->getPos()->x, $blockReplace->getPos()->y, $blockReplace->getPos()->z);
 		}else{
 			return false;

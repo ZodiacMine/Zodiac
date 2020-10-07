@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
+use pocketmine\block\Block;
 use pocketmine\block\BlockFactory;
-use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\utils\DyeColor;
 use pocketmine\block\utils\RecordType;
 use pocketmine\block\utils\SkullType;
@@ -51,9 +51,6 @@ class ItemFactory{
 
 	/** @var Item[] */
 	private $list = [];
-
-	/** @var Item|null */
-	private static $air = null;
 
 	public function __construct(){
 		$this->registerArmorItems();
@@ -178,23 +175,22 @@ class ItemFactory{
 		$this->register(new Item(new ItemIdentifier(ItemIds::SUGAR, 0), "Sugar"));
 		$this->register(new Item(new ItemIdentifier(ItemIds::TURTLE_SHELL_PIECE, 0), "Scute"));
 		$this->register(new Item(new ItemIdentifier(ItemIds::WHEAT, 0), "Wheat"));
-		$this->register(new ItemBlock(BlockLegacyIds::ACACIA_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::ACACIA_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::BIRCH_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::BIRCH_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::BREWING_STAND_BLOCK, 0, new ItemIdentifier(ItemIds::BREWING_STAND, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::CAKE_BLOCK, 0, new ItemIdentifier(ItemIds::CAKE, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::CAULDRON_BLOCK, 0, new ItemIdentifier(ItemIds::CAULDRON, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::COMPARATOR_BLOCK, 0, new ItemIdentifier(ItemIds::COMPARATOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::DARK_OAK_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::DARK_OAK_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::FLOWER_POT_BLOCK, 0, new ItemIdentifier(ItemIds::FLOWER_POT, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::HOPPER_BLOCK, 0, new ItemIdentifier(ItemIds::HOPPER, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::IRON_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::IRON_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::ITEM_FRAME_BLOCK, 0, new ItemIdentifier(ItemIds::ITEM_FRAME, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::JUNGLE_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::JUNGLE_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::NETHER_WART_PLANT, 0, new ItemIdentifier(ItemIds::NETHER_WART, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::OAK_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::OAK_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::REPEATER_BLOCK, 0, new ItemIdentifier(ItemIds::REPEATER, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::SPRUCE_DOOR_BLOCK, 0, new ItemIdentifier(ItemIds::SPRUCE_DOOR, 0)));
-		$this->register(new ItemBlock(BlockLegacyIds::SUGARCANE_BLOCK, 0, new ItemIdentifier(ItemIds::SUGARCANE, 0)));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::ACACIA_DOOR, 0), VanillaBlocks::ACACIA_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::BIRCH_DOOR, 0), VanillaBlocks::BIRCH_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::BREWING_STAND, 0), VanillaBlocks::BREWING_STAND()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::CAKE, 0), VanillaBlocks::CAKE()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::COMPARATOR, 0), VanillaBlocks::REDSTONE_COMPARATOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::DARK_OAK_DOOR, 0), VanillaBlocks::DARK_OAK_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::FLOWER_POT, 0), VanillaBlocks::FLOWER_POT()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::HOPPER, 0), VanillaBlocks::HOPPER()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::IRON_DOOR, 0), VanillaBlocks::IRON_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::ITEM_FRAME, 0), VanillaBlocks::ITEM_FRAME()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::JUNGLE_DOOR, 0), VanillaBlocks::JUNGLE_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::NETHER_WART, 0), VanillaBlocks::NETHER_WART()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::OAK_DOOR, 0), VanillaBlocks::OAK_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::REPEATER, 0), VanillaBlocks::REDSTONE_REPEATER()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::SPRUCE_DOOR, 0), VanillaBlocks::SPRUCE_DOOR()));
+		$this->register(new ItemBlock(new ItemIdentifier(ItemIds::SUGARCANE, 0), VanillaBlocks::SUGARCANE()));
 		//TODO: fix metadata for buckets with still liquid in them
 		//the meta values are intentionally hardcoded because block IDs will change in the future
 		$this->register(new LiquidBucket(new ItemIdentifier(ItemIds::BUCKET, 8), "Water Bucket", VanillaBlocks::WATER()));
@@ -234,12 +230,12 @@ class ItemFactory{
 		$this->register(new RottenFlesh(new ItemIdentifier(ItemIds::ROTTEN_FLESH, 0), "Rotten Flesh"));
 		$this->register(new Shears(new ItemIdentifier(ItemIds::SHEARS, 0), "Shears"));
 		$this->register(new Shield(new ItemIdentifier(ItemIds::SHIELD, 0), "Shield"));
-		$this->register(new Sign(BlockLegacyIds::STANDING_SIGN, 0, new ItemIdentifier(ItemIds::SIGN, 0)));
-		$this->register(new Sign(BlockLegacyIds::SPRUCE_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::SPRUCE_SIGN, 0)));
-		$this->register(new Sign(BlockLegacyIds::BIRCH_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::BIRCH_SIGN, 0)));
-		$this->register(new Sign(BlockLegacyIds::JUNGLE_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::JUNGLE_SIGN, 0)));
-		$this->register(new Sign(BlockLegacyIds::ACACIA_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::ACACIA_SIGN, 0)));
-		$this->register(new Sign(BlockLegacyIds::DARKOAK_STANDING_SIGN, 0, new ItemIdentifier(ItemIds::DARKOAK_SIGN, 0)));
+		$this->register(new Sign(new ItemIdentifier(ItemIds::SIGN, 0), VanillaBlocks::OAK_SIGN(), VanillaBlocks::OAK_WALL_SIGN()));
+		$this->register(new Sign(new ItemIdentifier(ItemIds::SPRUCE_SIGN, 0), VanillaBlocks::SPRUCE_SIGN(), VanillaBlocks::SPRUCE_WALL_SIGN()));
+		$this->register(new Sign(new ItemIdentifier(ItemIds::BIRCH_SIGN, 0), VanillaBlocks::BIRCH_SIGN(), VanillaBlocks::BIRCH_WALL_SIGN()));
+		$this->register(new Sign(new ItemIdentifier(ItemIds::JUNGLE_SIGN, 0), VanillaBlocks::JUNGLE_SIGN(), VanillaBlocks::JUNGLE_WALL_SIGN()));
+		$this->register(new Sign(new ItemIdentifier(ItemIds::ACACIA_SIGN, 0), VanillaBlocks::ACACIA_SIGN(), VanillaBlocks::ACACIA_WALL_SIGN()));
+		$this->register(new Sign(new ItemIdentifier(ItemIds::DARKOAK_SIGN, 0), VanillaBlocks::DARK_OAK_SIGN(), VanillaBlocks::DARK_OAK_WALL_SIGN()));
 		$this->register(new Snowball(new ItemIdentifier(ItemIds::SNOWBALL, 0), "Snowball"));
 		$this->register(new SpiderEye(new ItemIdentifier(ItemIds::SPIDER_EYE, 0), "Spider Eye"));
 		$this->register(new Steak(new ItemIdentifier(ItemIds::STEAK, 0), "Steak"));
@@ -266,7 +262,11 @@ class ItemFactory{
 			//TODO: add interface to dye-colour objects
 			$this->register(new Dye(new ItemIdentifier(ItemIds::DYE, $dyeMap[$color->id()] ?? $colorIdMap->toInvertedId($color)), $color->getDisplayName() . " Dye", $color));
 			$this->register(new Bed(new ItemIdentifier(ItemIds::BED, $colorIdMap->toId($color)), $color->getDisplayName() . " Bed", $color));
-			$this->register(new Banner(new ItemIdentifier(ItemIds::BANNER, $colorIdMap->toInvertedId($color)), $color->getDisplayName() . " Banner", $color));
+			$this->register((new Banner(
+				new ItemIdentifier(ItemIds::BANNER, 0),
+				VanillaBlocks::BANNER(),
+				VanillaBlocks::WALL_BANNER()
+			))->setColor($color));
 		}
 
 		foreach(Potion::ALL as $type){
@@ -432,7 +432,7 @@ class ItemFactory{
 				}
 			}elseif($id < 256){ //intentionally includes negatives, for extended block IDs
 				//TODO: do not assume that item IDs and block IDs are the same or related
-				$item = new ItemBlock($id < 0 ? 255 - $id : $id, $meta, new ItemIdentifier($id, $meta));
+				$item = new ItemBlock(new ItemIdentifier($id, $meta), BlockFactory::getInstance()->get($id < 0 ? 255 - $id : $id, $meta & 0xf));
 			}
 		}
 
@@ -449,7 +449,7 @@ class ItemFactory{
 	}
 
 	public static function air() : Item{
-		return self::$air ?? (self::$air = self::getInstance()->get(ItemIds::AIR, 0, 0));
+		return self::getInstance()->get(ItemIds::AIR, 0, 0);
 	}
 
 	/**

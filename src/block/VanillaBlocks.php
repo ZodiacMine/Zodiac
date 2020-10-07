@@ -40,10 +40,11 @@ use function assert;
  * @method static Planks ACACIA_PLANKS()
  * @method static WoodenPressurePlate ACACIA_PRESSURE_PLATE()
  * @method static Sapling ACACIA_SAPLING()
- * @method static Sign ACACIA_SIGN()
+ * @method static FloorSign ACACIA_SIGN()
  * @method static WoodenSlab ACACIA_SLAB()
  * @method static WoodenStairs ACACIA_STAIRS()
  * @method static WoodenTrapdoor ACACIA_TRAPDOOR()
+ * @method static WallSign ACACIA_WALL_SIGN()
  * @method static Wood ACACIA_WOOD()
  * @method static ActivatorRail ACTIVATOR_RAIL()
  * @method static Air AIR()
@@ -56,8 +57,9 @@ use function assert;
  * @method static Flower AZURE_BLUET()
  * @method static Bamboo BAMBOO()
  * @method static BambooSapling BAMBOO_SAPLING()
- * @method static Banner BANNER()
+ * @method static FloorBanner BANNER()
  * @method static Transparent BARRIER()
+ * @method static Beacon BEACON()
  * @method static Bed BED()
  * @method static Bedrock BEDROCK()
  * @method static Beetroot BEETROOTS()
@@ -70,10 +72,11 @@ use function assert;
  * @method static Planks BIRCH_PLANKS()
  * @method static WoodenPressurePlate BIRCH_PRESSURE_PLATE()
  * @method static Sapling BIRCH_SAPLING()
- * @method static Sign BIRCH_SIGN()
+ * @method static FloorSign BIRCH_SIGN()
  * @method static WoodenSlab BIRCH_SLAB()
  * @method static WoodenStairs BIRCH_STAIRS()
  * @method static WoodenTrapdoor BIRCH_TRAPDOOR()
+ * @method static WallSign BIRCH_WALL_SIGN()
  * @method static Wood BIRCH_WOOD()
  * @method static Carpet BLACK_CARPET()
  * @method static Concrete BLACK_CONCRETE()
@@ -115,6 +118,7 @@ use function assert;
  * @method static Cake CAKE()
  * @method static Carrot CARROTS()
  * @method static CarvedPumpkin CARVED_PUMPKIN()
+ * @method static ChemicalHeat CHEMICAL_HEAT()
  * @method static Chest CHEST()
  * @method static Opaque CHISELED_QUARTZ()
  * @method static Opaque CHISELED_RED_SANDSTONE()
@@ -156,10 +160,11 @@ use function assert;
  * @method static Planks DARK_OAK_PLANKS()
  * @method static WoodenPressurePlate DARK_OAK_PRESSURE_PLATE()
  * @method static Sapling DARK_OAK_SAPLING()
- * @method static Sign DARK_OAK_SIGN()
+ * @method static FloorSign DARK_OAK_SIGN()
  * @method static WoodenSlab DARK_OAK_SLAB()
  * @method static WoodenStairs DARK_OAK_STAIRS()
  * @method static WoodenTrapdoor DARK_OAK_TRAPDOOR()
+ * @method static WallSign DARK_OAK_WALL_SIGN()
  * @method static Wood DARK_OAK_WOOD()
  * @method static Opaque DARK_PRISMARINE()
  * @method static Slab DARK_PRISMARINE_SLAB()
@@ -408,10 +413,11 @@ use function assert;
  * @method static Planks JUNGLE_PLANKS()
  * @method static WoodenPressurePlate JUNGLE_PRESSURE_PLATE()
  * @method static Sapling JUNGLE_SAPLING()
- * @method static Sign JUNGLE_SIGN()
+ * @method static FloorSign JUNGLE_SIGN()
  * @method static WoodenSlab JUNGLE_SLAB()
  * @method static WoodenStairs JUNGLE_STAIRS()
  * @method static WoodenTrapdoor JUNGLE_TRAPDOOR()
+ * @method static WallSign JUNGLE_WALL_SIGN()
  * @method static Wood JUNGLE_WOOD()
  * @method static ChemistryTable LAB_TABLE()
  * @method static Ladder LADDER()
@@ -494,10 +500,11 @@ use function assert;
  * @method static Planks OAK_PLANKS()
  * @method static WoodenPressurePlate OAK_PRESSURE_PLATE()
  * @method static Sapling OAK_SAPLING()
- * @method static Sign OAK_SIGN()
+ * @method static FloorSign OAK_SIGN()
  * @method static WoodenSlab OAK_SLAB()
  * @method static WoodenStairs OAK_STAIRS()
  * @method static WoodenTrapdoor OAK_TRAPDOOR()
+ * @method static WallSign OAK_WALL_SIGN()
  * @method static Wood OAK_WOOD()
  * @method static Opaque OBSIDIAN()
  * @method static Carpet ORANGE_CARPET()
@@ -598,7 +605,6 @@ use function assert;
  * @method static Wall SANDSTONE_WALL()
  * @method static SeaLantern SEA_LANTERN()
  * @method static SeaPickle SEA_PICKLE()
- * @method static Anvil SLIGHTLY_DAMAGED_ANVIL()
  * @method static Opaque SMOOTH_QUARTZ()
  * @method static Slab SMOOTH_QUARTZ_SLAB()
  * @method static Stair SMOOTH_QUARTZ_STAIRS()
@@ -623,10 +629,11 @@ use function assert;
  * @method static Planks SPRUCE_PLANKS()
  * @method static WoodenPressurePlate SPRUCE_PRESSURE_PLATE()
  * @method static Sapling SPRUCE_SAPLING()
- * @method static Sign SPRUCE_SIGN()
+ * @method static FloorSign SPRUCE_SIGN()
  * @method static WoodenSlab SPRUCE_SLAB()
  * @method static WoodenStairs SPRUCE_STAIRS()
  * @method static WoodenTrapdoor SPRUCE_TRAPDOOR()
+ * @method static WallSign SPRUCE_WALL_SIGN()
  * @method static Wood SPRUCE_WOOD()
  * @method static Opaque STONE()
  * @method static Slab STONE_BRICK_SLAB()
@@ -646,8 +653,8 @@ use function assert;
  * @method static Tripwire TRIPWIRE()
  * @method static TripwireHook TRIPWIRE_HOOK()
  * @method static UnderwaterTorch UNDERWATER_TORCH()
- * @method static Anvil VERY_DAMAGED_ANVIL()
  * @method static Vine VINES()
+ * @method static WallBanner WALL_BANNER()
  * @method static Water WATER()
  * @method static WeightedPressurePlateHeavy WEIGHTED_PRESSURE_PLATE_HEAVY()
  * @method static WeightedPressurePlateLight WEIGHTED_PRESSURE_PLATE_LIGHT()
@@ -712,6 +719,7 @@ final class VanillaBlocks{
 		self::register("acacia_slab", $factory->get(158, 4));
 		self::register("acacia_stairs", $factory->get(163));
 		self::register("acacia_trapdoor", $factory->get(400));
+		self::register("acacia_wall_sign", $factory->get(446, 2));
 		self::register("acacia_wood", $factory->get(467, 4));
 		self::register("activator_rail", $factory->get(126));
 		self::register("air", $factory->get(0));
@@ -726,6 +734,7 @@ final class VanillaBlocks{
 		self::register("bamboo_sapling", $factory->get(419));
 		self::register("banner", $factory->get(176));
 		self::register("barrier", $factory->get(416));
+		self::register("beacon", $factory->get(138));
 		self::register("bed", $factory->get(26));
 		self::register("bedrock", $factory->get(7));
 		self::register("beetroots", $factory->get(244));
@@ -742,6 +751,7 @@ final class VanillaBlocks{
 		self::register("birch_slab", $factory->get(158, 2));
 		self::register("birch_stairs", $factory->get(135));
 		self::register("birch_trapdoor", $factory->get(401));
+		self::register("birch_wall_sign", $factory->get(442, 2));
 		self::register("birch_wood", $factory->get(467, 2));
 		self::register("black_carpet", $factory->get(171, 15));
 		self::register("black_concrete", $factory->get(236, 15));
@@ -783,6 +793,7 @@ final class VanillaBlocks{
 		self::register("cake", $factory->get(92));
 		self::register("carrots", $factory->get(141));
 		self::register("carved_pumpkin", $factory->get(410));
+		self::register("chemical_heat", $factory->get(192));
 		self::register("chest", $factory->get(54, 2));
 		self::register("chiseled_quartz", $factory->get(155, 1));
 		self::register("chiseled_red_sandstone", $factory->get(179, 1));
@@ -828,6 +839,7 @@ final class VanillaBlocks{
 		self::register("dark_oak_slab", $factory->get(158, 5));
 		self::register("dark_oak_stairs", $factory->get(164));
 		self::register("dark_oak_trapdoor", $factory->get(402));
+		self::register("dark_oak_wall_sign", $factory->get(448, 2));
 		self::register("dark_oak_wood", $factory->get(467, 5));
 		self::register("dark_prismarine", $factory->get(168, 1));
 		self::register("dark_prismarine_slab", $factory->get(182, 3));
@@ -1080,6 +1092,7 @@ final class VanillaBlocks{
 		self::register("jungle_slab", $factory->get(158, 3));
 		self::register("jungle_stairs", $factory->get(136));
 		self::register("jungle_trapdoor", $factory->get(403));
+		self::register("jungle_wall_sign", $factory->get(444, 2));
 		self::register("jungle_wood", $factory->get(467, 3));
 		self::register("lab_table", $factory->get(238, 12));
 		self::register("ladder", $factory->get(65, 2));
@@ -1166,6 +1179,7 @@ final class VanillaBlocks{
 		self::register("oak_slab", $factory->get(158));
 		self::register("oak_stairs", $factory->get(53));
 		self::register("oak_trapdoor", $factory->get(96));
+		self::register("oak_wall_sign", $factory->get(68, 2));
 		self::register("oak_wood", $factory->get(467));
 		self::register("obsidian", $factory->get(49));
 		self::register("orange_carpet", $factory->get(171, 1));
@@ -1266,7 +1280,6 @@ final class VanillaBlocks{
 		self::register("sandstone_wall", $factory->get(139, 5));
 		self::register("sea_lantern", $factory->get(169));
 		self::register("sea_pickle", $factory->get(411));
-		self::register("slightly_damaged_anvil", $factory->get(145, 4));
 		self::register("smooth_quartz", $factory->get(155, 3));
 		self::register("smooth_quartz_slab", $factory->get(421, 1));
 		self::register("smooth_quartz_stairs", $factory->get(440));
@@ -1295,6 +1308,7 @@ final class VanillaBlocks{
 		self::register("spruce_slab", $factory->get(158, 1));
 		self::register("spruce_stairs", $factory->get(134));
 		self::register("spruce_trapdoor", $factory->get(404));
+		self::register("spruce_wall_sign", $factory->get(437, 2));
 		self::register("spruce_wood", $factory->get(467, 1));
 		self::register("stone", $factory->get(1));
 		self::register("stone_brick_slab", $factory->get(44, 5));
@@ -1314,8 +1328,8 @@ final class VanillaBlocks{
 		self::register("tripwire", $factory->get(132));
 		self::register("tripwire_hook", $factory->get(131));
 		self::register("underwater_torch", $factory->get(239, 5));
-		self::register("very_damaged_anvil", $factory->get(145, 8));
 		self::register("vines", $factory->get(106));
+		self::register("wall_banner", $factory->get(177, 2));
 		self::register("water", $factory->get(8));
 		self::register("weighted_pressure_plate_heavy", $factory->get(148));
 		self::register("weighted_pressure_plate_light", $factory->get(147));

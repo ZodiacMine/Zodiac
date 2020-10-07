@@ -21,14 +21,26 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\block\utils;
 
-use pocketmine\block\Block;
-use pocketmine\block\VanillaBlocks;
+use function floor;
 
-class Redstone extends Item{
+trait SignLikeRotationTrait{
+	/** @var int */
+	private $rotation = 0;
 
-	public function getBlock(?int $clickedFace = null) : Block{
-		return VanillaBlocks::REDSTONE_WIRE();
+	public function getRotation() : int{ return $this->rotation; }
+
+	/** @return $this */
+	public function setRotation(int $rotation) : self{
+		if($rotation < 0 || $rotation > 15){
+			throw new \InvalidArgumentException("Rotation must be in range 0-15");
+		}
+		$this->rotation = $rotation;
+		return $this;
+	}
+
+	private static function getRotationFromYaw(float $yaw) : int{
+		return ((int) floor((($yaw + 180) * 16 / 360) + 0.5)) & 0xf;
 	}
 }

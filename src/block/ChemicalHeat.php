@@ -21,14 +21,12 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\block;
 
-use pocketmine\block\Block;
-use pocketmine\block\VanillaBlocks;
+final class ChemicalHeat extends Transparent{
 
-class Redstone extends Item{
-
-	public function getBlock(?int $clickedFace = null) : Block{
-		return VanillaBlocks::REDSTONE_WIRE();
-	}
+	/*
+	 * TODO: this block causes melting of nearby ice and snow within 2 blocks taxicab distance.
+	 * Since it doesn't emit any light, the mechanics of this block's behaviour are not currently clear.
+	 */
 }

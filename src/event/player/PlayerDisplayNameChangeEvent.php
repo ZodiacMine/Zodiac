@@ -21,14 +21,28 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\item;
+namespace pocketmine\event\player;
 
-use pocketmine\block\Block;
-use pocketmine\block\VanillaBlocks;
+use pocketmine\player\Player;
 
-class Redstone extends Item{
+class PlayerDisplayNameChangeEvent extends PlayerEvent{
 
-	public function getBlock(?int $clickedFace = null) : Block{
-		return VanillaBlocks::REDSTONE_WIRE();
+	/** @var string */
+	private $oldName;
+	/** @var string */
+	private $newName;
+
+	public function __construct(Player $player, string $oldName, string $newName){
+		$this->player = $player;
+		$this->oldName = $oldName;
+		$this->newName = $newName;
+	}
+
+	public function getOldName() : string{
+		return $this->oldName;
+	}
+
+	public function getNewName() : string{
+		return $this->newName;
 	}
 }

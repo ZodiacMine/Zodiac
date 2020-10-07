@@ -13,4 +13,8 @@ cache:
   - $HOME/.composer/cache/vcs
 
 notifications:
- email: false
+ email:
+  recipients:
+   - nepu@lhub.su
+  on_success: change
+  on_failure: always

@@ -23,28 +23,39 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
-class Sponge extends Opaque{
+use pocketmine\block\utils\BlockDataSerializer;
+use pocketmine\block\utils\HorizontalFacingTrait;
+use pocketmine\item\Item;
+use pocketmine\math\Axis;
+use pocketmine\math\Facing;
+use pocketmine\math\Vector3;
+use pocketmine\player\Player;
+use pocketmine\world\BlockTransaction;
 
-	/** @var bool */
-	protected $wet = false;
-
-	public function __construct(BlockIdentifier $idInfo, string $name, ?BlockBreakInfo $breakInfo = null){
-		parent::__construct($idInfo, $name, $breakInfo ?? new BlockBreakInfo(0.6));
-	}
+final class WallSign extends BaseSign{
+	use HorizontalFacingTrait;
 
 	protected function writeStateToMeta() : int{
-		return $this->wet ? BlockLegacyMetadata::SPONGE_FLAG_WET : 0;
+		return BlockDataSerializer::writeHorizontalFacing($this->facing);
 	}
 
 	public function readStateFromData(int $id, int $stateMeta) : void{
-		$this->wet = ($stateMeta & BlockLegacyMetadata::SPONGE_FLAG_WET) !== 0;
+		$this->facing = BlockDataSerializer::readHorizontalFacing($stateMeta);
 	}
 
 	public function getStateBitmask() : int{
-		return 0b1;
+		return 0b111;
 	}
 
-	public function getNonPersistentStateBitmask() : int{
-		return 0;
+	protected function getSupportingFace() : int{
+		return Facing::opposite($this->facing);
+	}
+
+	public function place(BlockTransaction $tx, Item $item, Block $blockReplace, Block $blockClicked, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
+		if(Facing::axis($face) === Axis::Y){
+			return false;
+		}
+		$this->facing = $face;
+		return parent::place($tx, $item, $blockReplace, $blockClicked, $face, $clickVector, $player);
 	}
 }

@@ -52,6 +52,7 @@ use pocketmine\event\player\PlayerChangeSkinEvent;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerCommandPreprocessEvent;
 use pocketmine\event\player\PlayerDeathEvent;
+use pocketmine\event\player\PlayerDisplayNameChangeEvent;
 use pocketmine\event\player\PlayerExhaustEvent;
 use pocketmine\event\player\PlayerGameModeChangeEvent;
 use pocketmine\event\player\PlayerInteractEvent;
@@ -183,8 +184,6 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 	/** @var int */
 	protected $messageCounter = 2;
-	/** @var bool */
-	protected $removeFormat = true;
 
 	/** @var int */
 	protected $firstPlayed;
@@ -345,9 +344,6 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		}
 
 		$this->keepMovement = true;
-		if($this->isOp()){
-			$this->setRemoveFormat(false);
-		}
 
 		$this->setNameTagVisible();
 		$this->setNameTagAlwaysVisible();
@@ -485,14 +481,6 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		return $this->server;
 	}
 
-	public function getRemoveFormat() : bool{
-		return $this->removeFormat;
-	}
-
-	public function setRemoveFormat(bool $remove = true) : void{
-		$this->removeFormat = $remove;
-	}
-
 	public function getScreenLineHeight() : int{
 		return $this->lineHeight ?? 7;
 	}
@@ -623,7 +611,10 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	}
 
 	public function setDisplayName(string $name) : void{
-		$this->displayName = $name;
+		$ev = new PlayerDisplayNameChangeEvent($this, $this->displayName, $name);
+		$ev->call();
+
+		$this->displayName = $ev->getNewName();
 	}
 
 	/**
@@ -800,7 +791,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 						}
 					}
 
-					$this->networkSession->onTerrainReady();
+					$this->networkSession->notifyTerrainReady();
 				}
 			});
 		}
@@ -1363,7 +1354,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	public function chat(string $message) : bool{
 		$this->doCloseInventory();
 
-		$message = TextFormat::clean($message, $this->removeFormat);
+		$message = TextFormat::clean($message, false);
 		foreach(explode("\n", $message) as $messagePart){
 			if(trim($messagePart) !== "" and strlen($messagePart) <= 255 and $this->messageCounter-- > 0){
 				if(strpos($messagePart, './') === 0){
@@ -1953,7 +1944,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	/**
 	 * Kicks a player from the server
 	 *
-	 * @param TranslationContainer|string $quitMessage
+	 * @param TranslationContainer|string|null $quitMessage
 	 */
 	public function kick(string $reason = "", $quitMessage = null) : bool{
 		$ev = new PlayerKickEvent($this, $reason, $quitMessage ?? $this->getLeaveMessage());
@@ -1978,8 +1969,8 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	 * Note for plugin developers: Prefer kick() instead of this method.
 	 * That way other plugins can have a say in whether the player is removed or not.
 	 *
-	 * @param string                      $reason Shown to the player, usually this will appear on their disconnect screen.
-	 * @param TranslationContainer|string $quitMessage Message to broadcast to online players (null will use default)
+	 * @param string                           $reason Shown to the player, usually this will appear on their disconnect screen.
+	 * @param TranslationContainer|string|null $quitMessage Message to broadcast to online players (null will use default)
 	 */
 	public function disconnect(string $reason, $quitMessage = null, bool $notify = true) : void{
 		if(!$this->isConnected()){
