@@ -769,7 +769,7 @@ class World implements ChunkManager{
 							$p->onChunkChanged($chunk);
 						}
 					}else{
-						foreach($this->createBlockUpdatePackets($blocks) as $packet){
+						foreach($this->createBlockUpdatePackets($this->getChunkPlayers($chunkX, $chunkZ), $blocks) as $packet){
 							$this->broadcastPacketToPlayersUsingChunk($chunkX, $chunkZ, $packet);
 						}
 					}
@@ -830,11 +830,12 @@ class World implements ChunkManager{
 	}
 
 	/**
+	 * @param Player[]  $target
 	 * @param Vector3[] $blocks
 	 *
 	 * @return ClientboundPacket[]
 	 */
-	public function createBlockUpdatePackets(array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL) : array{
+	public function createBlockUpdatePackets(array $target, array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL) : array{
 		$packets = [];
 
 		foreach($blocks as $b){
