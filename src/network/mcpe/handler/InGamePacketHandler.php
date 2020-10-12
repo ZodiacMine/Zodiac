@@ -390,7 +390,9 @@ class InGamePacketHandler extends PacketHandler{
 			}else{
 				$blocks[] = $blockPos;
 			}
-			$this->player->getLocation()->getWorld()->sendBlocks([$this->player], $blocks);
+			foreach($this->player->getWorld()->createBlockUpdatePackets($blocks) as $packet){
+				$this->session->sendDataPacket($packet);
+			}
 		}
 	}
 
@@ -510,22 +512,22 @@ class InGamePacketHandler extends PacketHandler{
 				return true;
 			case PlayerActionPacket::ACTION_START_SPRINT:
 				if(!$this->player->toggleSprint(true)){
-					$this->player->sendData($this->player);
+					$this->player->sendData([$this->player]);
 				}
 				return true;
 			case PlayerActionPacket::ACTION_STOP_SPRINT:
 				if(!$this->player->toggleSprint(false)){
-					$this->player->sendData($this->player);
+					$this->player->sendData([$this->player]);
 				}
 				return true;
 			case PlayerActionPacket::ACTION_START_SNEAK:
 				if(!$this->player->toggleSneak(true)){
-					$this->player->sendData($this->player);
+					$this->player->sendData([$this->player]);
 				}
 				return true;
 			case PlayerActionPacket::ACTION_STOP_SNEAK:
 				if(!$this->player->toggleSneak(false)){
-					$this->player->sendData($this->player);
+					$this->player->sendData([$this->player]);
 				}
 				return true;
 			case PlayerActionPacket::ACTION_START_GLIDE:
@@ -620,7 +622,9 @@ class InGamePacketHandler extends PacketHandler{
 
 				try{
 					if(!$block->updateText($this->player, $text)){
-						$this->player->getWorld()->sendBlocks([$this->player], [$pos]);
+						foreach($this->player->getWorld()->createBlockUpdatePackets([$pos]) as $updatePacket){
+							$this->session->sendDataPacket($updatePacket);
+						}
 					}
 				}catch(\UnexpectedValueException $e){
 					throw BadPacketException::wrap($e);

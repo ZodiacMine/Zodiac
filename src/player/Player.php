@@ -91,6 +91,7 @@ use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\AnimatePacket;
 use pocketmine\network\mcpe\protocol\MovePlayerPacket;
+use pocketmine\network\mcpe\protocol\SetActorMotionPacket;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
@@ -1258,6 +1259,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	public function setMotion(Vector3 $motion) : bool{
 		if(parent::setMotion($motion)){
 			$this->broadcastMotion();
+			$this->networkSession->sendDataPacket(SetActorMotionPacket::create($this->id, $motion));
 
 			return true;
 		}
@@ -2205,6 +2207,14 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		$properties->setPlayerFlag(PlayerMetadataFlags::SLEEP, $this->sleeping !== null);
 		$properties->setBlockPos(EntityMetadataProperties::PLAYER_BED_POSITION, $this->sleeping ?? new Vector3(0, 0, 0));
+	}
+
+	public function sendData(?array $targets, ?array $data = null) : void{
+		if($targets === null){
+			$targets = $this->getViewers();
+			$targets[] = $this;
+		}
+		parent::sendData($targets, $data);
 	}
 
 	public function broadcastAnimation(Animation $animation, ?array $targets = null) : void{

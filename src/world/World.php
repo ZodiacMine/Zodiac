@@ -174,6 +174,9 @@ class World implements ChunkManager{
 	/** @var Player[][] */
 	private $playerChunkListeners = [];
 
+	/** @var ClientboundPacket[][] */
+	private $packetBuffersByChunk = [];
+
 	/** @var float[] */
 	private $unloadQueue = [];
 
@@ -528,7 +531,15 @@ class World implements ChunkManager{
 	 * Broadcasts a packet to every player who has the target position within their view distance.
 	 */
 	public function broadcastPacketToViewers(Vector3 $pos, ClientboundPacket $packet) : void{
-		$this->server->broadcastPackets($this->getChunkPlayers($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4), [$packet]);
+		$this->broadcastPacketToPlayersUsingChunk($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4, $packet);
+	}
+
+	private function broadcastPacketToPlayersUsingChunk(int $chunkX, int $chunkZ, ClientboundPacket $packet) : void{
+		if(!isset($this->packetBuffersByChunk[$index = World::chunkHash($chunkX, $chunkZ)])){
+			$this->packetBuffersByChunk[$index] = [$packet];
+		}else{
+			$this->packetBuffersByChunk[$index][] = $packet;
+		}
 	}
 
 	public function registerChunkLoader(ChunkLoader $loader, int $chunkX, int $chunkZ, bool $autoLoad = true) : void{
@@ -758,7 +769,9 @@ class World implements ChunkManager{
 							$p->onChunkChanged($chunk);
 						}
 					}else{
-						$this->sendBlocks($this->getChunkPlayers($chunkX, $chunkZ), $blocks);
+						foreach($this->createBlockUpdatePackets($blocks) as $packet){
+							$this->broadcastPacketToPlayersUsingChunk($chunkX, $chunkZ, $packet);
+						}
 					}
 				}
 			}
@@ -774,6 +787,16 @@ class World implements ChunkManager{
 		if($this->sleepTicks > 0 and --$this->sleepTicks <= 0){
 			$this->checkSleep();
 		}
+
+		foreach($this->packetBuffersByChunk as $index => $entries){
+			World::getXZ($index, $chunkX, $chunkZ);
+			$chunkPlayers = $this->getChunkPlayers($chunkX, $chunkZ);
+			if(count($chunkPlayers) > 0){
+				$this->server->broadcastPackets($chunkPlayers, $entries);
+			}
+		}
+
+		$this->packetBuffersByChunk = [];
 	}
 
 	public function checkSleep() : void{
@@ -807,10 +830,11 @@ class World implements ChunkManager{
 	}
 
 	/**
-	 * @param Player[]  $target
 	 * @param Vector3[] $blocks
+	 *
+	 * @return ClientboundPacket[]
 	 */
-	public function sendBlocks(array $target, array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL) : void{
+	public function createBlockUpdatePackets(array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL) : array{
 		$packets = [];
 
 		foreach($blocks as $b){
@@ -827,7 +851,7 @@ class World implements ChunkManager{
 			}
 		}
 
-		$this->server->broadcastPackets($target, $packets);
+		return $packets;
 	}
 
 	public function clearCache(bool $force = false) : void{

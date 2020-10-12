@@ -432,7 +432,7 @@ class NetworkSession{
 		if(count($this->sendBuffer) > 0){
 			$promise = $this->server->prepareBatch(PacketBatch::fromPackets(...$this->sendBuffer), $this->compressor, $immediate);
 			$this->sendBuffer = [];
-			$this->queueCompressed($promise, $immediate);
+			$this->queueCompressedNoBufferFlush($promise, $immediate);
 		}
 	}
 
@@ -442,6 +442,10 @@ class NetworkSession{
 
 	public function queueCompressed(CompressBatchPromise $payload, bool $immediate = false) : void{
 		$this->flushSendBuffer($immediate); //Maintain ordering if possible
+		$this->queueCompressedNoBufferFlush($payload, $immediate);
+	}
+
+	private function queueCompressedNoBufferFlush(CompressBatchPromise $payload, bool $immediate = false) : void{
 		if($immediate){
 			//Skips all queues
 			$this->sendEncoded($payload->getResult(), true);
@@ -566,8 +570,6 @@ class NetworkSession{
 		if($error === null){
 			if($authenticated and $this->info->getXuid() === ""){
 				$error = "Expected XUID but none found";
-			}elseif(!$authenticated and $this->info->getXuid() !== ""){
-				$error = "Unexpected XUID for non-XBOX-authenticated player";
 			}elseif($clientPubKey === null){
 				$error = "Missing client public key"; //failsafe
 			}
@@ -581,9 +583,15 @@ class NetworkSession{
 
 		$this->authenticated = $authenticated;
 
-		if(!$this->authenticated and $authRequired){
-			$this->disconnect("disconnectionScreen.notAuthenticated");
-			return;
+		if(!$this->authenticated){
+			if($authRequired){
+				$this->disconnect("disconnectionScreen.notAuthenticated");
+				return;
+			}
+			if($this->info->hasXboxData()){
+				$this->logger->warning("Discarding unexpected XUID for non-authenticated player");
+				$this->info = $this->info->withoutXboxData();
+			}
 		}
 		$this->logger->debug("Xbox Live authenticated: " . ($this->authenticated ? "YES" : "NO"));
 
@@ -650,8 +658,7 @@ class NetworkSession{
 	}
 
 	public function onRespawn() : void{
-		$this->player->sendData($this->player);
-		$this->player->sendData($this->player->getViewers());
+		$this->player->sendData(null);
 
 		$this->syncAdventureSettings($this->player);
 		$this->invManager->syncAll();

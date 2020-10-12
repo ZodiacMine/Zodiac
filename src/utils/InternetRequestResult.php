@@ -21,45 +21,37 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\protocol\types;
+namespace pocketmine\utils;
 
-class SkinAnimation{
+final class InternetRequestResult{
 
-	public const TYPE_HEAD = 1;
-	public const TYPE_BODY_32 = 2;
-	public const TYPE_BODY_64 = 3;
-
-	/** @var SkinImage */
-	private $image;
+	/**
+	 * @var string[][]
+	 * @phpstan-var list<array<string, string>>
+	 */
+	private $headers;
+	/** @var string */
+	private $body;
 	/** @var int */
-	private $type;
-	/** @var float */
-	private $frames;
+	private $code;
 
-	public function __construct(SkinImage $image, int $type, float $frames){
-		$this->image = $image;
-		$this->type = $type;
-		$this->frames = $frames;
+	/**
+	 * @param string[][] $headers
+	 * @phpstan-param list<array<string, string>> $headers
+	 */
+	public function __construct(array $headers, string $body, int $code){
+		$this->headers = $headers;
+		$this->body = $body;
+		$this->code = $code;
 	}
 
 	/**
-	 * Image of the animation.
+	 * @return string[][]
+	 * @phpstan-return list<array<string, string>>
 	 */
-	public function getImage() : SkinImage{
-		return $this->image;
-	}
+	public function getHeaders() : array{ return $this->headers; }
 
-	/**
-	 * The type of animation you are applying.
-	 */
-	public function getType() : int{
-		return $this->type;
-	}
+	public function getBody() : string{ return $this->body; }
 
-	/**
-	 * The total amount of frames in an animation.
-	 */
-	public function getFrames() : float{
-		return $this->frames;
-	}
+	public function getCode() : int{ return $this->code; }
 }

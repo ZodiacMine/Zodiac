@@ -21,25 +21,45 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe\convert;
+namespace pocketmine\network\mcpe\protocol\types\skin;
 
-use pocketmine\entity\InvalidSkinException;
-use pocketmine\entity\Skin;
-use pocketmine\network\mcpe\protocol\types\skin\SkinData;
+class SkinAnimation{
 
-/**
- * Used to convert new skin data to the skin entity or old skin entity to skin data.
- */
-interface SkinAdapter{
+	public const TYPE_HEAD = 1;
+	public const TYPE_BODY_32 = 2;
+	public const TYPE_BODY_64 = 3;
+
+	/** @var SkinImage */
+	private $image;
+	/** @var int */
+	private $type;
+	/** @var float */
+	private $frames;
+
+	public function __construct(SkinImage $image, int $type, float $frames){
+		$this->image = $image;
+		$this->type = $type;
+		$this->frames = $frames;
+	}
 
 	/**
-	 * Allows you to convert a skin entity to skin data.
+	 * Image of the animation.
 	 */
-	public function toSkinData(Skin $skin) : SkinData;
+	public function getImage() : SkinImage{
+		return $this->image;
+	}
 
 	/**
-	 * Allows you to convert skin data to a skin entity.
-	 * @throws InvalidSkinException
+	 * The type of animation you are applying.
 	 */
-	public function fromSkinData(SkinData $data) : Skin;
+	public function getType() : int{
+		return $this->type;
+	}
+
+	/**
+	 * The total amount of frames in an animation.
+	 */
+	public function getFrames() : float{
+		return $this->frames;
+	}
 }
