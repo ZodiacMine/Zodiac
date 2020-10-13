@@ -52,7 +52,7 @@ use pocketmine\item\ItemUseResult;
 use pocketmine\item\LegacyStringToItemParser;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
+use pocketmine\network\mcpe\convert\RuntimeBlockMapping as RuntimeBlockTable;
 use pocketmine\network\mcpe\protocol\BlockActorDataPacket;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
@@ -769,8 +769,11 @@ class World implements ChunkManager{
 							$p->onChunkChanged($chunk);
 						}
 					}else{
-						foreach($this->createBlockUpdatePackets($this->getChunkPlayers($chunkX, $chunkZ), $blocks) as $packet){
-							$this->broadcastPacketToPlayersUsingChunk($chunkX, $chunkZ, $packet);
+						$targets = $this->getChunkPlayers($chunkX, $chunkZ);
+						if(count($targets) > 0){
+							foreach($this->createBlockUpdatePackets($blocks) as $packet){
+								$this->broadcastPacketToPlayersUsingChunk($chunkX, $chunkZ, $packet);
+							}
 						}
 					}
 				}
@@ -830,12 +833,11 @@ class World implements ChunkManager{
 	}
 
 	/**
-	 * @param Player[]  $target
 	 * @param Vector3[] $blocks
 	 *
 	 * @return ClientboundPacket[]
 	 */
-	public function createBlockUpdatePackets(array $target, array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL) : array{
+	public function createBlockUpdatePackets(array $blocks, int $dataLayerId = UpdateBlockPacket::DATA_LAYER_NORMAL, ?RuntimeBlockTable $palette = null) : array{
 		$packets = [];
 
 		foreach($blocks as $b){
@@ -844,7 +846,7 @@ class World implements ChunkManager{
 			}
 
 			$fullBlock = $this->getBlockAt($b->x, $b->y, $b->z);
-			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, RuntimeBlockMapping::getInstance()->toRuntimeId($fullBlock->getFullId()), $dataLayerId);
+			$packets[] = UpdateBlockPacket::create($b->x, $b->y, $b->z, ($palette ?? RuntimeBlockTable::getInstance())->toRuntimeId($fullBlock->getFullId()), $dataLayerId);
 
 			$tile = $this->getTileAt($b->x, $b->y, $b->z);
 			if($tile instanceof Spawnable){
