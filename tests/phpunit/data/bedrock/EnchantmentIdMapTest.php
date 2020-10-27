@@ -21,15 +21,18 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\data\bedrock;
 
-use pocketmine\block\utils\ColorInMetadataTrait;
-use pocketmine\item\ToolTier;
+use PHPUnit\Framework\TestCase;
+use pocketmine\item\enchantment\VanillaEnchantments;
 
-class Concrete extends Opaque{
-	use ColorInMetadataTrait;
+class EnchantmentIdMapTest extends TestCase{
 
-	public function __construct(BlockIdentifier $idInfo, string $name, ?BlockBreakInfo $breakInfo = null){
-		parent::__construct($idInfo, $name, $breakInfo ?? new BlockBreakInfo(1.8, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel()));
+	public function testAllEnchantsMapped() : void{
+		foreach(VanillaEnchantments::getAll() as $enchantment){
+			$id = EnchantmentIdMap::getInstance()->toId($enchantment);
+			$enchantment2 = EnchantmentIdMap::getInstance()->fromId($id);
+			self::assertTrue($enchantment === $enchantment2);
+		}
 	}
 }

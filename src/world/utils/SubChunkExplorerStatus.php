@@ -21,15 +21,17 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\world\utils;
 
-use pocketmine\block\utils\ColorInMetadataTrait;
-use pocketmine\item\ToolTier;
-
-class Concrete extends Opaque{
-	use ColorInMetadataTrait;
-
-	public function __construct(BlockIdentifier $idInfo, string $name, ?BlockBreakInfo $breakInfo = null){
-		parent::__construct($idInfo, $name, $breakInfo ?? new BlockBreakInfo(1.8, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel()));
+final class SubChunkExplorerStatus{
+	private function __construct(){
+		//NOOP
 	}
+
+	/** We encountered terrain not accessible by the current terrain provider */
+	public const INVALID = 0;
+	/** We remained inside the same (sub)chunk */
+	public const OK = 1;
+	/** We moved to a different (sub)chunk */
+	public const MOVED = 2;
 }

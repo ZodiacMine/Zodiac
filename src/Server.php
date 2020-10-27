@@ -39,7 +39,6 @@ use pocketmine\event\player\PlayerDataSaveEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\event\server\QueryRegenerateEvent;
-use pocketmine\item\enchantment\Enchantment;
 use pocketmine\lang\Language;
 use pocketmine\lang\LanguageNotFoundException;
 use pocketmine\lang\TranslationContainer;
@@ -859,10 +858,10 @@ class Server{
 				$netCompressionThreshold = (int) $this->configGroup->getProperty("network.batch-threshold", 256);
 			}
 
-			$netCompressionLevel = (int) $this->configGroup->getProperty("network.compression-level", 7);
+			$netCompressionLevel = (int) $this->configGroup->getProperty("network.compression-level", 6);
 			if($netCompressionLevel < 1 or $netCompressionLevel > 9){
-				$this->logger->warning("Invalid network compression level $netCompressionLevel set, setting to default 7");
-				$netCompressionLevel = 7;
+				$this->logger->warning("Invalid network compression level $netCompressionLevel set, setting to default 6");
+				$netCompressionLevel = 6;
 			}
 			ZlibCompressor::setInstance(new ZlibCompressor($netCompressionLevel, $netCompressionThreshold, ZlibCompressor::DEFAULT_MAX_DECOMPRESSION_SIZE));
 
@@ -924,7 +923,6 @@ class Server{
 
 			$this->commandMap = new SimpleCommandMap($this);
 
-			Enchantment::init();
 			Biome::init();
 
 			$this->craftingManager = CraftingManagerFromDataHelper::make(\pocketmine\RESOURCE_PATH . '/vanilla/recipes.json');
@@ -978,7 +976,7 @@ class Server{
 					if(isset($options["generator"])){
 						$generatorOptions = explode(":", $options["generator"]);
 						$generator = GeneratorManager::getInstance()->getGenerator(array_shift($generatorOptions));
-						if(count($options) > 0){
+						if(count($generatorOptions) > 0){
 							$options["preset"] = implode(":", $generatorOptions);
 						}
 					}else{

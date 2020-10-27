@@ -64,8 +64,8 @@ use function cos;
 use function count;
 use function deg2rad;
 use function floor;
+use function fmod;
 use function get_class;
-use function is_array;
 use function is_infinite;
 use function is_nan;
 use function lcg_value;
@@ -1021,8 +1021,14 @@ abstract class Entity{
 				$this->fall($this->fallDistance);
 				$this->resetFallDistance();
 			}
-		}elseif($distanceThisTick < 0){
+		}elseif($distanceThisTick < $this->fallDistance){
+			//we've fallen some distance (distanceThisTick is negative)
+			//or we ascended back towards where fall distance was measured from initially (distanceThisTick is positive but less than existing fallDistance)
 			$this->fallDistance -= $distanceThisTick;
+		}else{
+			//we ascended past the apex where fall distance was originally being measured from
+			//reset it so it will be measured starting from the new, higher position
+			$this->fallDistance = 0;
 		}
 	}
 

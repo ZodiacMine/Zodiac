@@ -26,12 +26,11 @@ namespace pocketmine\command\defaults;
 use pocketmine\command\CommandOverload;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
-use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
+use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\lang\TranslationContainer;
 use pocketmine\utils\TextFormat;
 use function count;
-use function is_numeric;
 
 class EnchantCommand extends VanillaCommand{
 
@@ -82,13 +81,9 @@ class EnchantCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(is_numeric($args[0])){
-			$enchantment = Enchantment::get((int) $args[0]);
-		}else{
-			$enchantment = Enchantment::fromString($args[0]);
-		}
-
-		if(!($enchantment instanceof Enchantment)){
+		try{
+			$enchantment = VanillaEnchantments::fromString($args[0]);
+		}catch(\InvalidArgumentException $e){
 			$sender->sendMessage(new TranslationContainer("commands.enchant.notFound", [$args[0]]));
 			return true;
 		}

@@ -26,7 +26,7 @@ namespace pocketmine\entity;
 use pocketmine\entity\utils\ExperienceUtils;
 use pocketmine\event\player\PlayerExperienceChangeEvent;
 use pocketmine\item\Durable;
-use pocketmine\item\enchantment\Enchantment;
+use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\world\sound\XpCollectSound;
 use pocketmine\world\sound\XpLevelUpSound;
 use function array_rand;
@@ -151,12 +151,13 @@ class ExperienceManager{
 	 * @param bool $playSound Whether to play level-up and XP gained sounds.
 	 */
 	public function addXp(int $amount, bool $playSound = true) : bool{
-		$this->totalXp += $amount;
-
 		$oldLevel = $this->getXpLevel();
 		$oldTotal = $this->getCurrentTotalXp();
 
 		if($this->setCurrentTotalXp($oldTotal + $amount)){
+			if($amount > 0){
+				$this->totalXp += $amount;
+			}
 			if($playSound){
 				$newLevel = $this->getXpLevel();
 				if((int) ($newLevel / 5) > (int) ($oldLevel / 5)){
@@ -244,12 +245,12 @@ class ExperienceManager{
 		/** @var Durable[] $equipment */
 		$equipment = [];
 
-		if(($item = $this->entity->getInventory()->getItemInHand()) instanceof Durable and $item->hasEnchantment(Enchantment::MENDING())){
+		if(($item = $this->entity->getInventory()->getItemInHand()) instanceof Durable and $item->hasEnchantment(VanillaEnchantments::MENDING())){
 			$equipment[$mainHandIndex] = $item;
 		}
 
 		foreach($this->entity->getArmorInventory()->getContents() as $k => $armorItem){
-			if($armorItem instanceof Durable and $armorItem->hasEnchantment(Enchantment::MENDING())){
+			if($armorItem instanceof Durable and $armorItem->hasEnchantment(VanillaEnchantments::MENDING())){
 				$equipment[$k] = $armorItem;
 			}
 		}

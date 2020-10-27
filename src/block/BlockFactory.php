@@ -472,9 +472,6 @@ class BlockFactory{
 			$coloredName = static function(string $name) use($color) : string{
 				return $color->getDisplayName() . " " . $name;
 			};
-			$this->register(new Carpet(new BID(Ids::CARPET, $colorIdMap->toId($color)), $coloredName("Carpet")));
-			$this->register(new Concrete(new BID(Ids::CONCRETE, $colorIdMap->toId($color)), $coloredName("Concrete")));
-			$this->register(new ConcretePowder(new BID(Ids::CONCRETE_POWDER, $colorIdMap->toId($color)), $coloredName("Concrete Powder")));
 			$this->register(new Glass(new BID(Ids::STAINED_GLASS, $colorIdMap->toId($color)), $coloredName("Stained Glass")));
 			$this->register(new GlassPane(new BID(Ids::STAINED_GLASS_PANE, $colorIdMap->toId($color)), $coloredName("Stained Glass Pane")));
 			$this->register(new GlazedTerracotta(BlockLegacyIdHelper::getGlazedTerracottaIdentifier($color), $coloredName("Glazed Terracotta")));
@@ -482,8 +479,11 @@ class BlockFactory{
 			$this->register(new HardenedGlass(new BID(Ids::HARD_STAINED_GLASS, $colorIdMap->toId($color)), "Hardened " . $coloredName("Stained Glass")));
 			$this->register(new HardenedGlassPane(new BID(Ids::HARD_STAINED_GLASS_PANE, $colorIdMap->toId($color)), "Hardened " . $coloredName("Stained Glass Pane")));
 			$this->register(new ShulkerBox(new BID(Ids::SHULKER_BOX, $colorIdMap->toId($color), null, TileShulkerBox::class), $coloredName("Shulker Box")));
-			$this->register(new Wool(new BID(Ids::WOOL, $colorIdMap->toId($color)), $coloredName("Wool")));
 		}
+		$this->register(new Carpet(new BID(Ids::CARPET), "Carpet"));
+		$this->register(new Concrete(new BID(Ids::CONCRETE), "Concrete"));
+		$this->register(new ConcretePowder(new BID(Ids::CONCRETE_POWDER), "Concrete Powder"));
+		$this->register(new Wool(new BID(Ids::WOOL), "Wool"));
 
 		$this->register(new Wall(new BID(Ids::COBBLESTONE_WALL, Meta::WALL_ANDESITE), "Andesite Wall"));
 		$this->register(new Wall(new BID(Ids::COBBLESTONE_WALL, Meta::WALL_BRICK), "Brick Wall"));

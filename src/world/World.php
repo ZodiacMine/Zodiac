@@ -98,6 +98,10 @@ use function lcg_value;
 use function max;
 use function microtime;
 use function min;
+use function morton2d_decode;
+use function morton2d_encode;
+use function morton3d_decode;
+use function morton3d_encode;
 use function mt_rand;
 use function spl_object_id;
 use function strtolower;
@@ -270,33 +274,56 @@ class World implements ChunkManager{
 	private $logger;
 
 	public static function chunkHash(int $x, int $z) : int{
-		return (($x & 0xFFFFFFFF) << 32) | ($z & 0xFFFFFFFF);
+		return morton2d_encode($x, $z);
 	}
 
+	private const MORTON3D_BIT_SIZE = 21;
+	private const BLOCKHASH_Y_BITS = 9;
+	private const BLOCKHASH_Y_MASK = (1 << self::BLOCKHASH_Y_BITS) - 1;
+	private const BLOCKHASH_XZ_MASK = (1 << self::MORTON3D_BIT_SIZE) - 1;
+	private const BLOCKHASH_XZ_EXTRA_BITS = 6;
+	private const BLOCKHASH_XZ_EXTRA_MASK = (1 << self::BLOCKHASH_XZ_EXTRA_BITS) - 1;
+	private const BLOCKHASH_XZ_SIGN_SHIFT = 64 - self::MORTON3D_BIT_SIZE - self::BLOCKHASH_XZ_EXTRA_BITS;
+	private const BLOCKHASH_X_SHIFT = self::BLOCKHASH_Y_BITS;
+	private const BLOCKHASH_Z_SHIFT = self::BLOCKHASH_X_SHIFT + self::BLOCKHASH_XZ_EXTRA_BITS;
+
 	public static function blockHash(int $x, int $y, int $z) : int{
-		$shiftedY = $y - self::HALF_Y_MAX;
-		if($shiftedY < -512 or $shiftedY >= 512){
+		$shiftedY = $y + self::HALF_Y_MAX;
+		if(($shiftedY & (~0 << self::BLOCKHASH_Y_BITS)) !== 0){
 			throw new \InvalidArgumentException("Y coordinate $y is out of range!");
 		}
-		return (($x & 0x7ffffff) << 37) | (($shiftedY & 0x3ff) << 27) | ($z & 0x7ffffff);
+		//morton3d gives us 21 bits on each axis, but the Y axis only requires 9
+		//so we use the extra space on Y (12 bits) and add 6 extra bits from X and Z instead.
+		//if we ever need more space for Y (e.g. due to expansion), take bits from X/Z to compensate.
+		return morton3d_encode(
+			$x & self::BLOCKHASH_XZ_MASK,
+			($shiftedY /* & self::BLOCKHASH_Y_MASK */) |
+				((($x >> self::MORTON3D_BIT_SIZE) & self::BLOCKHASH_XZ_EXTRA_MASK) << self::BLOCKHASH_X_SHIFT) |
+				((($z >> self::MORTON3D_BIT_SIZE) & self::BLOCKHASH_XZ_EXTRA_MASK) << self::BLOCKHASH_Z_SHIFT),
+			$z & self::BLOCKHASH_XZ_MASK
+		);
 	}
 
 	/**
 	 * Computes a small index relative to chunk base from the given coordinates.
 	 */
 	public static function chunkBlockHash(int $x, int $y, int $z) : int{
-		return ($y << 8) | (($z & 0xf) << 4) | ($x & 0xf);
+		return morton3d_encode($x, $y, $z);
 	}
 
 	public static function getBlockXYZ(int $hash, ?int &$x, ?int &$y, ?int &$z) : void{
-		$x = $hash >> 37;
-		$y = ($hash << 27 >> 54) + self::HALF_Y_MAX;
-		$z = $hash << 37 >> 37;
+		[$baseX, $baseY, $baseZ] = morton3d_decode($hash);
+
+		$extraX = ((($baseY >> self::BLOCKHASH_X_SHIFT) & self::BLOCKHASH_XZ_EXTRA_MASK) << self::MORTON3D_BIT_SIZE);
+		$extraZ = ((($baseY >> self::BLOCKHASH_Z_SHIFT) & self::BLOCKHASH_XZ_EXTRA_MASK) << self::MORTON3D_BIT_SIZE);
+
+		$x = (($baseX & self::BLOCKHASH_XZ_MASK) | $extraX) << self::BLOCKHASH_XZ_SIGN_SHIFT >> self::BLOCKHASH_XZ_SIGN_SHIFT;
+		$y = ($baseY & self::BLOCKHASH_Y_MASK) - self::HALF_Y_MAX;
+		$z = (($baseZ & self::BLOCKHASH_XZ_MASK) | $extraZ) << self::BLOCKHASH_XZ_SIGN_SHIFT >> self::BLOCKHASH_XZ_SIGN_SHIFT;
 	}
 
 	public static function getXZ(int $hash, ?int &$x, ?int &$z) : void{
-		$x = $hash >> 32;
-		$z = ($hash & 0xFFFFFFFF) << 32 >> 32;
+		[$x, $z] = morton2d_decode($hash);
 	}
 
 	public static function getDifficultyFromString(string $str) : int{

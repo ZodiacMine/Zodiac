@@ -21,15 +21,18 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\block;
+namespace pocketmine\data\bedrock;
 
-use pocketmine\block\utils\ColorInMetadataTrait;
-use pocketmine\item\ToolTier;
+use PHPUnit\Framework\TestCase;
+use pocketmine\entity\effect\VanillaEffects;
 
-class Concrete extends Opaque{
-	use ColorInMetadataTrait;
+class EffectIdMapTest extends TestCase{
 
-	public function __construct(BlockIdentifier $idInfo, string $name, ?BlockBreakInfo $breakInfo = null){
-		parent::__construct($idInfo, $name, $breakInfo ?? new BlockBreakInfo(1.8, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel()));
+	public function testAllEffectsMapped() : void{
+		foreach(VanillaEffects::getAll() as $e){
+			$id = EffectIdMap::getInstance()->toId($e);
+			$e2 = EffectIdMap::getInstance()->fromId($id);
+			self::assertTrue($e === $e2);
+		}
 	}
 }
