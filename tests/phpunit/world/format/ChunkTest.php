@@ -23,43 +23,23 @@ declare(strict_types=1);
 
 namespace pocketmine\world\format;
 
-class EmptySubChunk implements SubChunkInterface{
-	/** @var EmptySubChunk */
-	private static $instance;
+use PHPUnit\Framework\TestCase;
 
-	public static function getInstance() : self{
-		if(self::$instance === null){
-			self::$instance = new self();
-		}
+class ChunkTest extends TestCase{
 
-		return self::$instance;
-	}
+	public function testClone() : void{
+		$chunk = new Chunk(0, 0);
+		$chunk->setFullBlock(0, 0, 0, 1);
+		$chunk->setBiomeId(0, 0, 1);
+		$chunk->setHeightMap(0, 0, 1);
 
-	public function isEmptyAuthoritative() : bool{
-		return true;
-	}
+		$chunk2 = clone $chunk;
+		$chunk2->setFullBlock(0, 0, 0, 2);
+		$chunk2->setBiomeId(0, 0, 2);
+		$chunk2->setHeightMap(0, 0, 2);
 
-	public function isEmptyFast() : bool{
-		return true;
-	}
-
-	public function getFullBlock(int $x, int $y, int $z) : int{
-		return 0;
-	}
-
-	public function getBlockLayers() : array{
-		return [];
-	}
-
-	public function getHighestBlockAt(int $x, int $z) : int{
-		return -1;
-	}
-
-	public function getBlockLightArray() : LightArray{
-		return LightArray::fill(0);
-	}
-
-	public function getBlockSkyLightArray() : LightArray{
-		return LightArray::fill(15);
+		self::assertNotSame($chunk->getFullBlock(0, 0, 0), $chunk2->getFullBlock(0, 0, 0));
+		self::assertNotSame($chunk->getBiomeId(0, 0), $chunk2->getBiomeId(0, 0));
+		self::assertNotSame($chunk->getHeightMap(0, 0), $chunk2->getHeightMap(0, 0));
 	}
 }

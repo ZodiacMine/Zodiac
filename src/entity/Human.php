@@ -310,7 +310,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 			$this->effectManager->add(new EffectInstance(VanillaEffects::ABSORPTION(), 5 * 20, 1));
 
 			$this->broadcastAnimation(new TotemUseAnimation($this));
-			$this->getWorld()->addSound($this->location->add(0, $this->eyeHeight, 0), new TotemUseSound());
+			$this->broadcastSound(new TotemUseSound());
 
 			// By vanilla logic: first checks offhand inventory, then normal inventory
 			$hand = $this->offHandInventory->getItemInHand();

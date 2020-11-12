@@ -124,7 +124,7 @@ class Explosion{
 							$pointerY += $shiftY;
 							$pointerZ += $shiftZ;
 
-							if($this->subChunkExplorer->moveTo($vBlockX, $vBlockY, $vBlockZ, false) === SubChunkExplorerStatus::INVALID){
+							if($this->subChunkExplorer->moveTo($vBlockX, $vBlockY, $vBlockZ) === SubChunkExplorerStatus::INVALID){
 								continue;
 							}
 
@@ -157,7 +157,6 @@ class Explosion{
 	 * and creating sounds and particles.
 	 */
 	public function explodeB() : bool{
-		$send = [];
 		$updateBlocks = [];
 
 		$source = (new Vector3($this->source->x, $this->source->y, $this->source->z))->floor();
@@ -250,7 +249,6 @@ class Explosion{
 					$updateBlocks[$index] = true;
 				}
 			}
-			$send[] = $pos->subtractVector($source);
 		}
 
 		$this->world->addParticle($source, new HugeExplodeSeedParticle());

@@ -109,8 +109,10 @@ use pocketmine\world\format\Chunk;
 use pocketmine\world\Position;
 use pocketmine\world\sound\EntityAttackNoDamageSound;
 use pocketmine\world\sound\EntityAttackSound;
+use pocketmine\world\sound\FireExtinguishSound;
 use pocketmine\world\World;
 use function abs;
+use function array_key_exists;
 use function assert;
 use function count;
 use function explode;
@@ -676,6 +678,14 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	}
 
 	/**
+	 * Returns the server tick on which the player's cooldown period expires for the given item.
+	 */
+	public function getItemCooldownExpiry(Item $item) : int{
+		$this->checkItemCooldowns();
+		return $this->usedItemsCooldown[$item->getId()] ?? 0;
+	}
+
+	/**
 	 * Returns whether the player has a cooldown period left before it can use the given item again.
 	 */
 	public function hasItemCooldown(Item $item) : bool{
@@ -980,6 +990,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		if($this->isSpectator()){
 			$this->setFlying(true);
+			$this->setSilent();
 			$this->onGround = false;
 
 			//TODO: HACK! this syncs the onground flag with the client so that flying works properly
@@ -989,6 +1000,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 			if($this->isSurvival()){
 				$this->setFlying(false);
 			}
+			$this->setSilent(false);
 			$this->checkGroundState(0, 0, 0, 0, 0, 0);
 		}
 	}
@@ -1567,6 +1579,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		$block = $target->getSide($face);
 		if($block->getId() === BlockLegacyIds::FIRE){
 			$this->getWorld()->setBlock($block->getPos(), VanillaBlocks::AIR());
+			$this->getWorld()->addSound($block->getPos()->add(0.5, 0.5, 0.5), new FireExtinguishSound());
 			return true;
 		}
 
@@ -2374,7 +2387,8 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	}
 
 	public function onChunkChanged(Chunk $chunk) : void{
-		if(isset($this->usedChunks[$hash = World::chunkHash($chunk->getX(), $chunk->getZ())])){
+		$status = $this->usedChunks[$hash = World::chunkHash($chunk->getX(), $chunk->getZ())] ?? null;
+		if($status !== null && !$status->equals(UsedChunkStatus::NEEDED())){
 			$this->usedChunks[$hash] = UsedChunkStatus::NEEDED();
 			$this->nextChunkOrderRun = 0;
 		}

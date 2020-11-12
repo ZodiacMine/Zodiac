@@ -56,6 +56,7 @@ use pocketmine\timings\Timings;
 use pocketmine\timings\TimingsHandler;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\Position;
+use pocketmine\world\sound\Sound;
 use pocketmine\world\World;
 use function abs;
 use function array_map;
@@ -215,6 +216,8 @@ abstract class Entity{
 	protected $immobile = false;
 	/** @var bool */
 	protected $invisible = false;
+	/** @var bool */
+	protected $silent = false;
 
 	/** @var int|null */
 	protected $ownerId = null;
@@ -241,7 +244,7 @@ abstract class Entity{
 		$this->boundingBox = new AxisAlignedBB(0, 0, 0, 0, 0, 0);
 		$this->recalculateBoundingBox();
 
-		$this->chunk = $this->getWorld()->getChunkAtPosition($this->location, false);
+		$this->chunk = $this->getWorld()->getOrLoadChunkAtPosition($this->location, false);
 		if($this->chunk === null){
 			throw new \InvalidStateException("Cannot create entities in unloaded chunks");
 		}
@@ -357,6 +360,14 @@ abstract class Entity{
 		$this->invisible = $value;
 	}
 
+	public function isSilent() : bool{
+		return $this->silent;
+	}
+
+	public function setSilent(bool $value = true) : void{
+		$this->silent = $value;
+	}
+
 	/**
 	 * Returns whether the entity is able to climb blocks such as ladders or vines.
 	 */
@@ -463,7 +474,7 @@ abstract class Entity{
 		$nbt = EntityDataHelper::createBaseNBT($this->location, $this->motion, $this->location->yaw, $this->location->pitch);
 
 		if(!($this instanceof Player)){
-			$nbt->setString("id", EntityFactory::getInstance()->getSaveId(get_class($this)));
+			EntityFactory::getInstance()->injectSaveId(get_class($this), $nbt);
 
 			if($this->getNameTag() !== ""){
 				$nbt->setString("CustomName", $this->getNameTag());
@@ -1659,6 +1670,7 @@ abstract class Entity{
 		$properties->setGenericFlag(EntityMetadataFlags::HAS_COLLISION, true);
 		$properties->setGenericFlag(EntityMetadataFlags::IMMOBILE, $this->immobile);
 		$properties->setGenericFlag(EntityMetadataFlags::INVISIBLE, $this->invisible);
+		$properties->setGenericFlag(EntityMetadataFlags::SILENT, $this->silent);
 		$properties->setGenericFlag(EntityMetadataFlags::ONFIRE, $this->isOnFire());
 		$properties->setGenericFlag(EntityMetadataFlags::WALLCLIMBING, $this->canClimbWalls);
 	}
@@ -1671,6 +1683,16 @@ abstract class Entity{
 			$animation->send($this->server, $targets ?? $this->getViewers());
 		}else{
 			$this->server->broadcastPackets($targets ?? $this->getViewers(), $animation->encode());
+		}
+	}
+
+	/**
+	 * Broadcasts a sound caused by the entity. If the entity is considered "silent", the sound will be dropped.
+	 * @param Player[]|null $targets
+	 */
+	public function broadcastSound(Sound $sound, ?array $targets = null) : void{
+		if(!$this->silent){
+			$this->server->broadcastPackets($targets ?? $this->getViewers(), $sound->encode($this->location));
 		}
 	}
 

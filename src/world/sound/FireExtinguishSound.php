@@ -21,18 +21,14 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\world\generator;
+namespace pocketmine\world\sound;
 
-use pocketmine\world\format\Chunk;
-use pocketmine\world\SimpleChunkManager;
-use pocketmine\world\World;
+use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 
-class GeneratorChunkManager extends SimpleChunkManager{
+final class FireExtinguishSound implements Sound{
 
-	public function getChunk(int $chunkX, int $chunkZ, bool $create = false) : ?Chunk{
-		if(!isset($this->chunks[World::chunkHash($chunkX, $chunkZ)])){
-			throw new \InvalidArgumentException("Chunk does not exist");
-		}
-		return parent::getChunk($chunkX, $chunkZ, $create);
+	public function encode(?Vector3 $pos) : array{
+		return [LevelSoundEventPacket::create(LevelSoundEventPacket::SOUND_EXTINGUISH_FIRE, $pos)];
 	}
 }

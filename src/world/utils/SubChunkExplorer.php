@@ -23,11 +23,9 @@ declare(strict_types=1);
 
 namespace pocketmine\world\utils;
 
-use pocketmine\utils\Utils;
 use pocketmine\world\ChunkManager;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\SubChunk;
-use function assert;
 
 class SubChunkExplorer{
 	/** @var ChunkManager */
@@ -45,12 +43,6 @@ class SubChunkExplorer{
 	/** @var int */
 	protected $currentZ;
 
-	/**
-	 * @var \Closure|null
-	 * @phpstan-var (\Closure() : void)|null
-	 */
-	private $onSubChunkChangeFunc = null;
-
 	public function __construct(ChunkManager $world){
 		$this->world = $world;
 	}
@@ -58,13 +50,13 @@ class SubChunkExplorer{
 	/**
 	 * @phpstan-return SubChunkExplorerStatus::*
 	 */
-	public function moveTo(int $x, int $y, int $z, bool $create) : int{
+	public function moveTo(int $x, int $y, int $z) : int{
 		if($this->currentChunk === null or $this->currentX !== ($x >> 4) or $this->currentZ !== ($z >> 4)){
 			$this->currentX = $x >> 4;
 			$this->currentZ = $z >> 4;
 			$this->currentSubChunk = null;
 
-			$this->currentChunk = $this->world->getChunk($this->currentX, $this->currentZ, $create);
+			$this->currentChunk = $this->world->getChunk($this->currentX, $this->currentZ);
 			if($this->currentChunk === null){
 				return SubChunkExplorerStatus::INVALID;
 			}
@@ -78,12 +70,7 @@ class SubChunkExplorer{
 				return SubChunkExplorerStatus::INVALID;
 			}
 
-			$newSubChunk = $this->currentChunk->getSubChunk($y >> 4);
-			assert($newSubChunk instanceof SubChunk, "chunk inside valid bounds should always be a SubChunk instance");
-			$this->currentSubChunk = $newSubChunk;
-			if($this->onSubChunkChangeFunc !== null){
-				($this->onSubChunkChangeFunc)();
-			}
+			$this->currentSubChunk = $this->currentChunk->getSubChunk($y >> 4);
 			return SubChunkExplorerStatus::MOVED;
 		}
 
@@ -93,17 +80,9 @@ class SubChunkExplorer{
 	/**
 	 * @phpstan-return SubChunkExplorerStatus::*
 	 */
-	public function moveToChunk(int $chunkX, int $chunkY, int $chunkZ, bool $create) : int{
+	public function moveToChunk(int $chunkX, int $chunkY, int $chunkZ) : int{
 		//this is a cold path, so we don't care much if it's a bit slower (extra fcall overhead)
-		return $this->moveTo($chunkX << 4, $chunkY << 4, $chunkZ << 4, $create);
-	}
-
-	/**
-	 * @phpstan-param \Closure() : void $callback
-	 */
-	public function onSubChunkChange(\Closure $callback) : void{
-		Utils::validateCallableSignature(function() : void{}, $callback);
-		$this->onSubChunkChangeFunc = $callback;
+		return $this->moveTo($chunkX << 4, $chunkY << 4, $chunkZ << 4);
 	}
 
 	/**
