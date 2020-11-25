@@ -61,7 +61,7 @@ class KillCommand extends VanillaCommand{
 				return true;
 			}
 
-			$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
+			$player = $sender->getServer()->getPlayerByPrefix($args[0]);
 
 			if($player instanceof Player){
 				$player->attack(new EntityDamageEvent($player, EntityDamageEvent::CAUSE_SUICIDE, 1000));

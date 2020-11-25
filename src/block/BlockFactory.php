@@ -28,6 +28,7 @@ use pocketmine\block\BlockIdentifierFlattened as BIDFlattened;
 use pocketmine\block\BlockLegacyIds as Ids;
 use pocketmine\block\BlockLegacyMetadata as Meta;
 use pocketmine\block\tile\Banner as TileBanner;
+use pocketmine\block\tile\Barrel as TileBarrel;
 use pocketmine\block\tile\Beacon as TileBeacon;
 use pocketmine\block\tile\Bed as TileBed;
 use pocketmine\block\tile\BrewingStand as TileBrewingStand;
@@ -47,7 +48,7 @@ use pocketmine\block\tile\ShulkerBox as TileShulkerBox;
 use pocketmine\block\tile\Skull as TileSkull;
 use pocketmine\block\utils\DyeColor;
 use pocketmine\block\utils\InvalidBlockStateException;
-use pocketmine\block\utils\PillarRotationTrait;
+use pocketmine\block\utils\PillarRotationInMetadataTrait;
 use pocketmine\block\utils\TreeType;
 use pocketmine\data\bedrock\DyeColorIdMap;
 use pocketmine\item\Item;
@@ -107,6 +108,7 @@ class BlockFactory{
 		$this->register(new BambooSapling(new BID(Ids::BAMBOO_SAPLING), "Bamboo Sapling", BlockBreakInfo::instant()));
 		$this->register(new FloorBanner(new BID(Ids::STANDING_BANNER, 0, ItemIds::BANNER, TileBanner::class), "Banner"));
 		$this->register(new WallBanner(new BID(Ids::WALL_BANNER, 0, ItemIds::BANNER, TileBanner::class), "Wall Banner"));
+		$this->register(new Barrel(new BID(Ids::BARREL, 0, null, TileBarrel::class), "Barrel"));
 		$this->register(new Transparent(new BID(Ids::BARRIER), "Barrier", BlockBreakInfo::indestructible()));
 		$this->register(new Beacon(new BID(Ids::BEACON, 0, null, TileBeacon::class), "Beacon", new BlockBreakInfo(3.0)));
 		$this->register(new Bed(new BID(Ids::BED_BLOCK, 0, ItemIds::BED, TileBed::class), "Bed Block"));
@@ -140,6 +142,7 @@ class BlockFactory{
 
 		$this->register(new Cobweb(new BID(Ids::COBWEB), "Cobweb"));
 		$this->register(new CocoaBlock(new BID(Ids::COCOA), "Cocoa Block"));
+		$this->register(new CoralBlock(new BID(Ids::CORAL_BLOCK), "Coral Block", new BlockBreakInfo(7.0, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel())));
 		$this->register(new CraftingTable(new BID(Ids::CRAFTING_TABLE), "Crafting Table"));
 		$this->register(new DaylightSensor(new BIDFlattened(Ids::DAYLIGHT_DETECTOR, Ids::DAYLIGHT_DETECTOR_INVERTED, 0, null, TileDaylightSensor::class), "Daylight Sensor"));
 		$this->register(new DeadBush(new BID(Ids::DEADBUSH), "Dead Bush"));
@@ -294,7 +297,7 @@ class BlockFactory{
 		$purpurBreakInfo = new BlockBreakInfo(1.5, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel(), 30.0);
 		$this->register(new Opaque(new BID(Ids::PURPUR_BLOCK, Meta::PURPUR_NORMAL), "Purpur Block", $purpurBreakInfo));
 		$this->register(new class(new BID(Ids::PURPUR_BLOCK, Meta::PURPUR_PILLAR), "Purpur Pillar", $purpurBreakInfo) extends Opaque{
-			use PillarRotationTrait;
+			use PillarRotationInMetadataTrait;
 		});
 		$this->register(new Stair(new BID(Ids::PURPUR_STAIRS), "Purpur Stairs", $purpurBreakInfo));
 
@@ -302,10 +305,10 @@ class BlockFactory{
 		$this->register(new Opaque(new BID(Ids::QUARTZ_BLOCK, Meta::QUARTZ_NORMAL), "Quartz Block", $quartzBreakInfo));
 		$this->register(new Stair(new BID(Ids::QUARTZ_STAIRS), "Quartz Stairs", $quartzBreakInfo));
 		$this->register(new class(new BID(Ids::QUARTZ_BLOCK, Meta::QUARTZ_CHISELED), "Chiseled Quartz Block", $quartzBreakInfo) extends Opaque{
-			use PillarRotationTrait;
+			use PillarRotationInMetadataTrait;
 		});
 		$this->register(new class(new BID(Ids::QUARTZ_BLOCK, Meta::QUARTZ_PILLAR), "Quartz Pillar", $quartzBreakInfo) extends Opaque{
-			use PillarRotationTrait;
+			use PillarRotationInMetadataTrait;
 		});
 		$this->register(new Opaque(new BID(Ids::QUARTZ_BLOCK, Meta::QUARTZ_SMOOTH), "Smooth Quartz Block", $quartzBreakInfo)); //TODO: this has axis rotation in 1.9, unsure if a bug (https://bugs.mojang.com/browse/MCPE-39074)
 		$this->register(new Stair(new BID(Ids::SMOOTH_QUARTZ_STAIRS), "Smooth Quartz Stairs", $quartzBreakInfo));
@@ -510,10 +513,6 @@ class BlockFactory{
 
 		$this->register(new ChemicalHeat(new BID(Ids::CHEMICAL_HEAT), "Heat Block", $chemistryTableBreakInfo));
 		//region --- auto-generated TODOs for bedrock-1.11.0 ---
-		//TODO: minecraft:bamboo
-		//TODO: minecraft:bamboo_sapling
-		//TODO: minecraft:barrel
-		//TODO: minecraft:beacon
 		//TODO: minecraft:bell
 		//TODO: minecraft:blast_furnace
 		//TODO: minecraft:bubble_column
@@ -521,14 +520,12 @@ class BlockFactory{
 		//TODO: minecraft:cartography_table
 		//TODO: minecraft:cauldron
 		//TODO: minecraft:chain_command_block
-		//TODO: minecraft:chemical_heat
 		//TODO: minecraft:chorus_flower
 		//TODO: minecraft:chorus_plant
 		//TODO: minecraft:command_block
 		//TODO: minecraft:composter
 		//TODO: minecraft:conduit
 		//TODO: minecraft:coral
-		//TODO: minecraft:coral_block
 		//TODO: minecraft:coral_fan
 		//TODO: minecraft:coral_fan_dead
 		//TODO: minecraft:coral_fan_hang
@@ -870,7 +867,7 @@ class BlockFactory{
 	/**
 	 * Returns a new Block instance with the specified ID, meta and position.
 	 */
-	public function get(int $id, int $meta = 0) : Block{
+	public function get(int $id, int $meta) : Block{
 		if($meta < 0 or $meta > 0xf){
 			throw new \InvalidArgumentException("Block meta value $meta is out of bounds");
 		}

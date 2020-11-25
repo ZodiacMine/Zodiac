@@ -63,7 +63,8 @@ final class ClientDataToSkinDataHelper{
 					self::safeB64Decode($animation[LoginPacketHandler::I_ANIMATION_IMAGE_DATA], "AnimatedImageData.$k.Image")
 				),
 				$animation[LoginPacketHandler::I_ANIMATION_IMAGE_TYPE],
-				$animation[LoginPacketHandler::I_ANIMATION_IMAGE_FRAMES]
+				$animation[LoginPacketHandler::I_ANIMATION_IMAGE_FRAMES],
+				$animation[LoginPacketHandler::I_ANIMATION_EXPRESSION]
 			);
 		}
 		return new SkinData(

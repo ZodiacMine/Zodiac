@@ -59,7 +59,7 @@ class TellCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$player = $sender->getServer()->getPlayer($this->readPlayerName($args));
+		$player = $sender->getServer()->getPlayerByPrefix(array_shift($args));
 
 		if($player === $sender){
 			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.message.sameTarget"));

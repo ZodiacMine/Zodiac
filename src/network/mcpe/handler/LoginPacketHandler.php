@@ -45,6 +45,7 @@ use pocketmine\network\mcpe\protocol\types\skin\PersonaSkinPiece;
 use pocketmine\network\mcpe\protocol\types\skin\SkinData;
 use pocketmine\player\Player;
 use pocketmine\player\PlayerInfo;
+use pocketmine\player\XboxLivePlayerInfo;
 use pocketmine\Server;
 use pocketmine\uuid\UUID;
 use function array_map;
@@ -177,14 +178,31 @@ class LoginPacketHandler extends PacketHandler{
 			throw BadPacketException::wrap($e, "Failed to parse login UUID");
 		}
 
-		$playerInfo = new PlayerInfo(
-			$extraData[self::I_USERNAME],
-			$uuid,
-			$skin,
-			$clientData[self::I_LANGUAGE_CODE],
-			$extraData[self::I_XUID],
-			$clientData
-		);
+		if($extraData->XUID !== ""){
+			$playerInfo = new XboxLivePlayerInfo(
+				$extraData[self::I_XUID],
+				$extraData[self::I_USERNAME],
+				$uuid,
+				$skin,
+				$clientData[self::I_LANGUAGE_CODE],
+				(array) $clientData
+			);
+		}else{
+			$playerInfo = new PlayerInfo(
+				$extraData[self::I_USERNAME],
+				$uuid,
+				$skin,
+				$clientData[self::I_LANGUAGE_CODE],
+				$clientData
+			);
+			$playerInfo = new PlayerInfo(
+				$extraData->displayName,
+				$uuid,
+				$skin,
+				$clientData->LanguageCode,
+				(array) $clientData
+			);
+		}
 		($this->playerInfoConsumer)($playerInfo);
 
 		$ev = new PlayerPreLoginEvent(

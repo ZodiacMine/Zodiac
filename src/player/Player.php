@@ -112,7 +112,6 @@ use pocketmine\world\sound\EntityAttackSound;
 use pocketmine\world\sound\FireExtinguishSound;
 use pocketmine\world\World;
 use function abs;
-use function array_key_exists;
 use function assert;
 use function count;
 use function explode;
@@ -281,7 +280,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		$this->locale = $this->playerInfo->getLocale();
 
 		$this->uuid = $this->playerInfo->getUuid();
-		$this->xuid = $this->playerInfo->getXuid();
+		$this->xuid = $this->playerInfo instanceof XboxLivePlayerInfo ? $this->playerInfo->getXuid() : "";
 
 		$this->perm = new PermissibleBase($this);
 		$this->chunksPerTick = (int) $this->server->getConfigGroup()->getProperty("chunk-sending.per-tick", 4);
@@ -757,6 +756,10 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		}
 	}
 
+	/**
+	 * Requests chunks from the world to be sent, up to a set limit every tick. This operates on the results of the most recent chunk
+	 * order.
+	 */
 	protected function requestChunks() : void{
 		if(!$this->isConnected()){
 			return;
@@ -810,6 +813,10 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		Timings::$playerChunkSendTimer->stopTiming();
 	}
 
+	/**
+	 * Called by the network system when the pre-spawn sequence is completed (e.g. after sending spawn chunks).
+	 * This fires join events and broadcasts join messages to other online players.
+	 */
 	public function doFirstSpawn() : void{
 		if($this->spawned){
 			return;
@@ -841,6 +848,10 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		}
 	}
 
+	/**
+	 * Calculates which new chunks this player needs to use, and which currently-used chunks it needs to stop using.
+	 * This is based on factors including the player's current render radius and current position.
+	 */
 	protected function orderChunks() : void{
 		if(!$this->isConnected() or $this->viewDistance === -1){
 			return;
@@ -876,15 +887,25 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		Timings::$playerChunkOrderTimer->stopTiming();
 	}
 
+	/**
+	 * Returns whether the player is using the chunk with the given coordinates, irrespective of whether the chunk has
+	 * been sent yet.
+	 */
 	public function isUsingChunk(int $chunkX, int $chunkZ) : bool{
 		return isset($this->usedChunks[World::chunkHash($chunkX, $chunkZ)]);
 	}
 
+	/**
+	 * Returns whether the target chunk has been sent to this player.
+	 */
 	public function hasReceivedChunk(int $chunkX, int $chunkZ) : bool{
 		$status = $this->usedChunks[World::chunkHash($chunkX, $chunkZ)] ?? null;
 		return $status !== null and $status->equals(UsedChunkStatus::SENT());
 	}
 
+	/**
+	 * Ticks the chunk-requesting mechanism.
+	 */
 	public function doChunkRequests() : void{
 		if($this->nextChunkOrderRun !== PHP_INT_MAX and $this->nextChunkOrderRun-- <= 0){
 			$this->nextChunkOrderRun = PHP_INT_MAX;
@@ -1297,13 +1318,6 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		$this->lastUpdate = $currentTick;
 
-		//TODO: move this to network session ticking (this is specifically related to net sync)
-		$dirtyAttributes = $this->attributeMap->needSend();
-		$this->networkSession->syncAttributes($this, $dirtyAttributes);
-		foreach($dirtyAttributes as $attribute){
-			$attribute->markSynchronized();
-		}
-
 		if(!$this->isAlive() and $this->spawned){
 			$this->onDeathUpdate($tickDiff);
 			return true;
@@ -1427,6 +1441,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	public function useHeldItem() : bool{
 		$directionVector = $this->getDirectionVector();
 		$item = $this->inventory->getItemInHand();
+		$oldItem = clone $item;
 
 		$ev = new PlayerItemUseEvent($this, $item, $directionVector);
 		if($this->hasItemCooldown($item) or $this->isSpectator()){
@@ -1445,7 +1460,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		}
 
 		$this->resetItemCooldown($item);
-		if($this->hasFiniteResources()){
+		if($this->hasFiniteResources() and !$item->equalsExact($oldItem) and $oldItem->equalsExact($this->inventory->getItemInHand())){
 			$this->inventory->setItemInHand($item);
 		}
 
@@ -1462,6 +1477,8 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	public function consumeHeldItem() : bool{
 		$slot = $this->inventory->getItemInHand();
 		if($slot instanceof ConsumableItem){
+			$oldItem = clone $slot;
+
 			$ev = new PlayerItemConsumeEvent($this, $slot);
 			if($this->hasItemCooldown($slot)){
 				$ev->cancel();
@@ -1475,7 +1492,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 			$this->setUsingItem(false);
 			$this->resetItemCooldown($slot);
 
-			if($this->hasFiniteResources()){
+			if($this->hasFiniteResources() && $oldItem->equalsExact($this->inventory->getItemInHand())){
 				$slot->pop();
 				$this->inventory->setItemInHand($slot);
 				$this->inventory->addItem($slot->getResidue());
@@ -1499,10 +1516,14 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 				return false;
 			}
 
+			$oldItem = clone $item;
+
 			$result = $item->onReleaseUsing($this);
 			if($result->equals(ItemUseResult::SUCCESS())){
 				$this->resetItemCooldown($item);
-				$this->inventory->setItemInHand($item);
+				if(!$item->equalsExact($oldItem) and $oldItem->equalsExact($this->inventory->getItemInHand())){
+					$this->inventory->setItemInHand($item);
+				}
 				return true;
 			}
 
@@ -1984,15 +2005,31 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 	 * Note for plugin developers: Prefer kick() instead of this method.
 	 * That way other plugins can have a say in whether the player is removed or not.
 	 *
+	 * Note for internals developers: Do not call this from network sessions. It will cause a feedback loop.
+	 *
 	 * @param string                           $reason Shown to the player, usually this will appear on their disconnect screen.
 	 * @param TranslationContainer|string|null $quitMessage Message to broadcast to online players (null will use default)
 	 */
-	public function disconnect(string $reason, $quitMessage = null, bool $notify = true) : void{
+	public function disconnect(string $reason, $quitMessage = null) : void{
 		if(!$this->isConnected()){
 			return;
 		}
 
-		$this->networkSession->onPlayerDestroyed($reason, $notify);
+		$this->networkSession->onPlayerDestroyed($reason);
+		$this->onPostDisconnect($reason, $quitMessage);
+	}
+
+	/**
+	 * @internal
+	 * This method executes post-disconnect actions and cleanups.
+	 *
+	 * @param string                           $reason Shown to the player, usually this will appear on their disconnect screen.
+	 * @param TranslationContainer|string|null $quitMessage Message to broadcast to online players (null will use default)
+	 */
+	public function onPostDisconnect(string $reason, $quitMessage) : void{
+		if($this->isConnected()){
+			throw new \InvalidStateException("Player is still connected");
+		}
 
 		//prevent the player receiving their own disconnect message
 		PermissionManager::getInstance()->unsubscribeFromPermission(Server::BROADCAST_CHANNEL_USERS, $this);
@@ -2149,7 +2186,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 
 		$this->startDeathAnimation();
 
-		$this->networkSession->onDeath();
+		$this->networkSession->onServerDeath();
 	}
 
 	protected function onDeathUpdate(int $tickDiff) : bool{
@@ -2187,7 +2224,7 @@ class Player extends Human implements CommandSender, ChunkListener, IPlayer{
 		$this->spawnToAll();
 		$this->scheduleUpdate();
 
-		$this->networkSession->onRespawn();
+		$this->networkSession->onServerRespawn();
 	}
 
 	protected function applyPostDamageEffects(EntityDamageEvent $source) : void{

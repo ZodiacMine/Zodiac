@@ -21,25 +21,11 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\plugin;
+namespace pocketmine\network\mcpe\protocol\types;
 
-use pocketmine\utils\EnumTrait;
+final class PlayerMovementType{
 
-/**
- * This doc-block is generated automatically, do not modify it manually.
- * This must be regenerated whenever enum members are added, removed or changed.
- * @see EnumTrait::_generateMethodAnnotations()
- *
- * @method static self STARTUP()
- * @method static self POSTWORLD()
- */
-final class PluginLoadOrder{
-	use EnumTrait;
-
-	protected static function setup() : void{
-		self::registerAll(
-			new self("startup"),
-			new self("postworld")
-		);
-	}
+	public const LEGACY = 0; //MovePlayerPacket
+	public const SERVER_AUTHORITATIVE_V1 = 1; //PlayerAuthInputPacket
+	public const SERVER_AUTHORITATIVE_V2_REWIND = 2; //PlayerAuthInputPacket + a bunch of junk that solves a nonexisting problem
 }

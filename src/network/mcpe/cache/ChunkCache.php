@@ -21,9 +21,10 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\network\mcpe;
+namespace pocketmine\network\mcpe\cache;
 
 use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\ChunkRequestTask;
 use pocketmine\network\mcpe\compression\CompressBatchPromise;
 use pocketmine\network\mcpe\compression\Compressor;
 use pocketmine\world\ChunkListener;
@@ -93,6 +94,10 @@ class ChunkCache implements ChunkListener{
 	 */
 	public function request(int $chunkX, int $chunkZ) : CompressBatchPromise{
 		$this->world->registerChunkListener($this, $chunkX, $chunkZ);
+		$chunk = $this->world->getChunk($chunkX, $chunkZ);
+		if($chunk === null){
+			throw new \InvalidArgumentException("Cannot request an unloaded chunk");
+		}
 		$chunkHash = World::chunkHash($chunkX, $chunkZ);
 
 		if(isset($this->caches[$chunkHash])){
@@ -110,7 +115,7 @@ class ChunkCache implements ChunkListener{
 				new ChunkRequestTask(
 					$chunkX,
 					$chunkZ,
-					$this->world->getChunk($chunkX, $chunkZ),
+					$chunk,
 					$this->caches[$chunkHash],
 					$this->compressor,
 					function() use ($chunkX, $chunkZ) : void{

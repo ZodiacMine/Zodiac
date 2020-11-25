@@ -24,9 +24,12 @@ declare(strict_types=1);
 namespace pocketmine\network\mcpe\protocol\types\inventory;
 
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\protocol\types\FixedItemIds;
+use pocketmine\nbt\TreeRoot;
+use pocketmine\network\mcpe\protocol\serializer\NetworkNbtSerializer;
+use function base64_encode;
+use function count;
 
-final class ItemStack{
+final class ItemStack implements \JsonSerializable{
 
 	/** @var int */
 	private $id;
@@ -48,9 +51,6 @@ final class ItemStack{
 	 * @param string[] $canDestroy
 	 */
 	public function __construct(int $id, int $meta, int $count, ?CompoundTag $nbt, array $canPlaceOn, array $canDestroy, ?int $shieldBlockingTick = null){
-		if(($shieldBlockingTick !== null) !== ($id === FixedItemIds::SHIELD)){
-			throw new \InvalidArgumentException("Blocking tick must only be provided for shield items");
-		}
 		$this->id = $id;
 		$this->meta = $meta;
 		$this->count = $count;
@@ -109,5 +109,27 @@ final class ItemStack{
 				$this->nbt === $itemStack->nbt || //this covers null === null and fast object identity
 				($this->nbt !== null && $itemStack->nbt !== null && $this->nbt->equals($itemStack->nbt))
 			);
+	}
+
+	/** @return mixed[] */
+	public function jsonSerialize() : array{
+		$result = [
+			"id" => $this->id,
+			"meta" => $this->meta,
+			"count" => $this->count,
+		];
+		if(count($this->canPlaceOn) > 0){
+			$result["canPlaceOn"] = $this->canPlaceOn;
+		}
+		if(count($this->canDestroy) > 0){
+			$result["canDestroy"] = $this->canDestroy;
+		}
+		if($this->shieldBlockingTick !== null){
+			$result["shieldBlockingTick"] = $this->shieldBlockingTick;
+		}
+		if($this->nbt !== null){
+			$result["nbt"] = base64_encode((new NetworkNbtSerializer())->write(new TreeRoot($this->nbt)));
+		}
+		return $result;
 	}
 }

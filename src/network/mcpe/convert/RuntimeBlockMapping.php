@@ -25,18 +25,12 @@ namespace pocketmine\network\mcpe\convert;
 
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\data\bedrock\LegacyBlockIdToStringIdMap;
-use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\protocol\serializer\NetworkNbtSerializer;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
-use pocketmine\network\mcpe\protocol\types\CacheableNbt;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\SingletonTrait;
 use function file_get_contents;
-use function getmypid;
-use function mt_rand;
-use function mt_srand;
-use function shuffle;
 
 /**
  * @internal
@@ -54,19 +48,24 @@ final class RuntimeBlockMapping{
 	 */
 	private $startGamePaletteCache;
 
+	/** @var CompoundTag[] */
+	private $bedrockKnownStates;
+
 	private function __construct(){
 		$this->setupLegacyMappings();
 	}
 
 	private function setupLegacyMappings() : void{
-		$tag = (new NetworkNbtSerializer())->read(file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/required_block_states.nbt"))->getTag();
-		if(!($tag instanceof ListTag) or $tag->getTagType() !== NBT::TAG_Compound){ //this is a little redundant currently, but good for auto complete and makes phpstan happy
-			throw new \RuntimeException("Invalid blockstates table, expected TAG_List<TAG_Compound> root");
+		$canonicalBlockStatesFile = file_get_contents(\pocketmine\RESOURCE_PATH . "vanilla/canonical_block_states.nbt");
+		if($canonicalBlockStatesFile === false){
+			throw new AssumptionFailedError("Missing required resource file");
 		}
-
-		/** @var CompoundTag[] $list */
-		$list = $tag->getValue();
-		$bedrockKnownStates = self::randomizeTable($list);
+		$stream = new PacketSerializer($canonicalBlockStatesFile);
+		$list = [];
+		while(!$stream->feof()){
+			$list[] = $stream->getNbtCompoundRoot();
+		}
+		$bedrockKnownStates = $list;
 
 		$legacyIdMap = LegacyBlockIdToStringIdMap::getInstance();
 		/** @var R12ToCurrentBlockMapEntry[] $legacyStateMap */
@@ -88,7 +87,7 @@ final class RuntimeBlockMapping{
 		 */
 		$idToStatesMap = [];
 		foreach($bedrockKnownStates as $k => $state){
-			$idToStatesMap[$state->getCompoundTag("block")->getString("name")][] = $k;
+			$idToStatesMap[$state->getString("name")][] = $k;
 		}
 		foreach($legacyStateMap as $pair){
 			$id = $legacyIdMap->stringToLegacy($pair->getId()) ?? null;
@@ -107,7 +106,7 @@ final class RuntimeBlockMapping{
 			}
 			foreach($idToStatesMap[$mappedName] as $k){
 				$networkState = $bedrockKnownStates[$k];
-				if($mappedState->equals($networkState->getCompoundTag("block"))){
+				if($mappedState->equals($networkState)){
 					$this->registerMapping($k, $id, $data);
 					continue 2;
 				}
@@ -116,23 +115,6 @@ final class RuntimeBlockMapping{
 		}
 
 		$this->startGamePaletteCache = new CacheableNbt(new ListTag($bedrockKnownStates));
-	}
-
-	/**
-	 * Randomizes the order of the runtimeID table to prevent plugins relying on them.
-	 * Plugins shouldn't use this stuff anyway, but plugin devs have an irritating habit of ignoring what they
-	 * aren't supposed to do, so we have to deliberately break it to make them stop.
-	 *
-	 * @param CompoundTag[] $table
-	 *
-	 * @return CompoundTag[]
-	 */
-	private static function randomizeTable(array $table) : array{
-		$postSeed = mt_rand(); //save a seed to set afterwards, to avoid poor quality randoms
-		mt_srand(getmypid()); //Use a seed which is the same on all threads. This isn't a secure seed, but we don't care.
-		shuffle($table);
-		mt_srand($postSeed); //restore a good quality seed that isn't dependent on PID
-		return $table;
 	}
 
 	public function toRuntimeId(int $internalStateId) : int{

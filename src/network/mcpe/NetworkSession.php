@@ -38,6 +38,7 @@ use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\form\Form;
 use pocketmine\math\Vector3;
 use pocketmine\network\BadPacketException;
+use pocketmine\network\mcpe\cache\ChunkCache;
 use pocketmine\network\mcpe\compression\CompressBatchPromise;
 use pocketmine\network\mcpe\compression\Compressor;
 use pocketmine\network\mcpe\compression\DecompressionException;
@@ -98,6 +99,7 @@ use pocketmine\network\NetworkSessionManager;
 use pocketmine\player\GameMode;
 use pocketmine\player\Player;
 use pocketmine\player\PlayerInfo;
+use pocketmine\player\XboxLivePlayerInfo;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
 use pocketmine\utils\TextFormat;
@@ -230,10 +232,7 @@ class NetworkSession{
 		//TODO: this really has no business being in NetworkSession at all - what about allowing it to be provided by PlayerCreationEvent?
 		$namedtag = $this->server->getOfflinePlayerData($this->info->getUsername());
 
-		/**
-		 * @var Player $player
-		 * @see Player::__construct()
-		 */
+		/** @see Player::__construct() */
 		$this->player = new $class($this->server, $this, $this->info, $this->authenticated, $namedtag);
 
 		$this->invManager = new InventoryManager($this->player, $this);
@@ -264,7 +263,7 @@ class NetworkSession{
 	}
 
 	public function isConnected() : bool{
-		return $this->connected;
+		return $this->connected && !$this->disconnectGuard;
 	}
 
 	public function getIp() : string{
@@ -331,7 +330,6 @@ class NetworkSession{
 			$stream = new PacketBatch($this->compressor->decompress($payload));
 		}catch(DecompressionException $e){
 			$this->logger->debug("Failed to decompress packet: " . base64_encode($payload));
-			//TODO: this isn't incompatible game version if we already established protocol version
 			throw BadPacketException::wrap($e, "Compressed packet batch decode error");
 		}finally{
 			Timings::$playerNetworkReceiveDecompressTimer->stopTiming();
@@ -510,7 +508,7 @@ class NetworkSession{
 	public function disconnect(string $reason, bool $notify = true) : void{
 		$this->tryDisconnect(function() use ($reason, $notify) : void{
 			if($this->player !== null){
-				$this->player->disconnect($reason, null, $notify);
+				$this->player->onPostDisconnect($reason, null);
 			}
 			$this->doServerDisconnect($reason, $notify);
 		}, $reason);
@@ -524,9 +522,8 @@ class NetworkSession{
 	public function transfer(string $ip, int $port, string $reason = "transfer") : void{
 		$this->tryDisconnect(function() use ($ip, $port, $reason) : void{
 			$this->sendDataPacket(TransferPacket::create($ip, $port), true);
-			$this->disconnect($reason, false);
 			if($this->player !== null){
-				$this->player->disconnect($reason, null, false);
+				$this->player->onPostDisconnect($reason, null);
 			}
 			$this->doServerDisconnect($reason, false);
 		}, $reason);
@@ -535,9 +532,9 @@ class NetworkSession{
 	/**
 	 * Called by the Player when it is closed (for example due to getting kicked).
 	 */
-	public function onPlayerDestroyed(string $reason, bool $notify = true) : void{
-		$this->tryDisconnect(function() use ($reason, $notify) : void{
-			$this->doServerDisconnect($reason, $notify);
+	public function onPlayerDestroyed(string $reason) : void{
+		$this->tryDisconnect(function() use ($reason) : void{
+			$this->doServerDisconnect($reason, true);
 		}, $reason);
 	}
 
@@ -559,7 +556,7 @@ class NetworkSession{
 	public function onClientDisconnect(string $reason) : void{
 		$this->tryDisconnect(function() use ($reason) : void{
 			if($this->player !== null){
-				$this->player->disconnect($reason, null, false);
+				$this->player->onPostDisconnect($reason, null);
 			}
 		}, $reason);
 	}
@@ -569,7 +566,7 @@ class NetworkSession{
 			return;
 		}
 		if($error === null){
-			if($authenticated and $this->info->getXuid() === ""){
+			if($authenticated and !($this->info instanceof XboxLivePlayerInfo)){
 				$error = "Expected XUID but none found";
 			}elseif($clientPubKey === null){
 				$error = "Missing client public key"; //failsafe
@@ -589,7 +586,7 @@ class NetworkSession{
 				$this->disconnect("disconnectionScreen.notAuthenticated");
 				return;
 			}
-			if($this->info->hasXboxData()){
+			if($this->info instanceof XboxLivePlayerInfo){
 				$this->logger->warning("Discarding unexpected XUID for non-authenticated player");
 				$this->info = $this->info->withoutXboxData();
 			}
@@ -607,17 +604,17 @@ class NetworkSession{
 					$this->cipher = new EncryptionContext($encryptionKey);
 
 					$this->setHandler(new HandshakePacketHandler(function() : void{
-						$this->onLoginSuccess();
+						$this->onServerLoginSuccess();
 					}));
 					$this->logger->debug("Enabled encryption");
 				}));
 			}else{
-				$this->onLoginSuccess();
+				$this->onServerLoginSuccess();
 			}
 		}
 	}
 
-	private function onLoginSuccess() : void{
+	private function onServerLoginSuccess() : void{
 		$this->loggedIn = true;
 
 		$this->sendDataPacket(PlayStatusPacket::create(PlayStatusPacket::LOGIN_SUCCESS));
@@ -641,24 +638,24 @@ class NetworkSession{
 		$this->logger->debug("Sending spawn notification, waiting for spawn response");
 		$this->sendDataPacket(PlayStatusPacket::create(PlayStatusPacket::PLAYER_SPAWN));
 		$this->setHandler(new SpawnResponsePacketHandler(function() : void{
-			$this->onSpawn();
+			$this->onClientSpawnResponse();
 		}));
 	}
 
-	private function onSpawn() : void{
+	private function onClientSpawnResponse() : void{
 		$this->logger->debug("Received spawn response, entering in-game phase");
 		$this->player->setImmobile(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
 		$this->player->doFirstSpawn();
 		$this->setHandler(new InGamePacketHandler($this->player, $this));
 	}
 
-	public function onDeath() : void{
+	public function onServerDeath() : void{
 		if($this->handler instanceof InGamePacketHandler){ //TODO: this is a bad fix for pre-spawn death, this shouldn't be reachable at all at this stage :(
 			$this->setHandler(new DeathPacketHandler($this->player, $this));
 		}
 	}
 
-	public function onRespawn() : void{
+	public function onServerRespawn() : void{
 		$this->player->sendData(null);
 
 		$this->syncAdventureSettings($this->player);
@@ -735,7 +732,7 @@ class NetworkSession{
 		if(count($attributes) > 0){
 			$this->sendDataPacket(UpdateAttributesPacket::create($entity->getId(), array_map(function(Attribute $attr) : NetworkAttribute{
 				return new NetworkAttribute($attr->getId(), $attr->getMinValue(), $attr->getMaxValue(), $attr->getValue(), $attr->getDefaultValue());
-			}, $attributes)));
+			}, $attributes), 0));
 		}
 	}
 
@@ -744,7 +741,7 @@ class NetworkSession{
 	 * @phpstan-param array<int, MetadataProperty> $properties
 	 */
 	public function syncActorData(Entity $entity, array $properties) : void{
-		$this->sendDataPacket(SetActorDataPacket::create($entity->getId(), $properties));
+		$this->sendDataPacket(SetActorDataPacket::create($entity->getId(), $properties, 0));
 	}
 
 	public function onEntityEffectAdded(Living $entity, EffectInstance $effect, bool $replacesOldEffect) : void{
@@ -869,6 +866,8 @@ class NetworkSession{
 		$world = $this->player->getWorld();
 		$this->syncWorldTime($world->getTime());
 		$this->syncWorldDifficulty($world->getDifficulty());
+		//TODO: weather needs to be synced here (when implemented)
+		//TODO: world spawn needs to be synced here
 	}
 
 	public function syncWorldTime(int $worldTime) : void{
@@ -965,8 +964,20 @@ class NetworkSession{
 			return true; //keep ticking until timeout
 		}
 
+		if($this->player !== null){
+			$this->player->doChunkRequests();
+
+			$dirtyAttributes = $this->player->getAttributeMap()->needSend();
+			$this->syncAttributes($this->player, $dirtyAttributes);
+			foreach($dirtyAttributes as $attribute){
+				//TODO: we might need to send these to other players in the future
+				//if that happens, this will need to become more complex than a flag on the attribute itself
+				$attribute->markSynchronized();
+			}
+		}
+
 		$this->flushSendBuffer();
 
-		return false;
+		return true;
 	}
 }

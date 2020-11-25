@@ -23,10 +23,10 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
-use pocketmine\block\utils\PillarRotationTrait;
+use pocketmine\block\utils\PillarRotationInMetadataTrait;
 
 class Log extends Wood{
-	use PillarRotationTrait;
+	use PillarRotationInMetadataTrait;
 
 	/** @var bool */
 	protected $fullBorked = false;

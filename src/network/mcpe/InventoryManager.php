@@ -154,7 +154,7 @@ class InventoryManager{
 	public function onCurrentWindowRemove() : void{
 		if(isset($this->windowMap[$this->lastInventoryNetworkId])){
 			$this->remove($this->lastInventoryNetworkId);
-			$this->session->sendDataPacket(ContainerClosePacket::create($this->lastInventoryNetworkId));
+			$this->session->sendDataPacket(ContainerClosePacket::create($this->lastInventoryNetworkId, true));
 		}
 	}
 

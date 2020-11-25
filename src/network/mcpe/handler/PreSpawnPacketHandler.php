@@ -23,16 +23,17 @@ declare(strict_types=1);
 
 namespace pocketmine\network\mcpe\handler;
 
-use pocketmine\data\bedrock\LegacyItemIdToStringIdMap;
-use pocketmine\network\mcpe\convert\RuntimeBlockMapping;
+use pocketmine\network\mcpe\cache\CraftingDataCache;
+use pocketmine\network\mcpe\cache\StaticPacketCache;
+use pocketmine\network\mcpe\convert\ItemTypeDictionary;
 use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\RequestChunkRadiusPacket;
 use pocketmine\network\mcpe\protocol\StartGamePacket;
 use pocketmine\network\mcpe\protocol\types\BoolGameRule;
 use pocketmine\network\mcpe\protocol\types\DimensionIds;
+use pocketmine\network\mcpe\protocol\types\Experiments;
 use pocketmine\network\mcpe\protocol\types\SpawnSettings;
-use pocketmine\network\mcpe\StaticPacketCache;
 use pocketmine\player\Player;
 use pocketmine\Server;
 
@@ -81,10 +82,10 @@ class PreSpawnPacketHandler extends PacketHandler{
 		$pk->gameRules = [
 			"naturalregeneration" => new BoolGameRule(false) //Hack for client side regeneration
 		];
+		$pk->experiments = new Experiments([], false);
 		$pk->levelId = "";
 		$pk->worldName = $this->server->getMotd();
-		$pk->blockTable = RuntimeBlockMapping::getInstance()->getStartGamePaletteCache();
-		$pk->itemTable = LegacyItemIdToStringIdMap::getInstance()->getStringToLegacyMap(); //TODO: check if this is actually needed
+		$pk->itemTable = ItemTypeDictionary::getInstance()->getEntries(); //TODO: check if this is actually needed
 		$this->session->sendDataPacket($pk);
 
 		$this->session->sendDataPacket(StaticPacketCache::getInstance()->getAvailableActorIdentifiers());
@@ -100,7 +101,7 @@ class PreSpawnPacketHandler extends PacketHandler{
 		$this->session->getInvManager()->syncAll();
 		$this->session->getInvManager()->syncCreative();
 		$this->session->getInvManager()->syncSelectedHotbarSlot();
-		$this->session->queueCompressed($this->server->getCraftingManager()->getCraftingDataPacket($this->session->getCompressor()));
+		$this->session->sendDataPacket(CraftingDataCache::getInstance()->getCache($this->server->getCraftingManager()));
 
 		$this->session->syncPlayerList($this->server->getOnlinePlayers());
 	}

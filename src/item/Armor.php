@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace pocketmine\item;
 
-use pocketmine\block\Block;
 use pocketmine\color\Color;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\inventory\ArmorInventory;
@@ -140,10 +139,13 @@ class Armor extends Durable{
 
 	public function equipArmor(Player $player) : ItemUseResult{
 		$existing = $player->getArmorInventory()->getItem($this->getArmorSlot());
-		if(!$existing->isNull()){
-			return ItemUseResult::FAIL();
-		}
 		$player->getArmorInventory()->setItem($this->getArmorSlot(), $this->pop());
+		if($this->getCount() === 0){
+			$player->getInventory()->setItemInHand($existing);
+		}else{ //if the stack size was bigger than 1 (usually won't happen, but might be caused by plugins
+			$player->getInventory()->setItemInHand($this);
+			$player->getInventory()->addItem($existing);
+		}
 		return ItemUseResult::SUCCESS();
 	}
 
