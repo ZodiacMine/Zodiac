@@ -59,7 +59,7 @@ class EnchantCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) < 1){
+		if(count($args) < 2){
 			throw new InvalidCommandSyntaxException();
 		}
 
@@ -70,10 +70,6 @@ class EnchantCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) < 1){
-			throw new InvalidCommandSyntaxException();
-		}
-
 		$item = $player->getInventory()->getItemInHand();
 
 		if($item->isNull()){
@@ -82,15 +78,15 @@ class EnchantCommand extends VanillaCommand{
 		}
 
 		try{
-			$enchantment = VanillaEnchantments::fromString($args[0]);
+			$enchantment = VanillaEnchantments::fromString($args[1]);
 		}catch(\InvalidArgumentException $e){
-			$sender->sendMessage(new TranslationContainer("commands.enchant.notFound", [$args[0]]));
+			$sender->sendMessage(new TranslationContainer("commands.enchant.notFound", [$args[1]]));
 			return true;
 		}
 
 		$level = 1;
-		if(isset($args[1])){
-			$level = $this->getBoundedInt($sender, $args[1], 1, $enchantment->getMaxLevel());
+		if(isset($args[2])){
+			$level = $this->getBoundedInt($sender, $args[2], 1, $enchantment->getMaxLevel());
 			if($level === null){
 				return false;
 			}

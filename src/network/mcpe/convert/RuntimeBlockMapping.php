@@ -26,8 +26,10 @@ namespace pocketmine\network\mcpe\convert;
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\data\bedrock\LegacyBlockIdToStringIdMap;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\protocol\serializer\NetworkNbtSerializer;
 use pocketmine\network\mcpe\protocol\serializer\PacketSerializer;
+use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\SingletonTrait;
 use function file_get_contents;
@@ -47,9 +49,6 @@ final class RuntimeBlockMapping{
 	 * @phpstan-var CacheableNbt<\pocketmine\nbt\tag\ListTag>
 	 */
 	private $startGamePaletteCache;
-
-	/** @var CompoundTag[] */
-	private $bedrockKnownStates;
 
 	private function __construct(){
 		$this->setupLegacyMappings();

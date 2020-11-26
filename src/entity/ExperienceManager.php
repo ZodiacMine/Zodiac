@@ -249,14 +249,14 @@ class ExperienceManager{
 			$equipment[$mainHandIndex] = $item;
 		}
 
+		if(($item = $this->entity->getOffHandInventory()->getItemInHand()) instanceof Durable and $item->hasEnchantment(VanillaEnchantments::MENDING())){
+			$equipment[$offHandIndex] = $item;
+		}
+
 		foreach($this->entity->getArmorInventory()->getContents() as $k => $armorItem){
 			if($armorItem instanceof Durable and $armorItem->hasEnchantment(VanillaEnchantments::MENDING())){
 				$equipment[$k] = $armorItem;
 			}
-		}
-
-		if(($item = $this->entity->getOffHandInventory()->getItemInHand()) instanceof Durable and $item->hasEnchantment(Enchantment::MENDING())){
-			$equipment[$offHandIndex] = $item;
 		}
 
 		if(count($equipment) > 0){

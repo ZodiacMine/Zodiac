@@ -28,9 +28,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
 use pocketmine\utils\TextFormat;
-use function array_shift;
 use function is_numeric;
-use function strlen;
 use function substr;
 
 abstract class VanillaCommand extends Command{
@@ -93,26 +91,5 @@ abstract class VanillaCommand extends Command{
 		}
 
 		return $v;
-	}
-
-	/**
-	 * @param string[] $args reference parameter
-	 */
-	protected function readPlayerName(array &$args) : string{
-		$name = array_shift($args);
-		if(strlen($name) > 0 and $name[0] === "\""){
-			while(count($args) > 0){
-				$part = array_shift($args);
-
-				$name .= " " . $part;
-				if(substr($part, -1) === "\""){
-					break;
-				}
-			}
-
-			return substr($name, 1, strlen($name) - 2);
-		}
-
-		return $name;
 	}
 }

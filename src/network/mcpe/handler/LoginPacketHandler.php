@@ -83,6 +83,7 @@ class LoginPacketHandler extends PacketHandler{
 
 	public const I_GEOMETRY_DATA = 'SkinGeometryData';
 
+	public const I_ANIMATION_EXPRESSION = 'AnimationExpression';
 	public const I_ANIMATION_DATA = 'SkinAnimationData';
 	public const I_ANIMATION_FRAMES = 'AnimatedImageData';
 
@@ -178,14 +179,14 @@ class LoginPacketHandler extends PacketHandler{
 			throw BadPacketException::wrap($e, "Failed to parse login UUID");
 		}
 
-		if($extraData->XUID !== ""){
+		if($extraData[self::I_XUID] !== ""){
 			$playerInfo = new XboxLivePlayerInfo(
 				$extraData[self::I_XUID],
 				$extraData[self::I_USERNAME],
 				$uuid,
 				$skin,
 				$clientData[self::I_LANGUAGE_CODE],
-				(array) $clientData
+				$clientData
 			);
 		}else{
 			$playerInfo = new PlayerInfo(
@@ -194,13 +195,6 @@ class LoginPacketHandler extends PacketHandler{
 				$skin,
 				$clientData[self::I_LANGUAGE_CODE],
 				$clientData
-			);
-			$playerInfo = new PlayerInfo(
-				$extraData->displayName,
-				$uuid,
-				$skin,
-				$clientData->LanguageCode,
-				(array) $clientData
 			);
 		}
 		($this->playerInfoConsumer)($playerInfo);

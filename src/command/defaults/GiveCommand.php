@@ -72,20 +72,20 @@ class GiveCommand extends VanillaCommand{
 		}
 
 		try{
-			$item = LegacyStringToItemParser::getInstance()->parse($args[0]);
+			$item = LegacyStringToItemParser::getInstance()->parse($args[1]);
 		}catch(\InvalidArgumentException $e){
-			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.give.item.notFound", [$args[0]]));
+			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.give.item.notFound", [$args[1]]));
 			return true;
 		}
 
-		if(!isset($args[1])){
+		if(!isset($args[2])){
 			$item->setCount($item->getMaxStackSize());
 		}else{
-			$item->setCount((int) $args[1]);
+			$item->setCount((int) $args[2]);
 		}
 
-		if(isset($args[2])){
-			$data = implode(" ", array_slice($args, 2));
+		if(isset($args[3])){
+			$data = implode(" ", array_slice($args, 3));
 			try{
 				$tags = JsonNbtParser::parseJson($data);
 			}catch(NbtDataException $e){

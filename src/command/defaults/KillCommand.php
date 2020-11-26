@@ -54,7 +54,11 @@ class KillCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) > 0){
+		if(count($args) >= 2){
+			throw new InvalidCommandSyntaxException();
+		}
+
+		if(count($args) === 1){
 			if(!$sender->hasPermission("pocketmine.command.kill.other")){
 				$sender->sendMessage($sender->getLanguage()->translateString(TextFormat::RED . "%commands.generic.permission"));
 

@@ -146,6 +146,7 @@ class TeleportCommand extends VanillaCommand{
 
 				$subject->teleport($targetPlayer->getLocation());
 				Command::broadcastCommandMessage($sender, new TranslationContainer("commands.tp.success", [$subject->getName(), $targetPlayer->getName()]));
+
 				return true;
 			case 3:
 			case 5:

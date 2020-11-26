@@ -490,11 +490,11 @@ class World implements ChunkManager{
 	 * @param Player[]|null $players
 	 */
 	public function addSound(Vector3 $pos, Sound $sound, ?array $players = null) : void{
-		if($players === null){
-			$players = $this->getViewersForPosition($pos);
-		}
-
 		if($sound instanceof SendableSound){
+			if($players === null){
+				$players = $this->getViewersForPosition($pos);
+			}
+
 			$sound->send($this->server, $pos, $players);
 		}else{
 			$pk = $sound->encode($pos);
@@ -514,11 +514,11 @@ class World implements ChunkManager{
 	 * @param Player[]|null $players
 	 */
 	public function addParticle(Vector3 $pos, Particle $particle, ?array $players = null) : void{
-		if($players === null){
-			$players = $this->getViewersForPosition($pos);
-		}
-
 		if($particle instanceof SendableParticle){
+			if($players === null){
+				$players = $this->getViewersForPosition($pos);
+			}
+
 			$particle->send($this->server, $pos, $players);
 		}else{
 			$pk = $particle->encode($pos);

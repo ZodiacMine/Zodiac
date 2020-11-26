@@ -62,7 +62,7 @@ class EffectCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) < 1){
+		if(count($args) < 2){
 			throw new InvalidCommandSyntaxException();
 		}
 
@@ -72,14 +72,9 @@ class EffectCommand extends VanillaCommand{
 			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.generic.player.notFound"));
 			return true;
 		}
-
-		if(count($args) < 1){
-			throw new InvalidCommandSyntaxException();
-		}
-
 		$effectManager = $player->getEffects();
 
-		if(strtolower($args[0]) === "clear"){
+		if(strtolower($args[1]) === "clear"){
 			$effectManager->clear();
 
 			$sender->sendMessage(new TranslationContainer("commands.effect.success.removed.all", [$player->getDisplayName()]));
@@ -87,16 +82,16 @@ class EffectCommand extends VanillaCommand{
 		}
 
 		try{
-			$effect = VanillaEffects::fromString($args[0]);
+			$effect = VanillaEffects::fromString($args[1]);
 		}catch(\InvalidArgumentException $e){
-			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.effect.notFound", [$args[0]]));
+			$sender->sendMessage(new TranslationContainer(TextFormat::RED . "%commands.effect.notFound", [$args[1]]));
 			return true;
 		}
 
 		$amplification = 0;
 
-		if(count($args) >= 2){
-			if(($d = $this->getBoundedInt($sender, $args[1], 0, (int) (Limits::INT32_MAX / 20))) === null){
+		if(count($args) >= 3){
+			if(($d = $this->getBoundedInt($sender, $args[2], 0, (int) (Limits::INT32_MAX / 20))) === null){
 				return false;
 			}
 			$duration = $d * 20; //ticks
@@ -104,16 +99,16 @@ class EffectCommand extends VanillaCommand{
 			$duration = null;
 		}
 
-		if(count($args) >= 3){
-			$amplification = $this->getBoundedInt($sender, $args[2], 0, 255);
+		if(count($args) >= 4){
+			$amplification = $this->getBoundedInt($sender, $args[3], 0, 255);
 			if($amplification === null){
 				return false;
 			}
 		}
 
 		$visible = true;
-		if(count($args) >= 4){
-			$v = strtolower($args[3]);
+		if(count($args) >= 5){
+			$v = strtolower($args[4]);
 			if($v === "on" or $v === "true" or $v === "t" or $v === "1"){
 				$visible = false;
 			}

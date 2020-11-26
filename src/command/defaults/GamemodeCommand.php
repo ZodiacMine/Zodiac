@@ -63,7 +63,7 @@ class GamemodeCommand extends VanillaCommand{
 		}
 
 		try{
-			$gameMode = GameMode::fromString(array_shift($args));
+			$gameMode = GameMode::fromString($args[0]);
 		}catch(\InvalidArgumentException $e){
 			$sender->sendMessage("Unknown game mode");
 			return true;

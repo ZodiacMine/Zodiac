@@ -51,14 +51,13 @@ class PardonCommand extends VanillaCommand{
 			return true;
 		}
 
-		if(count($args) === 0){
+		if(count($args) !== 1){
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$name = $this->readPlayerName($args);
-		$sender->getServer()->getNameBans()->remove($name);
+		$sender->getServer()->getNameBans()->remove($args[0]);
 
-		Command::broadcastCommandMessage($sender, new TranslationContainer("commands.unban.success", [$name]));
+		Command::broadcastCommandMessage($sender, new TranslationContainer("commands.unban.success", [$args[0]]));
 
 		return true;
 	}

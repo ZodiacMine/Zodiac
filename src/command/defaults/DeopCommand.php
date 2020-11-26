@@ -30,6 +30,7 @@ use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\lang\TranslationContainer;
 use pocketmine\player\Player;
 use pocketmine\utils\TextFormat;
+use function array_shift;
 use function count;
 
 class DeopCommand extends VanillaCommand{
@@ -59,7 +60,7 @@ class DeopCommand extends VanillaCommand{
 			throw new InvalidCommandSyntaxException();
 		}
 
-		$name = $this->readPlayerName($args);
+		$name = array_shift($args);
 		if(!Player::isValidUserName($name)){
 			throw new InvalidCommandSyntaxException();
 		}
