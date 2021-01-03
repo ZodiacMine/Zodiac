@@ -93,15 +93,12 @@ trait LegacyAnvilChunkTrait{
 		}
 
 		$result = new Chunk(
-			$chunk->getInt("xPos"),
-			$chunk->getInt("zPos"),
 			$subChunks,
 			($entitiesTag = $chunk->getTag("Entities")) instanceof ListTag ? self::getCompoundList("Entities", $entitiesTag) : [],
 			($tilesTag = $chunk->getTag("TileEntities")) instanceof ListTag ? self::getCompoundList("TileEntities", $tilesTag) : [],
 			$biomeArray
 		);
 		$result->setPopulated($chunk->getByte("TerrainPopulated", 0) !== 0);
-		$result->setGenerated();
 		return $result;
 	}
 

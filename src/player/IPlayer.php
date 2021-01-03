@@ -23,21 +23,9 @@ declare(strict_types=1);
 
 namespace pocketmine\player;
 
-use pocketmine\permission\ServerOperator;
-
-interface IPlayer extends ServerOperator{
-
-	public function isOnline() : bool;
+interface IPlayer{
 
 	public function getName() : string;
-
-	public function isBanned() : bool;
-
-	public function setBanned(bool $banned) : void;
-
-	public function isWhitelisted() : bool;
-
-	public function setWhitelisted(bool $value) : void;
 
 	public function getFirstPlayed() : ?int;
 

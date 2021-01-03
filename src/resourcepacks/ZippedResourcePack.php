@@ -121,6 +121,7 @@ class ZippedResourcePack implements ResourcePack{
 		if(!($manifest instanceof \stdClass)){
 			throw new ResourcePackException("manifest.json should contain a JSON object, not " . gettype($manifest));
 		}
+
 		if(!self::verifyManifest($manifest)){
 			throw new ResourcePackException("manifest.json is missing required fields");
 		}

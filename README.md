@@ -2,7 +2,7 @@
 	<img src="https://user-images.githubusercontent.com/25742996/76456007-61f0fd00-63e7-11ea-9e30-260ceb5f9820.png"></img><br>
 </p>
 
-[![Build Status](https://travis-ci.com/yosoftteam/Zodiac.svg?branch=master)](https://travis-ci.org/ZodiacMine/Zodiac)
+![CI](https://github.com/ZodiacMine/Zodiac/workflows/CI/badge.svg)
 
 ## What is this?
 - This is a open-source version of **YoRaze\`s** private software, which is also a fork of pmmp.

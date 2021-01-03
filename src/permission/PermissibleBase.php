@@ -23,17 +23,19 @@ declare(strict_types=1);
 
 namespace pocketmine\permission;
 
+use Ds\Set;
 use pocketmine\plugin\Plugin;
 use pocketmine\plugin\PluginException;
 use pocketmine\timings\Timings;
+use function count;
 use function spl_object_id;
 
 class PermissibleBase implements Permissible{
-	/** @var ServerOperator */
-	private $opable;
-
-	/** @var Permissible|null */
-	private $parent = null;
+	/**
+	 * @var bool[]
+	 * @phpstan-var array<string, bool>
+	 */
+	private $rootPermissions;
 
 	/** @var PermissionAttachment[] */
 	private $attachments = [];
@@ -41,19 +43,36 @@ class PermissibleBase implements Permissible{
 	/** @var PermissionAttachmentInfo[] */
 	private $permissions = [];
 
-	public function __construct(ServerOperator $opable){
-		$this->opable = $opable;
-		if($opable instanceof Permissible){
-			$this->parent = $opable;
+	/**
+	 * @var Set|\Closure[]
+	 * @phpstan-var Set<\Closure(array<string, bool> $changedPermissionsOldValues) : void>
+	 */
+	private $permissionRecalculationCallbacks;
+
+	/**
+	 * @param bool[] $basePermissions
+	 * @phpstan-param array<string, bool> $basePermissions
+	 */
+	public function __construct(array $basePermissions){
+		$this->permissionRecalculationCallbacks = new Set();
+
+		//TODO: we can't setBasePermission here directly due to bad architecture that causes recalculatePermissions to explode
+		//so, this hack has to be done here to prevent permission recalculations until it's fixed...
+		$this->rootPermissions = $basePermissions;
+		//TODO: permissions need to be recalculated here, or inherited permissions won't work
+	}
+
+	public function setBasePermission($name, bool $grant) : void{
+		if($name instanceof Permission){
+			$name = $name->getName();
 		}
+		$this->rootPermissions[$name] = $grant;
+		$this->recalculatePermissions();
 	}
 
-	public function isOp() : bool{
-		return $this->opable->isOp();
-	}
-
-	public function setOp(bool $value) : void{
-		$this->opable->setOp($value);
+	public function unsetBasePermission($name) : void{
+		unset($this->rootPermissions[$name instanceof Permission ? $name->getName() : $name]);
+		$this->recalculatePermissions();
 	}
 
 	/**
@@ -75,14 +94,7 @@ class PermissibleBase implements Permissible{
 			return $this->permissions[$name]->getValue();
 		}
 
-		if(($perm = PermissionManager::getInstance()->getPermission($name)) !== null){
-			$perm = $perm->getDefault();
-
-			return $perm === Permission::DEFAULT_TRUE or ($this->isOp() and $perm === Permission::DEFAULT_OP) or (!$this->isOp() and $perm === Permission::DEFAULT_NOT_OP);
-		}else{
-			return Permission::$DEFAULT_PERMISSION === Permission::DEFAULT_TRUE or ($this->isOp() and Permission::$DEFAULT_PERMISSION === Permission::DEFAULT_OP) or (!$this->isOp() and Permission::$DEFAULT_PERMISSION === Permission::DEFAULT_NOT_OP);
-		}
-
+		return false;
 	}
 
 	/**
@@ -93,7 +105,7 @@ class PermissibleBase implements Permissible{
 			throw new PluginException("Plugin " . $plugin->getDescription()->getName() . " is disabled");
 		}
 
-		$result = new PermissionAttachment($plugin, $this->parent ?? $this);
+		$result = new PermissionAttachment($plugin, $this);
 		$this->attachments[spl_object_id($result)] = $result;
 		if($name !== null and $value !== null){
 			$result->setPermission($name, $value);
@@ -117,59 +129,91 @@ class PermissibleBase implements Permissible{
 
 	}
 
-	public function recalculatePermissions() : void{
-		Timings::$permissibleCalculationTimer->startTiming();
+	public function recalculatePermissions() : array{
+		Timings::$permissibleCalculation->startTiming();
 
-		$this->clearPermissions();
 		$permManager = PermissionManager::getInstance();
-		$defaults = $permManager->getDefaultPermissions($this->isOp());
-		$permManager->subscribeToDefaultPerms($this->isOp(), $this->parent ?? $this);
+		$permManager->unsubscribeFromAllPermissions($this);
+		$oldPermissions = $this->permissions;
+		$this->permissions = [];
 
-		foreach($defaults as $perm){
-			$name = $perm->getName();
-			$this->permissions[$name] = new PermissionAttachmentInfo($this->parent ?? $this, $name, null, true);
-			$permManager->subscribeToPermission($name, $this->parent ?? $this);
-			$this->calculateChildPermissions($perm->getChildren(), false, null);
+		foreach($this->rootPermissions as $name => $isGranted){
+			$perm = $permManager->getPermission($name);
+			if($perm === null){
+				throw new \InvalidStateException("Unregistered root permission $name");
+			}
+			$this->permissions[$name] = new PermissionAttachmentInfo($name, null, $isGranted, null);
+			$permManager->subscribeToPermission($name, $this);
+			$this->calculateChildPermissions($perm->getChildren(), !$isGranted, null, $this->permissions[$name]);
 		}
 
 		foreach($this->attachments as $attachment){
-			$this->calculateChildPermissions($attachment->getPermissions(), false, $attachment);
+			$this->calculateChildPermissions($attachment->getPermissions(), false, $attachment, null);
 		}
 
-		Timings::$permissibleCalculationTimer->stopTiming();
-	}
+		$diff = [];
+		Timings::$permissibleCalculationDiff->time(function() use ($oldPermissions, &$diff) : void{
+			foreach($this->permissions as $permissionAttachmentInfo){
+				$name = $permissionAttachmentInfo->getPermission();
+				if(!isset($oldPermissions[$name])){
+					$diff[$name] = false;
+				}elseif($oldPermissions[$name]->getValue() !== $permissionAttachmentInfo->getValue()){
+					continue;
+				}
+				unset($oldPermissions[$name]);
+			}
+			//oldPermissions now only contains permissions that changed or are no longer set
+			foreach($oldPermissions as $permissionAttachmentInfo){
+				$diff[$permissionAttachmentInfo->getPermission()] = $permissionAttachmentInfo->getValue();
+			}
+		});
 
-	public function clearPermissions() : void{
-		$permManager = PermissionManager::getInstance();
-		$permManager->unsubscribeFromAllPermissions($this->parent ?? $this);
+		Timings::$permissibleCalculationCallback->time(function() use ($diff) : void{
+			if(count($diff) > 0){
+				foreach($this->permissionRecalculationCallbacks as $closure){
+					$closure($diff);
+				}
+			}
+		});
 
-		$permManager->unsubscribeFromDefaultPerms(false, $this->parent ?? $this);
-		$permManager->unsubscribeFromDefaultPerms(true, $this->parent ?? $this);
-
-		$this->permissions = [];
+		Timings::$permissibleCalculation->stopTiming();
+		return $diff;
 	}
 
 	/**
 	 * @param bool[]                    $children
 	 */
-	private function calculateChildPermissions(array $children, bool $invert, ?PermissionAttachment $attachment) : void{
+	private function calculateChildPermissions(array $children, bool $invert, ?PermissionAttachment $attachment, ?PermissionAttachmentInfo $parent) : void{
 		$permManager = PermissionManager::getInstance();
 		foreach($children as $name => $v){
 			$perm = $permManager->getPermission($name);
 			$value = ($v xor $invert);
-			$this->permissions[$name] = new PermissionAttachmentInfo($this->parent ?? $this, $name, $attachment, $value);
-			$permManager->subscribeToPermission($name, $this->parent ?? $this);
+			$this->permissions[$name] = new PermissionAttachmentInfo($name, $attachment, $value, $parent);
+			$permManager->subscribeToPermission($name, $this);
 
 			if($perm instanceof Permission){
-				$this->calculateChildPermissions($perm->getChildren(), !$value, $attachment);
+				$this->calculateChildPermissions($perm->getChildren(), !$value, $attachment, $this->permissions[$name]);
 			}
 		}
 	}
+
+	/**
+	 * @return \Closure[]|Set
+	 * @phpstan-return Set<\Closure(array<string, bool> $changedPermissionsOldValues) : void>
+	 */
+	public function getPermissionRecalculationCallbacks() : Set{ return $this->permissionRecalculationCallbacks; }
 
 	/**
 	 * @return PermissionAttachmentInfo[]
 	 */
 	public function getEffectivePermissions() : array{
 		return $this->permissions;
+	}
+
+	public function destroyCycles() : void{
+		PermissionManager::getInstance()->unsubscribeFromAllPermissions($this);
+		$this->permissions = []; //PermissionAttachmentInfo doesn't reference Permissible anymore, but it references PermissionAttachment which does
+		$this->attachments = []; //this might still be a problem if the attachments are still referenced, but we can't do anything about that
+		$this->permissionRecalculationCallbacks->clear();
 	}
 }

@@ -23,12 +23,27 @@ declare(strict_types=1);
 
 namespace pocketmine\permission;
 
+use Ds\Set;
 use pocketmine\plugin\Plugin;
 
 trait PermissibleDelegateTrait{
 
 	/** @var PermissibleBase */
 	private $perm;
+
+	/**
+	 * @param Permission|string $name
+	 */
+	public function setBasePermission($name, bool $value) : void{
+		$this->perm->setBasePermission($name, $value);
+	}
+
+	/**
+	 * @param Permission|string $name
+	 */
+	public function unsetBasePermission($name) : void{
+		$this->perm->unsetBasePermission($name);
+	}
 
 	/**
 	 * @param Permission|string $name
@@ -52,8 +67,16 @@ trait PermissibleDelegateTrait{
 		$this->perm->removeAttachment($attachment);
 	}
 
-	public function recalculatePermissions() : void{
-		$this->perm->recalculatePermissions();
+	public function recalculatePermissions() : array{
+		return $this->perm->recalculatePermissions();
+	}
+
+	/**
+	 * @return Set|\Closure[]
+	 * @phpstan-return Set<\Closure(array<string, bool> $changedPermissionsOldValues) : void>
+	 */
+	public function getPermissionRecalculationCallbacks() : Set{
+		return $this->perm->getPermissionRecalculationCallbacks();
 	}
 
 	/**

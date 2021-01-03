@@ -21,16 +21,13 @@
 
 declare(strict_types=1);
 
-namespace pocketmine\permission;
+namespace pocketmine\resourcepacks\json;
 
-interface ServerOperator{
-	/**
-	 * Checks if the current object has operator permissions
-	 */
-	public function isOp() : bool;
-
-	/**
-	 * Sets the operator permission for the current object
-	 */
-	public function setOp(bool $value) : void;
+final class ManifestMetadata{
+	/** @var string[]|null */
+	public $authors = null;
+	/** @var string|null */
+	public $license = null;
+	/** @var string|null */
+	public $url = null;
 }

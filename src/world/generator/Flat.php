@@ -145,8 +145,7 @@ class Flat extends Generator{
 	}
 
 	protected function generateBaseChunk() : void{
-		$this->chunk = new Chunk(0, 0);
-		$this->chunk->setGenerated();
+		$this->chunk = new Chunk();
 
 		for($Z = 0; $Z < 16; ++$Z){
 			for($X = 0; $X < 16; ++$X){
@@ -170,10 +169,7 @@ class Flat extends Generator{
 	}
 
 	public function generateChunk(ChunkManager $world, int $chunkX, int $chunkZ) : void{
-		$chunk = clone $this->chunk;
-		$chunk->setX($chunkX);
-		$chunk->setZ($chunkZ);
-		$world->setChunk($chunkX, $chunkZ, $chunk);
+		$world->setChunk($chunkX, $chunkZ, clone $this->chunk);
 	}
 
 	public function populateChunk(ChunkManager $world, int $chunkX, int $chunkZ) : void{

@@ -35,6 +35,7 @@ use pocketmine\command\SimpleCommandMap;
 use pocketmine\crafting\CraftingManager;
 use pocketmine\crafting\CraftingManagerFromDataHelper;
 use pocketmine\event\HandlerListManager;
+use pocketmine\event\player\PlayerCreationEvent;
 use pocketmine\event\player\PlayerDataSaveEvent;
 use pocketmine\event\server\CommandEvent;
 use pocketmine\event\server\DataPacketSendEvent;
@@ -52,20 +53,22 @@ use pocketmine\network\mcpe\compression\Compressor;
 use pocketmine\network\mcpe\compression\ZlibCompressor;
 use pocketmine\network\mcpe\encryption\EncryptionContext;
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\network\mcpe\PacketBroadcaster;
 use pocketmine\network\mcpe\protocol\ClientboundPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\serializer\PacketBatch;
 use pocketmine\network\mcpe\raklib\RakLibInterface;
 use pocketmine\network\Network;
+use pocketmine\network\query\DedicatedQueryNetworkInterface;
 use pocketmine\network\query\QueryHandler;
 use pocketmine\network\query\QueryInfo;
 use pocketmine\network\upnp\UPnP;
 use pocketmine\permission\BanList;
 use pocketmine\permission\DefaultPermissions;
-use pocketmine\permission\PermissionManager;
 use pocketmine\player\GameMode;
 use pocketmine\player\OfflinePlayer;
 use pocketmine\player\Player;
+use pocketmine\player\PlayerInfo;
 use pocketmine\plugin\PharPluginLoader;
 use pocketmine\plugin\Plugin;
 use pocketmine\plugin\PluginEnableOrder;
@@ -108,7 +111,6 @@ use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function get_class;
-use function getmypid;
 use function implode;
 use function ini_set;
 use function is_a;
@@ -270,6 +272,12 @@ class Server{
 
 	/** @var Player[] */
 	private $playerList = [];
+
+	/**
+	 * @var CommandSender[][]
+	 * @phpstan-var array<string, array<int, CommandSender>>
+	 */
+	private $broadcastSubscribers = [];
 
 	public function getName() : string{
 		return VersionInfo::NAME;
@@ -482,7 +490,7 @@ class Server{
 		$result = $this->getPlayerExact($name);
 
 		if($result === null){
-			$result = new OfflinePlayer($this, $name);
+			$result = new OfflinePlayer($name, $this->getOfflinePlayerData($name));
 		}
 
 		return $result;
@@ -506,34 +514,36 @@ class Server{
 	}
 
 	public function getOfflinePlayerData(string $name) : ?CompoundTag{
-		$name = strtolower($name);
-		$path = $this->getPlayerDataPath($name);
+		return Timings::$syncPlayerDataLoad->time(function() use ($name) : ?CompoundTag{
+			$name = strtolower($name);
+			$path = $this->getPlayerDataPath($name);
 
-		if(file_exists($path)){
-			$contents = @file_get_contents($path);
-			if($contents === false){
-				throw new \RuntimeException("Failed to read player data file \"$path\" (permission denied?)");
-			}
-			$decompressed = @zlib_decode($contents);
-			if($decompressed === false){
-				$this->logger->debug("Failed to decompress raw player data for \"$name\"");
-				$this->handleCorruptedPlayerData($name);
-				return null;
-			}
+			if(file_exists($path)){
+				$contents = @file_get_contents($path);
+				if($contents === false){
+					throw new \RuntimeException("Failed to read player data file \"$path\" (permission denied?)");
+				}
+				$decompressed = @zlib_decode($contents);
+				if($decompressed === false){
+					$this->logger->debug("Failed to decompress raw player data for \"$name\"");
+					$this->handleCorruptedPlayerData($name);
+					return null;
+				}
 
-			try{
-				return (new BigEndianNbtSerializer())->read($decompressed)->mustGetCompoundTag();
-			}catch(NbtDataException $e){ //zlib decode error / corrupt data
-				$this->logger->debug("Failed to decode NBT data for \"$name\": " . $e->getMessage());
-				$this->handleCorruptedPlayerData($name);
-				return null;
+				try{
+					return (new BigEndianNbtSerializer())->read($decompressed)->mustGetCompoundTag();
+				}catch(NbtDataException $e){ //corrupt data
+					$this->logger->debug("Failed to decode NBT data for \"$name\": " . $e->getMessage());
+					$this->handleCorruptedPlayerData($name);
+					return null;
+				}
 			}
-		}
-		return null;
+			return null;
+		});
 	}
 
 	public function saveOfflinePlayerData(string $name, CompoundTag $nbtTag) : void{
-		$ev = new PlayerDataSaveEvent($nbtTag, $name);
+		$ev = new PlayerDataSaveEvent($nbtTag, $name, $this->getPlayerExact($name));
 		if(!$this->shouldSavePlayerData()){
 			$ev->cancel();
 		}
@@ -541,14 +551,33 @@ class Server{
 		$ev->call();
 
 		if(!$ev->isCancelled()){
-			$nbt = new BigEndianNbtSerializer();
-			try{
-				file_put_contents($this->getPlayerDataPath($name), zlib_encode($nbt->write(new TreeRoot($ev->getSaveData())), ZLIB_ENCODING_GZIP));
-			}catch(\ErrorException $e){
-				$this->logger->critical($this->getLanguage()->translateString("pocketmine.data.saveError", [$name, $e->getMessage()]));
-				$this->logger->logException($e);
-			}
+			Timings::$syncPlayerDataSave->time(function() use ($name, $ev) : void{
+				$nbt = new BigEndianNbtSerializer();
+				try{
+					file_put_contents($this->getPlayerDataPath($name), zlib_encode($nbt->write(new TreeRoot($ev->getSaveData())), ZLIB_ENCODING_GZIP));
+				}catch(\ErrorException $e){
+					$this->logger->critical($this->getLanguage()->translateString("pocketmine.data.saveError", [$name, $e->getMessage()]));
+					$this->logger->logException($e);
+				}
+			});
 		}
+	}
+
+	public function createPlayer(NetworkSession $session, PlayerInfo $playerInfo, bool $authenticated) : Player{
+		$ev = new PlayerCreationEvent($session);
+		$ev->call();
+		$class = $ev->getPlayerClass();
+
+		//TODO: make this async
+		//TODO: what about allowing this to be provided by PlayerCreationEvent?
+		$namedtag = $this->getOfflinePlayerData($playerInfo->getUsername());
+
+		/**
+		 * @see Player::__construct()
+		 * @var Player $player
+		 */
+		$player = new $class($this, $session, $playerInfo, $authenticated, $namedtag);
+		return $player;
 	}
 
 	/**
@@ -589,27 +618,6 @@ class Server{
 		}
 
 		return null;
-	}
-
-	/**
-	 * Returns a list of online players whose names contain with the given string (case insensitive).
-	 * If an exact match is found, only that match is returned.
-	 *
-	 * @return Player[]
-	 */
-	public function matchPlayer(string $partialName) : array{
-		$partialName = strtolower($partialName);
-		$matchedPlayers = [];
-		foreach($this->getOnlinePlayers() as $player){
-			if(strtolower($player->getName()) === $partialName){
-				$matchedPlayers = [$player];
-				break;
-			}elseif(stripos($player->getName(), $partialName) !== false){
-				$matchedPlayers[] = $player;
-			}
-		}
-
-		return $matchedPlayers;
 	}
 
 	/**
@@ -660,7 +668,7 @@ class Server{
 		$this->operators->set(strtolower($name), true);
 
 		if(($player = $this->getPlayerExact($name)) !== null){
-			$player->recalculatePermissions();
+			$player->setBasePermission(DefaultPermissions::ROOT_OPERATOR, true);
 		}
 		$this->operators->save();
 	}
@@ -669,7 +677,7 @@ class Server{
 		$this->operators->remove(strtolower($name));
 
 		if(($player = $this->getPlayerExact($name)) !== null){
-			$player->recalculatePermissions();
+			$player->unsetBasePermission(DefaultPermissions::ROOT_OPERATOR);
 		}
 		$this->operators->save();
 	}
@@ -850,7 +858,7 @@ class Server{
 				$poolSize = max(1, (int) $poolSize);
 			}
 
-			$this->asyncPool = new AsyncPool($poolSize, max(-1, (int) $this->configGroup->getProperty("memory.async-worker-hard-limit", 256)), $this->autoloader, $this->logger);
+			$this->asyncPool = new AsyncPool($poolSize, max(-1, (int) $this->configGroup->getProperty("memory.async-worker-hard-limit", 256)), $this->autoloader, $this->logger, $this->tickSleeper);
 
 			$netCompressionThreshold = -1;
 			if($this->configGroup->getProperty("network.batch-threshold", 256) >= 0){
@@ -1012,10 +1020,15 @@ class Server{
 
 			$this->enablePlugins(PluginEnableOrder::POSTWORLD());
 
-			$this->network->registerInterface(new RakLibInterface($this));
+			$useQuery = $this->configGroup->getConfigBool("enable-query", true);
+			if(!$this->network->registerInterface(new RakLibInterface($this)) && $useQuery){
+				//RakLib would normally handle the transport for Query packets
+				//if it's not registered we need to make sure Query still works
+				$this->network->registerInterface(new DedicatedQueryNetworkInterface($this->getIp(), $this->getPort(), new \PrefixedLogger($this->logger, "Dedicated Query Interface")));
+			}
 			$this->logger->info($this->getLanguage()->translateString("pocketmine.server.networkStart", [$this->getIp(), $this->getPort()]));
 
-			if($this->configGroup->getConfigBool("enable-query", true)){
+			if($useQuery){
 				$this->network->registerRawPacketHandler(new QueryHandler($this));
 			}
 
@@ -1044,17 +1057,18 @@ class Server{
 
 			//TODO: move console parts to a separate component
 			$consoleSender = new ConsoleCommandSender($this, $this->language);
-			PermissionManager::getInstance()->subscribeToPermission(Server::BROADCAST_CHANNEL_ADMINISTRATIVE, $consoleSender);
-			PermissionManager::getInstance()->subscribeToPermission(Server::BROADCAST_CHANNEL_USERS, $consoleSender);
+			$consoleSender->recalculatePermissions();
+			$this->subscribeToBroadcastChannel(self::BROADCAST_CHANNEL_ADMINISTRATIVE, $consoleSender);
+			$this->subscribeToBroadcastChannel(self::BROADCAST_CHANNEL_USERS, $consoleSender);
 
 			$consoleNotifier = new SleeperNotifier();
 			$this->console = new CommandReader($consoleNotifier);
 			$this->tickSleeper->addNotifier($consoleNotifier, function() use ($consoleSender) : void{
-				Timings::$serverCommandTimer->startTiming();
+				Timings::$serverCommand->startTiming();
 				while(($line = $this->console->getLine()) !== null){
 					$this->dispatchCommand($consoleSender, $line);
 				}
-				Timings::$serverCommandTimer->stopTiming();
+				Timings::$serverCommand->stopTiming();
 			});
 			$this->console->start(PTHREADS_INHERIT_NONE);
 
@@ -1066,13 +1080,50 @@ class Server{
 	}
 
 	/**
+	 * Subscribes to a particular message broadcast channel.
+	 * The channel ID can be any arbitrary string.
+	 */
+	public function subscribeToBroadcastChannel(string $channelId, CommandSender $subscriber) : void{
+		$this->broadcastSubscribers[$channelId][spl_object_id($subscriber)] = $subscriber;
+	}
+
+	/**
+	 * Unsubscribes from a particular message broadcast channel.
+	 */
+	public function unsubscribeFromBroadcastChannel(string $channelId, CommandSender $subscriber) : void{
+		if(isset($this->broadcastSubscribers[$channelId][spl_object_id($subscriber)])){
+			unset($this->broadcastSubscribers[$channelId][spl_object_id($subscriber)]);
+			if(count($this->broadcastSubscribers[$channelId]) === 0){
+				unset($this->broadcastSubscribers[$channelId]);
+			}
+		}
+	}
+
+	/**
+	 * Unsubscribes from all broadcast channels.
+	 */
+	public function unsubscribeFromAllBroadcastChannels(CommandSender $subscriber) : void{
+		foreach($this->broadcastSubscribers as $channelId => $recipients){
+			$this->unsubscribeFromBroadcastChannel($channelId, $subscriber);
+		}
+	}
+
+	/**
+	 * Returns a list of all the CommandSenders subscribed to the given broadcast channel.
+	 *
+	 * @return CommandSender[]
+	 * @phpstan-return array<int, CommandSender>
+	 */
+	public function getBroadcastChannelSubscribers(string $channelId) : array{
+		return $this->broadcastSubscribers[$channelId] ?? [];
+	}
+
+	/**
 	 * @param TranslationContainer|string $message
 	 * @param CommandSender[]|null        $recipients
 	 */
 	public function broadcastMessage($message, ?array $recipients = null) : int{
-		if(!is_array($recipients)){
-			return $this->broadcast($message, self::BROADCAST_CHANNEL_USERS);
-		}
+		$recipients = $recipients ?? $this->getBroadcastChannelSubscribers(self::BROADCAST_CHANNEL_USERS);
 
 		foreach($recipients as $recipient){
 			$recipient->sendMessage($message);
@@ -1084,12 +1135,12 @@ class Server{
 	/**
 	 * @return Player[]
 	 */
-	private function selectPermittedPlayers(string $permission) : array{
+	private function getPlayerBroadcastSubscribers(string $channelId) : array{
 		/** @var Player[] $players */
 		$players = [];
-		foreach(PermissionManager::getInstance()->getPermissionSubscriptions($permission) as $permissible){
-			if($permissible instanceof Player and $permissible->hasPermission($permission)){
-				$players[spl_object_id($permissible)] = $permissible; //prevent duplication
+		foreach($this->broadcastSubscribers[$channelId] as $subscriber){
+			if($subscriber instanceof Player){
+				$players[spl_object_id($subscriber)] = $subscriber;
 			}
 		}
 		return $players;
@@ -1099,7 +1150,7 @@ class Server{
 	 * @param Player[]|null $recipients
 	 */
 	public function broadcastTip(string $tip, ?array $recipients = null) : int{
-		$recipients = $recipients ?? $this->selectPermittedPlayers(self::BROADCAST_CHANNEL_USERS);
+		$recipients = $recipients ?? $this->getPlayerBroadcastSubscribers(self::BROADCAST_CHANNEL_USERS);
 
 		foreach($recipients as $recipient){
 			$recipient->sendTip($tip);
@@ -1112,7 +1163,7 @@ class Server{
 	 * @param Player[]|null $recipients
 	 */
 	public function broadcastPopup(string $popup, ?array $recipients = null) : int{
-		$recipients = $recipients ?? $this->selectPermittedPlayers(self::BROADCAST_CHANNEL_USERS);
+		$recipients = $recipients ?? $this->getPlayerBroadcastSubscribers(self::BROADCAST_CHANNEL_USERS);
 
 		foreach($recipients as $recipient){
 			$recipient->sendPopup($popup);
@@ -1128,31 +1179,10 @@ class Server{
 	 * @param Player[]|null $recipients
 	 */
 	public function broadcastTitle(string $title, string $subtitle = "", int $fadeIn = -1, int $stay = -1, int $fadeOut = -1, ?array $recipients = null) : int{
-		$recipients = $recipients ?? $this->selectPermittedPlayers(self::BROADCAST_CHANNEL_USERS);
+		$recipients = $recipients ?? $this->getPlayerBroadcastSubscribers(self::BROADCAST_CHANNEL_USERS);
 
 		foreach($recipients as $recipient){
 			$recipient->sendTitle($title, $subtitle, $fadeIn, $stay, $fadeOut);
-		}
-
-		return count($recipients);
-	}
-
-	/**
-	 * @param TranslationContainer|string $message
-	 */
-	public function broadcast($message, string $permissions) : int{
-		/** @var CommandSender[] $recipients */
-		$recipients = [];
-		foreach(explode(";", $permissions) as $permission){
-			foreach(PermissionManager::getInstance()->getPermissionSubscriptions($permission) as $permissible){
-				if($permissible instanceof CommandSender and $permissible->hasPermission($permission)){
-					$recipients[spl_object_id($permissible)] = $permissible; // do not send messages directly, or some might be repeated
-				}
-			}
-		}
-
-		foreach($recipients as $recipient){
-			$recipient->sendMessage($message);
 		}
 
 		return count($recipients);
@@ -1186,33 +1216,17 @@ class Server{
 			}
 			$recipients = $ev->getTargets();
 
-			$stream = PacketBatch::fromPackets(...$ev->getPackets());
-
-			/** @var Compressor[] $compressors */
-			$compressors = [];
-			/** @var NetworkSession[][] $compressorTargets */
-			$compressorTargets = [];
+			/** @var PacketBroadcaster[] $broadcasters */
+			$broadcasters = [];
+			/** @var NetworkSession[][] $broadcasterTargets */
+			$broadcasterTargets = [];
 			foreach($recipients as $recipient){
-				$compressor = $recipient->getCompressor();
-				$compressorId = spl_object_id($compressor);
-				//TODO: different compressors might be compatible, it might not be necessary to split them up by object
-				$compressors[$compressorId] = $compressor;
-				$compressorTargets[$compressorId][] = $recipient;
+				$broadcaster = $recipient->getBroadcaster();
+				$broadcasters[spl_object_id($broadcaster)] = $broadcaster;
+				$broadcasterTargets[spl_object_id($broadcaster)][] = $recipient;
 			}
-
-			foreach($compressors as $compressorId => $compressor){
-				if(!$compressor->willCompress($stream->getBuffer())){
-					foreach($compressorTargets[$compressorId] as $target){
-						foreach($ev->getPackets() as $pk){
-							$target->addToSendBuffer($pk);
-						}
-					}
-				}else{
-					$promise = $this->prepareBatch($stream, $compressor);
-					foreach($compressorTargets[$compressorId] as $target){
-						$target->queueCompressed($promise);
-					}
-				}
+			foreach($broadcasters as $broadcaster){
+				$broadcaster->broadcastPackets($broadcasterTargets[spl_object_id($broadcaster)], $packets);
 			}
 
 			return true;
@@ -1221,18 +1235,21 @@ class Server{
 
 	/**
 	 * Broadcasts a list of packets in a batch to a list of players
+	 *
+	 * @param bool|null $sync Compression on the main thread (true) or workers (false). Default is automatic (null).
 	 */
-	public function prepareBatch(PacketBatch $stream, Compressor $compressor, bool $forceSync = false) : CompressBatchPromise{
+	public function prepareBatch(PacketBatch $stream, Compressor $compressor, ?bool $sync = null) : CompressBatchPromise{
 		try{
-			Timings::$playerNetworkSendCompressTimer->startTiming();
+			Timings::$playerNetworkSendCompress->startTiming();
 
 			$buffer = $stream->getBuffer();
-			if(!$compressor->willCompress($buffer)){
-				$forceSync = true;
+
+			if($sync === null){
+				$sync = !($this->networkCompressionAsync && $compressor->willCompress($buffer));
 			}
 
 			$promise = new CompressBatchPromise();
-			if(!$forceSync and $this->networkCompressionAsync){
+			if(!$sync){
 				$task = new CompressBatchTask($buffer, $promise, $compressor);
 				$this->asyncPool->submitTask($task);
 			}else{
@@ -1241,7 +1258,7 @@ class Server{
 
 			return $promise;
 		}finally{
-			Timings::$playerNetworkSendCompressTimer->stopTiming();
+			Timings::$playerNetworkSendCompress->stopTiming();
 		}
 	}
 
@@ -1350,7 +1367,7 @@ class Server{
 		}catch(\Throwable $e){
 			$this->logger->logException($e);
 			$this->logger->emergency("Crashed while crashing, killing process");
-			@Process::kill(getmypid());
+			@Process::kill(Process::pid());
 		}
 
 	}
@@ -1477,7 +1494,7 @@ class Server{
 		$this->forceShutdown();
 		$this->isRunning = false;
 
-		@Process::kill(getmypid());
+		@Process::kill(Process::pid());
 		exit(1);
 	}
 
@@ -1557,7 +1574,7 @@ class Server{
 	}
 
 	private function titleTick() : void{
-		Timings::$titleTickTimer->startTiming();
+		Timings::$titleTick->startTiming();
 		$d = Process::getRealMemoryUsage();
 
 		$u = Process::getAdvancedMemoryUsage();
@@ -1577,7 +1594,7 @@ class Server{
 			" kB/s | TPS " . $this->getTicksPerSecondAverage() .
 			" | Load " . $this->getTickUsageAverage() . "%\x07";
 
-		Timings::$titleTickTimer->stopTiming();
+		Timings::$titleTick->stopTiming();
 	}
 
 	/**
@@ -1589,23 +1606,23 @@ class Server{
 			return;
 		}
 
-		Timings::$serverTickTimer->startTiming();
+		Timings::$serverTick->startTiming();
 
 		++$this->tickCounter;
 
-		Timings::$schedulerTimer->startTiming();
+		Timings::$scheduler->startTiming();
 		$this->pluginManager->tickSchedulers($this->tickCounter);
-		Timings::$schedulerTimer->stopTiming();
+		Timings::$scheduler->stopTiming();
 
-		Timings::$schedulerAsyncTimer->startTiming();
+		Timings::$schedulerAsync->startTiming();
 		$this->asyncPool->collectTasks();
-		Timings::$schedulerAsyncTimer->stopTiming();
+		Timings::$schedulerAsync->stopTiming();
 
 		$this->worldManager->tick($this->tickCounter);
 
-		Timings::$connectionTimer->startTiming();
+		Timings::$connection->startTiming();
 		$this->network->tick();
-		Timings::$connectionTimer->stopTiming();
+		Timings::$connection->stopTiming();
 
 		if(($this->tickCounter % 20) === 0){
 			if($this->doTitleTick){
@@ -1639,7 +1656,7 @@ class Server{
 
 		$this->getMemoryManager()->check();
 
-		Timings::$serverTickTimer->stopTiming();
+		Timings::$serverTick->stopTiming();
 
 		$now = microtime(true);
 		$this->currentTPS = min(20, 1 / max(0.001, $now - $tickTime));

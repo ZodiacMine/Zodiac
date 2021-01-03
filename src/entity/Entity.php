@@ -54,7 +54,6 @@ use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
 use pocketmine\timings\TimingsHandler;
-use pocketmine\world\format\Chunk;
 use pocketmine\world\Position;
 use pocketmine\world\sound\Sound;
 use pocketmine\world\World;
@@ -97,13 +96,6 @@ abstract class Entity{
 
 	/** @var EntityMetadataCollection */
 	private $networkProperties;
-
-	/** @var Chunk|null */
-	public $chunk;
-	/** @var int */
-	private $chunkX;
-	/** @var int */
-	private $chunkZ;
 
 	/** @var EntityDamageEvent|null */
 	protected $lastDamageCause = null;
@@ -244,13 +236,6 @@ abstract class Entity{
 		$this->boundingBox = new AxisAlignedBB(0, 0, 0, 0, 0, 0);
 		$this->recalculateBoundingBox();
 
-		$this->chunk = $this->getWorld()->getOrLoadChunkAtPosition($this->location, false);
-		if($this->chunk === null){
-			throw new \InvalidStateException("Cannot create entities in unloaded chunks");
-		}
-		$this->chunkX = $this->location->getFloorX() >> 4;
-		$this->chunkZ = $this->location->getFloorZ() >> 4;
-
 		if($nbt !== null){
 			$this->motion = EntityDataHelper::parseVec3($nbt, "Motion", true);
 		}else{
@@ -266,7 +251,6 @@ abstract class Entity{
 
 		$this->initEntity($nbt ?? new CompoundTag());
 
-		$this->chunk->addEntity($this);
 		$this->getWorld()->addEntity($this);
 
 		$this->lastUpdate = $this->server->getTick();
@@ -976,9 +960,9 @@ abstract class Entity{
 
 		$this->updateMovement();
 
-		Timings::$timerEntityBaseTick->startTiming();
+		Timings::$entityBaseTick->startTiming();
 		$hasUpdate = $this->entityBaseTick($tickDiff);
-		Timings::$timerEntityBaseTick->stopTiming();
+		Timings::$entityBaseTick->stopTiming();
 
 		$this->timings->stopTiming();
 
@@ -996,6 +980,14 @@ abstract class Entity{
 
 	public function onNearbyBlockChange() : void{
 		$this->setForceMovementUpdate();
+		$this->scheduleUpdate();
+	}
+
+	/**
+	 * Called when a random update is performed on the chunk the entity is in. This happens when the chunk is within the
+	 * ticking chunk range of a player (or chunk loader).
+	 */
+	public function onRandomUpdate() : void{
 		$this->scheduleUpdate();
 	}
 
@@ -1082,7 +1074,7 @@ abstract class Entity{
 	protected function move(float $dx, float $dy, float $dz) : void{
 		$this->blocksAround = null;
 
-		Timings::$entityMoveTimer->startTiming();
+		Timings::$entityMove->startTiming();
 
 		$movX = $dx;
 		$movY = $dy;
@@ -1215,7 +1207,7 @@ abstract class Entity{
 			$this->location->world
 		);
 
-		$this->checkChunks();
+		$this->getWorld()->onEntityMoved($this);
 		$this->checkBlockCollision();
 		$this->checkGroundState($movX, $movY, $movZ, $dx, $dy, $dz);
 		$this->updateFallState($dy, $this->onGround);
@@ -1228,7 +1220,7 @@ abstract class Entity{
 
 		//TODO: vehicle collision events (first we need to spawn them!)
 
-		Timings::$entityMoveTimer->stopTiming();
+		Timings::$entityMove->stopTiming();
 	}
 
 	protected function checkGroundState(float $movX, float $movY, float $movZ, float $dx, float $dy, float $dz) : void{
@@ -1314,15 +1306,16 @@ abstract class Entity{
 			return false;
 		}
 
-		if($pos instanceof Position and $pos->isValid() and $pos->getWorld() !== $this->getWorld()){
-			if(!$this->switchWorld($pos->getWorld())){
-				return false;
-			}
+		$oldWorld = $this->getWorld();
+		$newWorld = $pos instanceof Position ? $pos->getWorld() : $oldWorld;
+		if($oldWorld !== $newWorld){
+			$this->despawnFromAll();
+			$oldWorld->removeEntity($this);
 		}
 
 		$this->location = Location::fromObject(
 			$pos,
-			$this->location->world,
+			$newWorld,
 			$this->location->yaw,
 			$this->location->pitch
 		);
@@ -1331,7 +1324,11 @@ abstract class Entity{
 
 		$this->blocksAround = null;
 
-		$this->checkChunks();
+		if($oldWorld !== $newWorld){
+			$newWorld->addEntity($this);
+		}else{
+			$newWorld->onEntityMoved($this);
+		}
 
 		return true;
 	}
@@ -1350,39 +1347,6 @@ abstract class Entity{
 		}
 
 		return false;
-	}
-
-	protected function checkChunks() : void{
-		$chunkX = $this->location->getFloorX() >> 4;
-		$chunkZ = $this->location->getFloorZ() >> 4;
-		if($this->chunk === null or $chunkX !== $this->chunkX or $chunkZ !== $this->chunkZ){
-			if($this->chunk !== null){
-				$this->chunk->removeEntity($this);
-			}
-			$this->chunk = $this->getWorld()->loadChunk($chunkX, $chunkZ, true);
-			$this->chunkX = $chunkX;
-			$this->chunkZ = $chunkZ;
-
-			if(!$this->justCreated){
-				$newChunk = $this->getWorld()->getViewersForPosition($this->location);
-				foreach($this->hasSpawned as $player){
-					if(!isset($newChunk[spl_object_id($player)])){
-						$this->despawnFrom($player);
-					}else{
-						unset($newChunk[spl_object_id($player)]);
-					}
-				}
-				foreach($newChunk as $player){
-					$this->spawnTo($player);
-				}
-			}
-
-			if($this->chunk === null){
-				return;
-			}
-
-			$this->chunk->addEntity($this);
-		}
 	}
 
 	protected function resetLastMovements() : void{
@@ -1452,33 +1416,6 @@ abstract class Entity{
 		}
 
 		return false;
-	}
-
-	protected function switchWorld(World $targetWorld) : bool{
-		if($this->closed){
-			return false;
-		}
-
-		if($this->location->isValid()){
-			$this->getWorld()->removeEntity($this);
-			if($this->chunk !== null){
-				$this->chunk->removeEntity($this);
-			}
-			$this->despawnFromAll();
-		}
-
-		$this->location = new Location(
-			$this->location->x,
-			$this->location->y,
-			$this->location->z,
-			$this->location->yaw,
-			$this->location->pitch,
-			$targetWorld
-		);
-		$this->getWorld()->addEntity($this);
-		$this->chunk = null;
-
-		return true;
 	}
 
 	public function getId() : int{
@@ -1606,9 +1543,6 @@ abstract class Entity{
 	 */
 	protected function onDispose() : void{
 		$this->despawnFromAll();
-		if($this->chunk !== null){
-			$this->chunk->removeEntity($this);
-		}
 		if($this->location->isValid()){
 			$this->getWorld()->removeEntity($this);
 		}
@@ -1621,7 +1555,6 @@ abstract class Entity{
 	 * It is expected that the object is unusable after this is called.
 	 */
 	protected function destroyCycles() : void{
-		$this->chunk = null;
 		$this->location = null;
 		$this->lastDamageCause = null;
 	}

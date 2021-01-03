@@ -24,47 +24,53 @@ declare(strict_types=1);
 namespace pocketmine\world\generator;
 
 use pocketmine\scheduler\AsyncTask;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\format\io\FastChunkSerializer;
 use pocketmine\world\SimpleChunkManager;
 use pocketmine\world\World;
+use function intdiv;
 
 class PopulationTask extends AsyncTask{
 	private const TLS_KEY_WORLD = "world";
 
-	/** @var bool */
-	public $state;
 	/** @var int */
 	public $worldId;
-	/** @var string */
+	/** @var int */
+	private $chunkX;
+	/** @var int */
+	private $chunkZ;
+
+	/** @var string|null */
 	public $chunk;
 
-	/** @var string */
+	/** @var string|null */
 	public $chunk0;
-	/** @var string */
+	/** @var string|null */
 	public $chunk1;
-	/** @var string */
+	/** @var string|null */
 	public $chunk2;
-	/** @var string */
+	/** @var string|null */
 	public $chunk3;
 
 	//center chunk
 
-	/** @var string */
+	/** @var string|null */
 	public $chunk5;
-	/** @var string */
+	/** @var string|null */
 	public $chunk6;
-	/** @var string */
+	/** @var string|null */
 	public $chunk7;
-	/** @var string */
+	/** @var string|null */
 	public $chunk8;
 
-	public function __construct(World $world, Chunk $chunk){
-		$this->state = true;
+	public function __construct(World $world, int $chunkX, int $chunkZ, ?Chunk $chunk){
 		$this->worldId = $world->getId();
-		$this->chunk = FastChunkSerializer::serializeWithoutLight($chunk);
+		$this->chunkX = $chunkX;
+		$this->chunkZ = $chunkZ;
+		$this->chunk = $chunk !== null ? FastChunkSerializer::serializeWithoutLight($chunk) : null;
 
-		foreach($world->getAdjacentChunks($chunk->getX(), $chunk->getZ()) as $i => $c){
+		foreach($world->getAdjacentChunks($chunkX, $chunkZ) as $i => $c){
 			$this->{"chunk$i"} = $c !== null ? FastChunkSerializer::serializeWithoutLight($c) : null;
 		}
 
@@ -72,50 +78,52 @@ class PopulationTask extends AsyncTask{
 	}
 
 	public function onRun() : void{
-		$manager = $this->worker->getFromThreadStore("generation.world{$this->worldId}.manager");
-		$generator = $this->worker->getFromThreadStore("generation.world{$this->worldId}.generator");
-		if(!($manager instanceof SimpleChunkManager) or !($generator instanceof Generator)){
-			$this->state = false;
-			return;
+		$context = ThreadLocalGeneratorContext::fetch($this->worldId);
+		if($context === null){
+			throw new AssumptionFailedError("Generator context should have been initialized before any PopulationTask execution");
 		}
+		$generator = $context->getGenerator();
+		$manager = new SimpleChunkManager($context->getWorldHeight());
 
 		/** @var Chunk[] $chunks */
 		$chunks = [];
 
-		$chunk = FastChunkSerializer::deserialize($this->chunk);
+		$chunk = $this->chunk !== null ? FastChunkSerializer::deserialize($this->chunk) : null;
 
 		for($i = 0; $i < 9; ++$i){
 			if($i === 4){
 				continue;
 			}
-			$xx = -1 + $i % 3;
-			$zz = -1 + (int) ($i / 3);
 			$ck = $this->{"chunk$i"};
 			if($ck === null){
-				$chunks[$i] = new Chunk($chunk->getX() + $xx, $chunk->getZ() + $zz);
+				$chunks[$i] = null;
 			}else{
 				$chunks[$i] = FastChunkSerializer::deserialize($ck);
 			}
 		}
 
-		$manager->setChunk($chunk->getX(), $chunk->getZ(), $chunk);
-		if(!$chunk->isGenerated()){
-			$generator->generateChunk($manager, $chunk->getX(), $chunk->getZ());
-			$chunk = $manager->getChunk($chunk->getX(), $chunk->getZ());
-			$chunk->setGenerated();
+		$manager->setChunk($this->chunkX, $this->chunkZ, $chunk ?? new Chunk());
+		if($chunk === null){
+			$generator->generateChunk($manager, $this->chunkX, $this->chunkZ);
+			$chunk = $manager->getChunk($this->chunkX, $this->chunkZ);
+			$chunk->setDirtyFlag(Chunk::DIRTY_FLAG_TERRAIN, true);
+			$chunk->setDirtyFlag(Chunk::DIRTY_FLAG_BIOMES, true);
 		}
 
 		foreach($chunks as $i => $c){
-			$manager->setChunk($c->getX(), $c->getZ(), $c);
-			if(!$c->isGenerated()){
-				$generator->generateChunk($manager, $c->getX(), $c->getZ());
-				$chunks[$i] = $manager->getChunk($c->getX(), $c->getZ());
-				$chunks[$i]->setGenerated();
+			$cX = (-1 + $i % 3) + $this->chunkX;
+			$cZ = (-1 + intdiv($i, 3)) + $this->chunkZ;
+			$manager->setChunk($cX, $cZ, $c ?? new Chunk());
+			if($c === null){
+				$generator->generateChunk($manager, $cX, $cZ);
+				$chunks[$i] = $manager->getChunk($cX, $cZ);
+				$chunks[$i]->setDirtyFlag(Chunk::DIRTY_FLAG_TERRAIN, true);
+				$chunks[$i]->setDirtyFlag(Chunk::DIRTY_FLAG_BIOMES, true);
 			}
 		}
 
-		$generator->populateChunk($manager, $chunk->getX(), $chunk->getZ());
-		$chunk = $manager->getChunk($chunk->getX(), $chunk->getZ());
+		$generator->populateChunk($manager, $this->chunkX, $this->chunkZ);
+		$chunk = $manager->getChunk($this->chunkX, $this->chunkZ);
 		$chunk->setPopulated();
 
 		$this->chunk = FastChunkSerializer::serializeWithoutLight($chunk);
@@ -123,19 +131,13 @@ class PopulationTask extends AsyncTask{
 		foreach($chunks as $i => $c){
 			$this->{"chunk$i"} = $c->isDirty() ? FastChunkSerializer::serializeWithoutLight($c) : null;
 		}
-
-		$manager->cleanChunks();
 	}
 
 	public function onCompletion() : void{
 		/** @var World $world */
 		$world = $this->fetchLocal(self::TLS_KEY_WORLD);
 		if(!$world->isClosed()){
-			if(!$this->state){
-				$world->registerGeneratorToWorker($this->worker->getAsyncWorkerId());
-			}
-
-			$chunk = FastChunkSerializer::deserialize($this->chunk);
+			$chunk = $this->chunk !== null ? FastChunkSerializer::deserialize($this->chunk) : null;
 
 			for($i = 0; $i < 9; ++$i){
 				if($i === 4){
@@ -143,12 +145,15 @@ class PopulationTask extends AsyncTask{
 				}
 				$c = $this->{"chunk$i"};
 				if($c !== null){
+					$xx = -1 + $i % 3;
+					$zz = -1 + intdiv($i, 3);
+
 					$c = FastChunkSerializer::deserialize($c);
-					$world->generateChunkCallback($c->getX(), $c->getZ(), $this->state ? $c : null);
+					$world->generateChunkCallback($this->chunkX + $xx, $this->chunkZ + $zz, $c);
 				}
 			}
 
-			$world->generateChunkCallback($chunk->getX(), $chunk->getZ(), $this->state ? $chunk : null);
+			$world->generateChunkCallback($this->chunkX, $this->chunkZ, $chunk);
 		}
 	}
 }

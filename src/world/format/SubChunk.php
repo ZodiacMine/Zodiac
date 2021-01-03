@@ -29,7 +29,7 @@ use function count;
 
 class SubChunk{
 	/** @var int */
-	private $defaultBlock;
+	private $emptyBlockId;
 	/** @var PalettedBlockArray[] */
 	private $blockLayers;
 
@@ -43,8 +43,8 @@ class SubChunk{
 	 *
 	 * @param PalettedBlockArray[] $blocks
 	 */
-	public function __construct(int $default, array $blocks, ?LightArray $skyLight = null, ?LightArray $blockLight = null){
-		$this->defaultBlock = $default;
+	public function __construct(int $emptyBlockId, array $blocks, ?LightArray $skyLight = null, ?LightArray $blockLight = null){
+		$this->emptyBlockId = $emptyBlockId;
 		$this->blockLayers = $blocks;
 
 		$this->skyLight = $skyLight ?? LightArray::fill(15);
@@ -69,16 +69,22 @@ class SubChunk{
 		return count($this->blockLayers) === 0;
 	}
 
+	/**
+	 * Returns the block used as the default. This is assumed to refer to air.
+	 * If all the blocks in a subchunk layer are equal to this block, the layer is assumed to be empty.
+	 */
+	public function getEmptyBlockId() : int{ return $this->emptyBlockId; }
+
 	public function getFullBlock(int $x, int $y, int $z) : int{
 		if(count($this->blockLayers) === 0){
-			return $this->defaultBlock;
+			return $this->emptyBlockId;
 		}
 		return $this->blockLayers[0]->get($x, $y, $z);
 	}
 
 	public function setFullBlock(int $x, int $y, int $z, int $block) : void{
 		if(count($this->blockLayers) === 0){
-			$this->blockLayers[] = new PalettedBlockArray($this->defaultBlock);
+			$this->blockLayers[] = new PalettedBlockArray($this->emptyBlockId);
 		}
 		$this->blockLayers[0]->set($x, $y, $z, $block);
 	}
@@ -95,7 +101,7 @@ class SubChunk{
 			return -1;
 		}
 		for($y = 15; $y >= 0; --$y){
-			if($this->blockLayers[0]->get($x, $y, $z) !== $this->defaultBlock){
+			if($this->blockLayers[0]->get($x, $y, $z) !== $this->emptyBlockId){
 				return $y;
 			}
 		}
@@ -131,7 +137,7 @@ class SubChunk{
 			$layer->collectGarbage();
 
 			foreach($layer->getPalette() as $p){
-				if($p !== $this->defaultBlock){
+				if($p !== $this->emptyBlockId){
 					continue 2;
 				}
 			}

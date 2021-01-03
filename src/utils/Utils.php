@@ -82,7 +82,7 @@ use const STR_PAD_RIGHT;
 /**
  * Big collection of functions
  */
-class Utils{
+final class Utils{
 	public const OS_WINDOWS = "win";
 	public const OS_IOS = "ios";
 	public const OS_MACOS = "mac";
@@ -183,7 +183,14 @@ class Utils{
 		}
 
 		$machine = php_uname("a");
-		$machine .= ($cpuinfo = @file("/proc/cpuinfo")) !== false ? implode(preg_grep("/(model name|Processor|Serial)/", $cpuinfo)) : "";
+		$cpuinfo = @file("/proc/cpuinfo");
+		if($cpuinfo !== false){
+			$cpuinfoLines = preg_grep("/(model name|Processor|Serial)/", $cpuinfo);
+			if($cpuinfoLines === false){
+				throw new AssumptionFailedError("Pattern is valid, so this shouldn't fail ...");
+			}
+			$machine .= implode("", $cpuinfoLines);
+		}
 		$machine .= sys_get_temp_dir();
 		$machine .= $extra;
 		$os = Utils::getOS();

@@ -26,41 +26,33 @@ namespace pocketmine\timings;
 use pocketmine\entity\Living;
 use pocketmine\Server;
 use function count;
-use function fwrite;
-use function microtime;
-use function round;
-use function spl_object_id;
-use const PHP_EOL;
+use function hrtime;
 
 class TimingsHandler{
-
-	/** @var TimingsHandler[] */
-	private static $HANDLERS = [];
 	/** @var bool */
 	private static $enabled = false;
-	/** @var float */
+	/** @var int */
 	private static $timingStart = 0;
 
-	/**
-	 * @param resource $fp
-	 */
-	public static function printTimings($fp) : void{
-		fwrite($fp, "Minecraft" . PHP_EOL);
+	/** @return string[] */
+	public static function printTimings() : array{
+		$result = ["Minecraft"];
 
-		foreach(self::$HANDLERS as $timings){
-			$time = $timings->totalTime;
-			$count = $timings->count;
+		foreach(TimingsRecord::getAll() as $timings){
+			$time = $timings->getTotalTime();
+			$count = $timings->getCount();
 			if($count === 0){
+				//this should never happen - a timings record shouldn't exist if it hasn't been used
 				continue;
 			}
 
 			$avg = $time / $count;
 
-			fwrite($fp, "    " . $timings->name . " Time: " . round($time * 1000000000) . " Count: " . $count . " Avg: " . round($avg * 1000000000) . " Violations: " . $timings->violations . PHP_EOL);
+			$result[] = "    " . $timings->getName() . " Time: $time Count: " . $count . " Avg: $avg Violations: " . $timings->getViolations();
 		}
 
-		fwrite($fp, "# Version " . Server::getInstance()->getVersion() . PHP_EOL);
-		fwrite($fp, "# " . Server::getInstance()->getName() . " " . Server::getInstance()->getPocketMineVersion() . PHP_EOL);
+		$result[] = "# Version " . Server::getInstance()->getVersion();
+		$result[] = "# " . Server::getInstance()->getName() . " " . Server::getInstance()->getPocketMineVersion();
 
 		$entities = 0;
 		$livingEntities = 0;
@@ -73,11 +65,12 @@ class TimingsHandler{
 			}
 		}
 
-		fwrite($fp, "# Entities " . $entities . PHP_EOL);
-		fwrite($fp, "# LivingEntities " . $livingEntities . PHP_EOL);
+		$result[] = "# Entities " . $entities;
+		$result[] = "# LivingEntities " . $livingEntities;
 
-		$sampleTime = microtime(true) - self::$timingStart;
-		fwrite($fp, "Sample time " . round($sampleTime * 1000000000) . " (" . $sampleTime . "s)" . PHP_EOL);
+		$sampleTime = hrtime(true) - self::$timingStart;
+		$result[] = "Sample time $sampleTime (" . ($sampleTime / 1000000000) . "s)";
+		return $result;
 	}
 
 	public static function isEnabled() : bool{
@@ -94,35 +87,15 @@ class TimingsHandler{
 	}
 
 	public static function reload() : void{
+		TimingsRecord::clearRecords();
 		if(self::$enabled){
-			foreach(self::$HANDLERS as $timings){
-				$timings->reset();
-			}
-			self::$timingStart = microtime(true);
+			self::$timingStart = hrtime(true);
 		}
 	}
 
 	public static function tick(bool $measure = true) : void{
 		if(self::$enabled){
-			if($measure){
-				foreach(self::$HANDLERS as $timings){
-					if($timings->curTickTotal > 0.05){
-						$timings->violations += (int) round($timings->curTickTotal / 0.05);
-					}
-					$timings->curTickTotal = 0;
-					$timings->curCount = 0;
-					$timings->timingDepth = 0;
-				}
-			}else{
-				foreach(self::$HANDLERS as $timings){
-					$timings->totalTime -= $timings->curTickTotal;
-					$timings->count -= $timings->curCount;
-
-					$timings->curTickTotal = 0;
-					$timings->curCount = 0;
-					$timings->timingDepth = 0;
-				}
-			}
+			TimingsRecord::tick($measure);
 		}
 	}
 
@@ -131,36 +104,31 @@ class TimingsHandler{
 	/** @var TimingsHandler|null */
 	private $parent = null;
 
-	/** @var int */
-	private $count = 0;
-	/** @var int */
-	private $curCount = 0;
-	/** @var float */
-	private $start = 0;
+	/** @var TimingsRecord|null */
+	private $record = null;
+
 	/** @var int */
 	private $timingDepth = 0;
-	/** @var float */
-	private $totalTime = 0;
-	/** @var float */
-	private $curTickTotal = 0;
-	/** @var int */
-	private $violations = 0;
 
 	public function __construct(string $name, ?TimingsHandler $parent = null){
 		$this->name = $name;
 		$this->parent = $parent;
-
-		self::$HANDLERS[spl_object_id($this)] = $this;
 	}
+
+	public function getName() : string{ return $this->name; }
+
 	public function startTiming() : void{
 		if(self::$enabled){
-			$this->internalStartTiming(microtime(true));
+			$this->internalStartTiming(hrtime(true));
 		}
 	}
 
-	private function internalStartTiming(float $now) : void{
+	private function internalStartTiming(int $now) : void{
 		if(++$this->timingDepth === 1){
-			$this->start = $now;
+			if($this->record === null){
+				$this->record = new TimingsRecord($this);
+			}
+			$this->record->startTiming($now);
 			if($this->parent !== null){
 				$this->parent->internalStartTiming($now);
 			}
@@ -169,27 +137,25 @@ class TimingsHandler{
 
 	public function stopTiming() : void{
 		if(self::$enabled){
-			$this->internalStopTiming(microtime(true));
+			$this->internalStopTiming(hrtime(true));
 		}
 	}
 
-	private function internalStopTiming(float $now) : void{
+	private function internalStopTiming(int $now) : void{
 		if($this->timingDepth === 0){
 			//TODO: it would be nice to bail here, but since we'd have to track timing depth across resets
 			//and enable/disable, it would have a performance impact. Therefore, considering the limited
 			//usefulness of bailing here anyway, we don't currently bother.
 			return;
 		}
-		if(--$this->timingDepth !== 0 or $this->start == 0){
+		if(--$this->timingDepth !== 0){
 			return;
 		}
 
-		$diff = $now - $this->start;
-		$this->totalTime += $diff;
-		$this->curTickTotal += $diff;
-		++$this->curCount;
-		++$this->count;
-		$this->start = 0;
+		if($this->record !== null){
+			//this might be null if a timings reset occurred while the timer was running
+			$this->record->stopTiming($now);
+		}
 		if($this->parent !== null){
 			$this->parent->internalStopTiming($now);
 		}
@@ -211,17 +177,10 @@ class TimingsHandler{
 		}
 	}
 
-	public function reset() : void{
-		$this->count = 0;
-		$this->curCount = 0;
-		$this->violations = 0;
-		$this->curTickTotal = 0;
-		$this->totalTime = 0;
-		$this->start = 0;
-		$this->timingDepth = 0;
-	}
-
-	public function remove() : void{
-		unset(self::$HANDLERS[spl_object_id($this)]);
+	/**
+	 * @internal
+	 */
+	public function destroyCycles() : void{
+		$this->record = null;
 	}
 }

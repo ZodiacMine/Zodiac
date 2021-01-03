@@ -46,17 +46,10 @@ class Chunk{
 	public const MAX_SUBCHUNKS = 16;
 
 	/** @var int */
-	protected $x;
-	/** @var int */
-	protected $z;
-
-	/** @var int */
 	private $dirtyFlags = 0;
 
 	/** @var bool|null */
 	protected $lightPopulated = false;
-	/** @var bool */
-	protected $terrainGenerated = false;
 	/** @var bool */
 	protected $terrainPopulated = false;
 
@@ -89,10 +82,7 @@ class Chunk{
 	 * @param CompoundTag[] $entities
 	 * @param CompoundTag[] $tiles
 	 */
-	public function __construct(int $chunkX, int $chunkZ, array $subChunks = [], ?array $entities = null, ?array $tiles = null, ?BiomeArray $biomeIds = null, ?HeightArray $heightMap = null){
-		$this->x = $chunkX;
-		$this->z = $chunkZ;
-
+	public function __construct(array $subChunks = [], ?array $entities = null, ?array $tiles = null, ?BiomeArray $biomeIds = null, ?HeightArray $heightMap = null){
 		$this->subChunks = new \SplFixedArray(Chunk::MAX_SUBCHUNKS);
 
 		foreach($this->subChunks as $y => $null){
@@ -105,22 +95,6 @@ class Chunk{
 
 		$this->NBTtiles = $tiles;
 		$this->NBTentities = $entities;
-	}
-
-	public function getX() : int{
-		return $this->x;
-	}
-
-	public function getZ() : int{
-		return $this->z;
-	}
-
-	public function setX(int $x) : void{
-		$this->x = $x;
-	}
-
-	public function setZ(int $z) : void{
-		$this->z = $z;
 	}
 
 	/**
@@ -228,15 +202,6 @@ class Chunk{
 
 	public function setPopulated(bool $value = true) : void{
 		$this->terrainPopulated = $value;
-		$this->dirtyFlags |= self::DIRTY_FLAG_TERRAIN;
-	}
-
-	public function isGenerated() : bool{
-		return $this->terrainGenerated;
-	}
-
-	public function setGenerated(bool $value = true) : void{
-		$this->terrainGenerated = $value;
 		$this->dirtyFlags |= self::DIRTY_FLAG_TERRAIN;
 	}
 

@@ -155,9 +155,6 @@ abstract class Command{
 	public function setLabel(string $name) : bool{
 		$this->nextLabel = $name;
 		if(!$this->isRegistered()){
-			if($this->timings instanceof TimingsHandler){
-				$this->timings->remove();
-			}
 			$this->timings = new TimingsHandler(Timings::INCLUDED_BY_OTHER_TIMINGS_PREFIX . "Command: " . $name);
 			$this->label = $name;
 
@@ -262,7 +259,7 @@ abstract class Command{
 	 * @param TranslationContainer|string $message
 	 */
 	public static function broadcastCommandMessage(CommandSender $source, $message, bool $sendToSource = true) : void{
-		$users = PermissionManager::getInstance()->getPermissionSubscriptions(Server::BROADCAST_CHANNEL_ADMINISTRATIVE);
+		$users = $source->getServer()->getBroadcastChannelSubscribers(Server::BROADCAST_CHANNEL_ADMINISTRATIVE);
 		if($message instanceof TranslationContainer){
 			$formatted = "[" . $source->getName() . ": " . ($source->getLanguage()->get($message->getText()) !== $message->getText() ? "%" : "") . $message->getText() . "]";
 
@@ -278,12 +275,10 @@ abstract class Command{
 		}
 
 		foreach($users as $user){
-			if($user instanceof CommandSender){
-				if($user instanceof ConsoleCommandSender){
-					$user->sendMessage($result);
-				}elseif($user !== $source){
-					$user->sendMessage($colored);
-				}
+			if($user instanceof ConsoleCommandSender){
+				$user->sendMessage($result);
+			}elseif($user !== $source){
+				$user->sendMessage($colored);
 			}
 		}
 	}

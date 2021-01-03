@@ -24,9 +24,6 @@ declare(strict_types=1);
 namespace pocketmine\permission;
 
 class PermissionAttachmentInfo{
-	/** @var Permissible */
-	private $permissible;
-
 	/** @var string */
 	private $permission;
 
@@ -36,18 +33,14 @@ class PermissionAttachmentInfo{
 	/** @var bool */
 	private $value;
 
-	/**
-	 * @throws \InvalidStateException
-	 */
-	public function __construct(Permissible $permissible, string $permission, ?PermissionAttachment $attachment, bool $value){
-		$this->permissible = $permissible;
+	/** @var PermissionAttachmentInfo|null */
+	private $groupPermission;
+
+	public function __construct(string $permission, ?PermissionAttachment $attachment, bool $value, ?PermissionAttachmentInfo $groupPermission){
 		$this->permission = $permission;
 		$this->attachment = $attachment;
 		$this->value = $value;
-	}
-
-	public function getPermissible() : Permissible{
-		return $this->permissible;
+		$this->groupPermission = $groupPermission;
 	}
 
 	public function getPermission() : string{
@@ -61,4 +54,10 @@ class PermissionAttachmentInfo{
 	public function getValue() : bool{
 		return $this->value;
 	}
+
+	/**
+	 * Returns the info of the permission group that caused this permission to be set, if any.
+	 * If null, the permission was set explicitly, either by a permission attachment or base permission.
+	 */
+	public function getGroupPermissionInfo() : ?PermissionAttachmentInfo{ return $this->groupPermission; }
 }

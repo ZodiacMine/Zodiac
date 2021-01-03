@@ -25,77 +25,21 @@ namespace pocketmine\player;
 
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\LongTag;
-use pocketmine\Server;
 
 class OfflinePlayer implements IPlayer{
 
 	/** @var string */
 	private $name;
-	/** @var Server */
-	private $server;
 	/** @var CompoundTag|null */
-	private $namedtag = null;
+	private $namedtag;
 
-	public function __construct(Server $server, string $name){
-		$this->server = $server;
+	public function __construct(string $name, ?CompoundTag $namedtag){
 		$this->name = $name;
-		$this->namedtag = $this->server->getOfflinePlayerData($this->name);
-	}
-
-	public function isOnline() : bool{
-		return $this->getPlayer() !== null;
+		$this->namedtag = $namedtag;
 	}
 
 	public function getName() : string{
 		return $this->name;
-	}
-
-	public function getServer() : Server{
-		return $this->server;
-	}
-
-	public function isOp() : bool{
-		return $this->server->isOp($this->name);
-	}
-
-	public function setOp(bool $value) : void{
-		if($value === $this->isOp()){
-			return;
-		}
-
-		if($value){
-			$this->server->addOp($this->name);
-		}else{
-			$this->server->removeOp($this->name);
-		}
-	}
-
-	public function isBanned() : bool{
-		return $this->server->getNameBans()->isBanned($this->name);
-	}
-
-	public function setBanned(bool $banned) : void{
-		if($banned){
-			$this->server->getNameBans()->addBan($this->name, null, null, null);
-		}else{
-			$this->server->getNameBans()->remove($this->name);
-		}
-	}
-
-	public function isWhitelisted() : bool{
-		return $this->server->isWhitelisted($this->name);
-	}
-
-	public function setWhitelisted(bool $value) : void{
-		if($value){
-			$this->server->addWhitelist($this->name);
-		}else{
-			$this->server->removeWhitelist($this->name);
-		}
-	}
-
-	public function getPlayer() : ?Player{
-		return $this->server->getPlayerExact($this->name);
 	}
 
 	public function getFirstPlayed() : ?int{

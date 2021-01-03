@@ -32,7 +32,6 @@ use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\entity\Living;
-use pocketmine\event\player\PlayerCreationEvent;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use pocketmine\form\Form;
@@ -96,6 +95,7 @@ use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\types\PlayerPermissions;
 use pocketmine\network\mcpe\protocol\UpdateAttributesPacket;
 use pocketmine\network\NetworkSessionManager;
+use pocketmine\permission\DefaultPermissions;
 use pocketmine\player\GameMode;
 use pocketmine\player\Player;
 use pocketmine\player\PlayerInfo;
@@ -165,6 +165,8 @@ class NetworkSession{
 	private $compressedQueue;
 	/** @var Compressor */
 	private $compressor;
+	/** @var bool */
+	private $forceAsyncCompression = true;
 
 	/** @var PacketPool */
 	private $packetPool;
@@ -175,16 +177,20 @@ class NetworkSession{
 	/** @var PacketSender */
 	private $sender;
 
+	/** @var PacketBroadcaster */
+	private $broadcaster;
+
 	/**
 	 * @var \Closure[]|Set
 	 * @phpstan-var Set<\Closure() : void>
 	 */
 	private $disposeHooks;
 
-	public function __construct(Server $server, NetworkSessionManager $manager, PacketPool $packetPool, PacketSender $sender, Compressor $compressor, string $ip, int $port){
+	public function __construct(Server $server, NetworkSessionManager $manager, PacketPool $packetPool, PacketSender $sender, PacketBroadcaster $broadcaster, Compressor $compressor, string $ip, int $port){
 		$this->server = $server;
 		$this->manager = $manager;
 		$this->sender = $sender;
+		$this->broadcaster = $broadcaster;
 		$this->ip = $ip;
 		$this->port = $port;
 
@@ -224,16 +230,7 @@ class NetworkSession{
 	}
 
 	protected function createPlayer() : void{
-		$ev = new PlayerCreationEvent($this);
-		$ev->call();
-		$class = $ev->getPlayerClass();
-
-		//TODO: make this async
-		//TODO: this really has no business being in NetworkSession at all - what about allowing it to be provided by PlayerCreationEvent?
-		$namedtag = $this->server->getOfflinePlayerData($this->info->getUsername());
-
-		/** @see Player::__construct() */
-		$this->player = new $class($this->server, $this, $this->info, $this->authenticated, $namedtag);
+		$this->player = $this->server->createPlayer($this, $this->info, $this->authenticated);
 
 		$this->invManager = new InventoryManager($this->player, $this);
 
@@ -247,6 +244,16 @@ class NetworkSession{
 		$this->disposeHooks->add(static function() use ($effectManager, $effectAddHook, $effectRemoveHook) : void{
 			$effectManager->getEffectAddHooks()->remove($effectAddHook);
 			$effectManager->getEffectRemoveHooks()->remove($effectRemoveHook);
+		});
+
+		$permissionHooks = $this->player->getPermissionRecalculationCallbacks();
+		$permissionHooks->add($permHook = function() : void{
+			$this->logger->debug("Syncing available commands and adventure settings due to permission recalculation");
+			$this->syncAdventureSettings($this->player);
+			$this->syncAvailableCommands();
+		});
+		$this->disposeHooks->add(static function() use ($permissionHooks, $permHook) : void{
+			$permissionHooks->remove($permHook);
 		});
 	}
 
@@ -314,25 +321,25 @@ class NetworkSession{
 		}
 
 		if($this->cipher !== null){
-			Timings::$playerNetworkReceiveDecryptTimer->startTiming();
+			Timings::$playerNetworkReceiveDecrypt->startTiming();
 			try{
 				$payload = $this->cipher->decrypt($payload);
 			}catch(DecryptionException $e){
 				$this->logger->debug("Encrypted packet: " . base64_encode($payload));
 				throw BadPacketException::wrap($e, "Packet decryption error");
 			}finally{
-				Timings::$playerNetworkReceiveDecryptTimer->stopTiming();
+				Timings::$playerNetworkReceiveDecrypt->stopTiming();
 			}
 		}
 
-		Timings::$playerNetworkReceiveDecompressTimer->startTiming();
+		Timings::$playerNetworkReceiveDecompress->startTiming();
 		try{
 			$stream = new PacketBatch($this->compressor->decompress($payload));
 		}catch(DecompressionException $e){
 			$this->logger->debug("Failed to decompress packet: " . base64_encode($payload));
 			throw BadPacketException::wrap($e, "Compressed packet batch decode error");
 		}finally{
-			Timings::$playerNetworkReceiveDecompressTimer->stopTiming();
+			Timings::$playerNetworkReceiveDecompress->stopTiming();
 		}
 
 		try{
@@ -429,11 +436,19 @@ class NetworkSession{
 
 	private function flushSendBuffer(bool $immediate = false) : void{
 		if(count($this->sendBuffer) > 0){
-			$promise = $this->server->prepareBatch(PacketBatch::fromPackets(...$this->sendBuffer), $this->compressor, $immediate);
+			$syncMode = null; //automatic
+			if($immediate){
+				$syncMode = true;
+			}elseif($this->forceAsyncCompression){
+				$syncMode = false;
+			}
+			$promise = $this->server->prepareBatch(PacketBatch::fromPackets(...$this->sendBuffer), $this->compressor, $syncMode);
 			$this->sendBuffer = [];
 			$this->queueCompressedNoBufferFlush($promise, $immediate);
 		}
 	}
+
+	public function getBroadcaster() : PacketBroadcaster{ return $this->broadcaster; }
 
 	public function getCompressor() : Compressor{
 		return $this->compressor;
@@ -474,9 +489,9 @@ class NetworkSession{
 
 	private function sendEncoded(string $payload, bool $immediate = false) : void{
 		if($this->cipher !== null){
-			Timings::$playerNetworkSendEncryptTimer->startTiming();
+			Timings::$playerNetworkSendEncrypt->startTiming();
 			$payload = $this->cipher->encrypt($payload);
-			Timings::$playerNetworkSendEncryptTimer->stopTiming();
+			Timings::$playerNetworkSendEncrypt->stopTiming();
 		}
 		$this->sender->send($payload, $immediate);
 	}
@@ -646,6 +661,7 @@ class NetworkSession{
 		$this->logger->debug("Received spawn response, entering in-game phase");
 		$this->player->setImmobile(false); //TODO: HACK: we set this during the spawn sequence to prevent the client sending junk movements
 		$this->player->doFirstSpawn();
+		$this->forceAsyncCompression = false;
 		$this->setHandler(new InGamePacketHandler($this->player, $this));
 	}
 
@@ -718,8 +734,9 @@ class NetworkSession{
 
 		//TODO: permission flags
 
-		$pk->commandPermission = ($for->isOp() ? AdventureSettingsPacket::PERMISSION_OPERATOR : AdventureSettingsPacket::PERMISSION_NORMAL);
-		$pk->playerPermission = ($for->isOp() ? PlayerPermissions::OPERATOR : PlayerPermissions::MEMBER);
+		$isOp = $for->hasPermission(DefaultPermissions::ROOT_OPERATOR);
+		$pk->commandPermission = ($isOp ? AdventureSettingsPacket::PERMISSION_OPERATOR : AdventureSettingsPacket::PERMISSION_NORMAL);
+		$pk->playerPermission = ($isOp ? PlayerPermissions::OPERATOR : PlayerPermissions::MEMBER);
 		$pk->entityUniqueId = $for->getId();
 
 		$this->sendDataPacket($pk);
@@ -847,12 +864,12 @@ class NetworkSession{
 					$this->logger->debug("Tried to send no-longer-active chunk $chunkX $chunkZ in world " . $world->getFolderName());
 					return;
 				}
-				$currentWorld->timings->syncChunkSendTimer->startTiming();
+				$currentWorld->timings->syncChunkSend->startTiming();
 				try{
 					$this->queueCompressed($promise);
 					$onCompletion($chunkX, $chunkZ);
 				}finally{
-					$currentWorld->timings->syncChunkSendTimer->stopTiming();
+					$currentWorld->timings->syncChunkSend->stopTiming();
 				}
 			}
 		);

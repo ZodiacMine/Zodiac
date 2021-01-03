@@ -31,14 +31,6 @@ namespace pocketmine\permission;
  * Represents a permission
  */
 class Permission{
-	public const DEFAULT_OP = "op";
-	public const DEFAULT_NOT_OP = "notop";
-	public const DEFAULT_TRUE = "true";
-	public const DEFAULT_FALSE = "false";
-
-	/** @var string */
-	public static $DEFAULT_PERMISSION = self::DEFAULT_OP;
-
 	/** @var string */
 	private $name;
 
@@ -51,19 +43,15 @@ class Permission{
 	 */
 	private $children;
 
-	/** @var string */
-	private $defaultValue;
-
 	/**
 	 * Creates a new Permission object to be attached to Permissible objects
 	 *
 	 * @param bool[] $children
 	 * @phpstan-param array<string, bool> $children
 	 */
-	public function __construct(string $name, ?string $description = null, ?string $defaultValue = null, array $children = []){
+	public function __construct(string $name, ?string $description = null, array $children = []){
 		$this->name = $name;
 		$this->description = $description ?? "";
-		$this->defaultValue = $defaultValue ?? self::$DEFAULT_PERMISSION;
 		$this->children = $children;
 
 		$this->recalculatePermissibles();
@@ -77,19 +65,8 @@ class Permission{
 	 * @return bool[]
 	 * @phpstan-return array<string, bool>
 	 */
-	public function &getChildren() : array{
+	public function getChildren() : array{
 		return $this->children;
-	}
-
-	public function getDefault() : string{
-		return $this->defaultValue;
-	}
-
-	public function setDefault(string $value) : void{
-		if($value !== $this->defaultValue){
-			$this->defaultValue = $value;
-			$this->recalculatePermissibles();
-		}
 	}
 
 	public function getDescription() : string{
@@ -110,33 +87,19 @@ class Permission{
 	public function recalculatePermissibles() : void{
 		$perms = $this->getPermissibles();
 
-		PermissionManager::getInstance()->recalculatePermissionDefaults($this);
-
 		foreach($perms as $p){
 			$p->recalculatePermissions();
 		}
 	}
 
-	/**
-	 * @param string|Permission $name
-	 *
-	 * @return Permission|null Permission if $name is a string, null if it's a Permission
-	 */
-	public function addParent($name, bool $value) : ?Permission{
-		if($name instanceof Permission){
-			$name->getChildren()[$this->getName()] = $value;
-			$name->recalculatePermissibles();
-			return null;
-		}else{
-			$perm = PermissionManager::getInstance()->getPermission($name);
-			if($perm === null){
-				$perm = new Permission($name);
-				PermissionManager::getInstance()->addPermission($perm);
-			}
+	public function addChild(string $name, bool $value) : void{
+		$this->children[$name] = $value;
+		$this->recalculatePermissibles();
+	}
 
-			$this->addParent($perm, $value);
+	public function removeChild(string $name) : void{
+		unset($this->children[$name]);
+		$this->recalculatePermissibles();
 
-			return $perm;
-		}
 	}
 }

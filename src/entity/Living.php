@@ -279,13 +279,20 @@ abstract class Living extends Entity{
 	 * etc.
 	 */
 	public function consumeObject(Consumable $consumable) : bool{
+		$this->applyConsumptionResults($consumable);
+		return true;
+	}
+
+	/**
+	 * Applies effects from consuming the object. This shouldn't do any can-consume checks (those are expected to be
+	 * handled by the caller).
+	 */
+	protected function applyConsumptionResults(Consumable $consumable) : void{
 		foreach($consumable->getAdditionalEffects() as $effect){
 			$this->effectManager->add($effect);
 		}
 
 		$consumable->onConsume($this);
-
-		return true;
 	}
 
 	/**
@@ -562,7 +569,7 @@ abstract class Living extends Entity{
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
-		Timings::$timerLivingEntityBaseTick->startTiming();
+		Timings::$livingEntityBaseTick->startTiming();
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
@@ -586,7 +593,7 @@ abstract class Living extends Entity{
 			$this->attackTime -= $tickDiff;
 		}
 
-		Timings::$timerLivingEntityBaseTick->stopTiming();
+		Timings::$livingEntityBaseTick->stopTiming();
 
 		return $hasUpdate;
 	}
@@ -795,6 +802,8 @@ abstract class Living extends Entity{
 
 	protected function onDispose() : void{
 		$this->armorInventory->removeAllViewers();
+		$this->effectManager->getEffectAddHooks()->clear();
+		$this->effectManager->getEffectRemoveHooks()->clear();
 		parent::onDispose();
 	}
 
