@@ -8,8 +8,13 @@ on:
 jobs:
   build-php:
     name: Prepare PHP
-    runs-on: ubuntu-latest
-    
+    runs-on: ${{ matrix.image }}
+
+    strategy:
+      matrix:
+        image: [ubuntu-20.04]
+        php: [7.4.15]
+
     steps:
       - uses: actions/checkout@v2 #needed for build.sh
       - name: Check for PHP build cache
@@ -17,16 +22,22 @@ jobs:
         uses: actions/cache@v2
         with:
           path: "./bin"
-          key: "php-build-generic-${{ hashFiles('./tests/gh-actions/build.sh') }}"
+          key: "php-build-generic-${{ matrix.php }}-${{ matrix.image }}-${{ hashFiles('./tests/gh-actions/build.sh') }}"
 
       - name: Compile PHP
         if: steps.php-build-cache.outputs.cache-hit != 'true'
-        run: ./tests/gh-actions/build.sh
+        run: ./tests/gh-actions/build.sh "${{ matrix.php }}"
 
   phpstan:
     name: PHPStan analysis
     needs: build-php
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.image }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu-20.04]
+        php: [7.4.15]
 
     steps:
       - uses: actions/checkout@v2
@@ -36,11 +47,15 @@ jobs:
         uses: actions/cache@v2
         with:
           path: "./bin"
-          key: "php-build-generic-${{ hashFiles('./tests/gh-actions/build.sh') }}"
+          key: "php-build-generic-${{ matrix.php }}-${{ matrix.image }}-${{ hashFiles('./tests/gh-actions/build.sh') }}"
 
       - name: Kill build on PHP build cache miss (should never happen)
         if: steps.php-build-cache.outputs.cache-hit != 'true'
         run: exit 1
+
+      - name: Install cached PHP's dependencies
+        if: steps.php-build-cache.outputs.cache-hit == 'true'
+        run: chmod +x ./bin/php7/install-dependencies.sh && ./bin/php7/install-dependencies.sh
 
       - name: Prefix PHP to PATH
         run: echo "$(pwd)/bin/php7/bin" >> $GITHUB_PATH
@@ -54,7 +69,7 @@ jobs:
           path: |
             ~/.cache/composer/files
             ~/.cache/composer/vcs
-          key: "composer-v2-cache-${{ hashFiles('./composer.lock') }}"
+          key: "composer-v2-cache-${{ matrix.php }}-${{ hashFiles('./composer.lock') }}"
           restore-keys: |
             composer-v2-cache-
 
@@ -67,7 +82,13 @@ jobs:
   phpunit:
     name: PHPUnit tests
     needs: build-php
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu-20.04]
+        php: [7.4.15]
+
     steps:
       - uses: actions/checkout@v2
 
@@ -76,11 +97,15 @@ jobs:
         uses: actions/cache@v2
         with:
           path: "./bin"
-          key: "php-build-generic-${{ hashFiles('./tests/gh-actions/build.sh') }}"
+          key: "php-build-generic-${{ matrix.php }}-${{ matrix.image }}-${{ hashFiles('./tests/gh-actions/build.sh') }}"
 
       - name: Kill build on PHP build cache miss (should never happen)
         if: steps.php-build-cache.outputs.cache-hit != 'true'
         run: exit 1
+
+      - name: Install cached PHP's dependencies
+        if: steps.php-build-cache.outputs.cache-hit == 'true'
+        run: chmod +x ./bin/php7/install-dependencies.sh && ./bin/php7/install-dependencies.sh
 
       - name: Prefix PHP to PATH
         run: echo "$(pwd)/bin/php7/bin" >> $GITHUB_PATH
@@ -94,7 +119,7 @@ jobs:
           path: |
             ~/.cache/composer/files
             ~/.cache/composer/vcs
-          key: "composer-v2-cache-${{ hashFiles('./composer.lock') }}"
+          key: "composer-v2-cache-${{ matrix.php }}-${{ hashFiles('./composer.lock') }}"
           restore-keys: |
             composer-v2-cache-
 
@@ -107,7 +132,13 @@ jobs:
   integration:
     name: Integration tests
     needs: build-php
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu-20.04]
+        php: [7.4.15]
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -118,11 +149,15 @@ jobs:
         uses: actions/cache@v2
         with:
           path: "./bin"
-          key: "php-build-generic-${{ hashFiles('./tests/gh-actions/build.sh') }}"
+          key: "php-build-generic-${{ matrix.php }}-${{ matrix.image }}-${{ hashFiles('./tests/gh-actions/build.sh') }}"
 
       - name: Kill build on PHP build cache miss (should never happen)
         if: steps.php-build-cache.outputs.cache-hit != 'true'
         run: exit 1
+
+      - name: Install cached PHP's dependencies
+        if: steps.php-build-cache.outputs.cache-hit == 'true'
+        run: chmod +x ./bin/php7/install-dependencies.sh && ./bin/php7/install-dependencies.sh
 
       - name: Prefix PHP to PATH
         run: echo "$(pwd)/bin/php7/bin" >> $GITHUB_PATH
@@ -136,7 +171,7 @@ jobs:
           path: |
             ~/.cache/composer/files
             ~/.cache/composer/vcs
-          key: "composer-v2-cache-${{ hashFiles('./composer.lock') }}"
+          key: "composer-v2-cache-${{ matrix.php }}-${{ hashFiles('./composer.lock') }}"
           restore-keys: |
             composer-v2-cache-
 

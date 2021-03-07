@@ -497,10 +497,12 @@ class World implements ChunkManager{
 		$this->closed = true;
 	}
 
+	/** @phpstan-param \Closure() : void $callback */
 	public function addOnUnloadCallback(\Closure $callback) : void{
 		$this->unloadCallbacks[spl_object_id($callback)] = $callback;
 	}
 
+	/** @phpstan-param \Closure() : void $callback */
 	public function removeOnUnloadCallback(\Closure $callback) : void{
 		unset($this->unloadCallbacks[spl_object_id($callback)]);
 	}
@@ -2263,6 +2265,7 @@ class World implements ChunkManager{
 	}
 
 	/**
+	 * @internal Tiles are now bound with blocks, and their creation is automatic. They should not be directly added.
 	 * @throws \InvalidArgumentException
 	 */
 	public function addTile(Tile $tile) : void{
@@ -2288,6 +2291,7 @@ class World implements ChunkManager{
 	}
 
 	/**
+	 * @internal Tiles are now bound with blocks, and their removal is automatic. They should not be directly removed.
 	 * @throws \InvalidArgumentException
 	 */
 	public function removeTile(Tile $tile) : void{

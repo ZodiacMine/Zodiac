@@ -140,11 +140,13 @@ class Armor extends Durable{
 
 	public function equipArmor(Player $player) : ItemUseResult{
 		$existing = $player->getArmorInventory()->getItem($this->getArmorSlot());
-		$player->getArmorInventory()->setItem($this->getArmorSlot(), $this->pop());
-		if($this->getCount() === 0){
+		$thisCopy = clone $this;
+		$new = $thisCopy->pop();
+		$player->getArmorInventory()->setItem($this->getArmorSlot(), $new);
+		if($thisCopy->getCount() === 0){
 			$player->getInventory()->setItemInHand($existing);
 		}else{ //if the stack size was bigger than 1 (usually won't happen, but might be caused by plugins
-			$player->getInventory()->setItemInHand($this);
+			$player->getInventory()->setItemInHand($thisCopy);
 			$player->getInventory()->addItem($existing);
 		}
 		return ItemUseResult::SUCCESS();

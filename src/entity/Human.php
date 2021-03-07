@@ -30,6 +30,8 @@ use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\projectile\ProjectileSource;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\player\PlayerExhaustEvent;
+use pocketmine\inventory\CallbackInventoryListener;
+use pocketmine\inventory\Inventory;
 use pocketmine\inventory\InventoryHolder;
 use pocketmine\inventory\PlayerInventory;
 use pocketmine\inventory\PlayerOffHandInventory;
@@ -57,6 +59,7 @@ use pocketmine\utils\Limits;
 use pocketmine\uuid\UUID;
 use pocketmine\world\sound\TotemUseSound;
 use function array_filter;
+use function array_key_exists;
 use function array_merge;
 use function array_values;
 use function min;
@@ -78,10 +81,6 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 	/** @var UUID */
 	protected $uuid;
 
-	public $width = 0.6;
-	public $height = 1.8;
-	public $eyeHeight = 1.62;
-
 	/** @var Skin */
 	protected $skin;
 
@@ -97,6 +96,8 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		$this->skin = $skin;
 		parent::__construct($location, $nbt);
 	}
+
+	protected function getInitialSizeInfo() : EntitySizeInfo{ return new EntitySizeInfo(1.8, 0.6, 1.62); }
 
 	/**
 	 * @throws InvalidSkinException
@@ -220,7 +221,27 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		$this->xpManager = new ExperienceManager($this);
 
 		$this->inventory = new PlayerInventory($this);
+
 		$this->offHandInventory = new PlayerOffHandInventory($this);
+
+		$syncHeldItem = function() : void{
+			foreach($this->getViewers() as $viewer){
+				$viewer->getNetworkSession()->onMobEquipmentChange($this);
+			}
+		};
+		$this->inventory->getListeners()->add(new CallbackInventoryListener(
+			function(Inventory $unused, int $slot, Item $unused2) use ($syncHeldItem) : void{
+				if($slot === $this->inventory->getHeldItemIndex()){
+					$syncHeldItem();
+				}
+			},
+			function(Inventory $unused, array $oldItems) use ($syncHeldItem) : void{
+				if(array_key_exists($this->inventory->getHeldItemIndex(), $oldItems)){
+					$syncHeldItem();
+				}
+			}
+		));
+
 		$this->enderChestInventory = new EnderChestInventory();
 		$this->initHumanData($nbt);
 
@@ -228,6 +249,8 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		if($inventoryTag !== null){
 			$armorListeners = $this->armorInventory->getListeners()->toArray();
 			$this->armorInventory->getListeners()->clear();
+			$inventoryListeners = $this->inventory->getListeners()->toArray();
+			$this->inventory->getListeners()->clear();
 
 			/** @var CompoundTag $item */
 			foreach($inventoryTag as $i => $item){
@@ -242,6 +265,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 			}
 
 			$this->armorInventory->getListeners()->add(...$armorListeners);
+			$this->inventory->getListeners()->add(...$inventoryListeners);
 		}
 
 		$enderChestInventoryTag = $nbt->getListTag("EnderChestInventory");
@@ -257,7 +281,13 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 			$this->offHandInventory->setItemInHand(Item::nbtDeserialize($offHand));
 		}
 
-		$this->inventory->setHeldItemIndex($nbt->getInt("SelectedInventorySlot", 0), false);
+		$this->inventory->setHeldItemIndex($nbt->getInt("SelectedInventorySlot", 0));
+		$this->inventory->getHeldItemIndexChangeListeners()->add(function(int $oldIndex) : void{
+			foreach($this->getViewers() as $viewer){
+				$viewer->getNetworkSession()->onMobEquipmentChange($this);
+			}
+		});
+
 
 		$this->hungerManager->setFood((float) $nbt->getInt("foodLevel", (int) $this->hungerManager->getFood()));
 		$this->hungerManager->setExhaustion($nbt->getFloat("foodExhaustionLevel", $this->hungerManager->getExhaustion()));
@@ -427,7 +457,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		$pk->yaw = $this->location->yaw;
 		$pk->pitch = $this->location->pitch;
 		$pk->item = TypeConverter::getInstance()->coreItemStackToNet($this->getInventory()->getItemInHand());
-		$pk->metadata = $this->getSyncedNetworkData(false);
+		$pk->metadata = $this->getAllNetworkData();
 		$player->getNetworkSession()->sendDataPacket($pk);
 
 		//TODO: Hack for MCPE 1.2.13: DATA_NAMETAG is useless in AddPlayerPacket, so it has to be sent separately
@@ -464,6 +494,7 @@ class Human extends Living implements ProjectileSource, InventoryHolder{
 		$this->inventory->removeAllViewers();
 		$this->offHandInventory->removeAllViewers();
 		$this->enderChestInventory->removeAllViewers();
+		$this->inventory->getHeldItemIndexChangeListeners()->clear();
 		parent::onDispose();
 	}
 

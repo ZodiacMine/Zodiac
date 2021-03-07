@@ -459,12 +459,21 @@ class PluginManager{
 					continue;
 				}
 
-				$eventClass = $parameters[0]->getClass();
-				if($eventClass === null or !$eventClass->isSubclassOf(Event::class)){
+				$paramType = $parameters[0]->getType();
+				//isBuiltin() returns false for builtin classes ..................
+				if($paramType instanceof \ReflectionNamedType && !$paramType->isBuiltin()){
+					/** @phpstan-var class-string $paramClass */
+					$paramClass = $paramType->getName();
+					$eventClass = new \ReflectionClass($paramClass);
+					if(!$eventClass->isSubclassOf(Event::class)){
+						continue;
+					}
+				}else{
 					continue;
 				}
 
 				$handlerClosure = $method->getClosure($listener);
+				if($handlerClosure === null) throw new AssumptionFailedError("This should never happen");
 
 				try{
 					$priority = isset($tags["priority"]) ? EventPriority::fromString($tags["priority"]) : EventPriority::NORMAL;

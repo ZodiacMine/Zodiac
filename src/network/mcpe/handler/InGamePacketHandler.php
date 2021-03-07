@@ -124,8 +124,11 @@ class InGamePacketHandler extends PacketHandler{
 
 	/** @var float */
 	protected $lastRightClickTime = 0.0;
-	/** @var Vector3|null */
-	protected $lastRightClickPos = null;
+	/** @var UseItemTransactionData|null */
+	protected $lastRightClickData = null;
+
+	/** @var bool */
+	public $forceMoveSync = false;
 
 	/**
 	 * TODO: HACK! This tracks GUIs for inventories that the server considers "always open" so that the client can't
@@ -157,7 +160,21 @@ class InGamePacketHandler extends PacketHandler{
 		}
 
 		$this->player->setRotation($yaw, $pitch);
-		$this->player->updateNextPosition($packet->position->round(4)->subtract(0, 1.62, 0));
+
+		$curPos = $this->player->getLocation();
+		$newPos = $packet->position->subtract(0, 1.62, 0);
+
+		if($this->forceMoveSync and $newPos->distanceSquared($curPos) > 1){  //Tolerate up to 1 block to avoid problems with client-sided physics when spawning in blocks
+			$this->session->syncMovement($curPos, null, null, MovePlayerPacket::MODE_RESET);
+			$this->session->getLogger()->debug("Got outdated pre-teleport movement, received " . $newPos . ", expected " . $curPos);
+			//Still getting movements from before teleport, ignore them
+			return false;
+		}
+
+		// Once we get a movement within a reasonable distance, treat it as a teleport ACK and remove position lock
+		$this->forceMoveSync = false;
+
+		$this->player->handleMovement($newPos);
 
 		return true;
 	}
@@ -322,12 +339,14 @@ class InGamePacketHandler extends PacketHandler{
 			case UseItemTransactionData::ACTION_CLICK_BLOCK:
 				//TODO: start hack for client spam bug
 				$clickPos = $data->getClickPos();
-				$spamBug = ($this->lastRightClickPos !== null and
+				$spamBug = ($this->lastRightClickData !== null and
 					microtime(true) - $this->lastRightClickTime < 0.1 and //100ms
-					$this->lastRightClickPos->distanceSquared($clickPos) < 0.00001 //signature spam bug has 0 distance, but allow some error
+					$this->lastRightClickData->getPlayerPos()->distanceSquared($data->getPlayerPos()) < 0.00001 and
+					$this->lastRightClickData->getBlockPos()->equals($data->getBlockPos()) and
+					$this->lastRightClickData->getClickPos()->distanceSquared($clickPos) < 0.00001 //signature spam bug has 0 distance, but allow some error
 				);
 				//get rid of continued spam if the player clicks and holds right-click
-				$this->lastRightClickPos = clone $clickPos;
+				$this->lastRightClickData = $data;
 				$this->lastRightClickTime = microtime(true);
 				if($spamBug){
 					return true;
@@ -435,6 +454,7 @@ class InGamePacketHandler extends PacketHandler{
 			return true; // Useless offhand noises...
 		}
 
+		$this->session->getInvManager()->onClientSelectHotbarSlot($packet->hotbarSlot);
 		if(!$this->player->selectHotbarSlot($packet->hotbarSlot)){
 			$this->session->getInvManager()->syncSelectedHotbarSlot();
 		}

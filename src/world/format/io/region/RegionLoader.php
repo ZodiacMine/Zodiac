@@ -25,13 +25,15 @@ namespace pocketmine\world\format\io\region;
 
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Binary;
+use pocketmine\utils\BinaryDataException;
+use pocketmine\utils\BinaryStream;
 use pocketmine\world\format\ChunkException;
 use pocketmine\world\format\io\exception\CorruptedChunkException;
 use function assert;
 use function ceil;
 use function chr;
+use function clearstatcache;
 use function fclose;
-use function feof;
 use function file_exists;
 use function filesize;
 use function fopen;
@@ -42,13 +44,11 @@ use function fwrite;
 use function is_resource;
 use function ksort;
 use function max;
-use function ord;
 use function str_pad;
 use function str_repeat;
 use function stream_set_read_buffer;
 use function stream_set_write_buffer;
 use function strlen;
-use function substr;
 use function time;
 use function touch;
 use function unpack;
@@ -89,6 +89,7 @@ class RegionLoader{
 	 * @throws CorruptedRegionException
 	 */
 	public function open() : void{
+		clearstatcache(false, $this->filePath);
 		$exists = file_exists($this->filePath);
 		if(!$exists){
 			touch($this->filePath);
@@ -135,34 +136,34 @@ class RegionLoader{
 
 		fseek($this->filePointer, $this->locationTable[$index]->getFirstSector() << 12);
 
-		$prefix = fread($this->filePointer, 4);
-		if($prefix === false or strlen($prefix) !== 4){
-			throw new CorruptedChunkException("Corrupted chunk header detected (unexpected end of file reading length prefix)");
-		}
-		$length = Binary::readInt($prefix);
+		/*
+		 * this might cause us to read some junk, but under normal circumstances it won't be any more than 4096 bytes wasted.
+		 * doing this in a single call is faster than making two seeks and reads to fetch the chunk.
+		 * this relies on the assumption that the end of the file is always padded to a multiple of 4096 bytes.
+		 */
+		$bytesToRead = $this->locationTable[$index]->getSectorCount() << 12;
+		$payload = fread($this->filePointer, $bytesToRead);
 
-		if($length <= 0){ //TODO: if we reached here, the locationTable probably needs updating
-			return null;
+		if($payload === false || strlen($payload) !== $bytesToRead){
+			throw new CorruptedChunkException("Corrupted chunk detected (unexpected EOF, truncated or non-padded chunk found)");
 		}
-		if($length > self::MAX_SECTOR_LENGTH){ //corrupted
-			throw new CorruptedChunkException("Length for chunk x=$x,z=$z ($length) is larger than maximum " . self::MAX_SECTOR_LENGTH);
-		}
+		$stream = new BinaryStream($payload);
 
-		if($length > ($this->locationTable[$index]->getSectorCount() << 12)){ //Invalid chunk, bigger than defined number of sectors
-			throw new CorruptedChunkException("Chunk length mismatch (expected " . ($this->locationTable[$index]->getSectorCount() << 12) . " sectors, got $length sectors)");
-		}
+		try{
+			$length = $stream->getInt();
+			if($length <= 0){ //TODO: if we reached here, the locationTable probably needs updating
+				return null;
+			}
 
-		$chunkData = fread($this->filePointer, $length);
-		if($chunkData === false or strlen($chunkData) !== $length){
-			throw new CorruptedChunkException("Corrupted chunk detected (unexpected end of file reading chunk data)");
-		}
+			$compression = $stream->getByte();
+			if($compression !== self::COMPRESSION_ZLIB and $compression !== self::COMPRESSION_GZIP){
+				throw new CorruptedChunkException("Invalid compression type (got $compression, expected " . self::COMPRESSION_ZLIB . " or " . self::COMPRESSION_GZIP . ")");
+			}
 
-		$compression = ord($chunkData[0]);
-		if($compression !== self::COMPRESSION_ZLIB and $compression !== self::COMPRESSION_GZIP){
-			throw new CorruptedChunkException("Invalid compression type (got $compression, expected " . self::COMPRESSION_ZLIB . " or " . self::COMPRESSION_GZIP . ")");
+			return $stream->get($length - 1); //length prefix includes the compression byte
+		}catch(BinaryDataException $e){
+			throw new CorruptedChunkException("Corrupted chunk detected: " . $e->getMessage(), 0, $e);
 		}
-
-		return substr($chunkData, 1);
 	}
 
 	/**
@@ -321,6 +322,8 @@ class RegionLoader{
 		/** @var int[] $usedOffsets */
 		$usedOffsets = [];
 
+		$fileSize = filesize($this->filePath);
+		if($fileSize === false) throw new AssumptionFailedError("filesize() should not return false here");
 		for($i = 0; $i < 1024; ++$i){
 			$entry = $this->locationTable[$i];
 			if($entry === null){
@@ -333,8 +336,7 @@ class RegionLoader{
 
 			//TODO: more validity checks
 
-			fseek($this->filePointer, $fileOffset);
-			if(feof($this->filePointer)){
+			if($fileOffset >= $fileSize){
 				throw new CorruptedRegionException("Region file location offset x=$x,z=$z points to invalid file location $fileOffset");
 			}
 			if(isset($usedOffsets[$offset])){
@@ -367,6 +369,7 @@ class RegionLoader{
 		fwrite($this->filePointer, Binary::writeInt($entry !== null ? ($entry->getFirstSector() << 8) | $entry->getSectorCount() : 0), 4);
 		fseek($this->filePointer, 4096 + ($index << 2));
 		fwrite($this->filePointer, Binary::writeInt($entry !== null ? $entry->getTimestamp() : 0), 4);
+		clearstatcache(false, $this->filePath);
 	}
 
 	protected function createBlank() : void{

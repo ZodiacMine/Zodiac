@@ -2,7 +2,7 @@
 ## Pre-requisites
 - A bash shell (git bash is sufficient for Windows)
 - [`git`](https://git-scm.com) available in your shell
-- PHP 7.3 or newer available in your shell
+- PHP 7.4 or newer available in your shell
 - [`composer`](https://getcomposer.org) available in your shell
 
 ## Custom PHP binaries
@@ -33,6 +33,12 @@ Preprocessor requires that the `cpp` (c preprocessor) is available in your PATH.
 Run `composer make-server` using your preferred PHP binary. It'll drop a `PocketMine-MP.phar` into the current working directory.
 
 You can also use the `--out` option to change the output filename.
+
+There is a bug in PHP that might cause an error which looks like this:
+```
+Fatal error: Uncaught BadMethodCallException: unable to create temporary file in PocketMine-MP/build/server-phar.php:119
+```
+You can work around it by setting `ulimit -n` to some bigger number, e.g. `8192`, or by updating your PHP version to at least 7.4.16 or 8.0.3.
 
 ## Running PocketMine-MP from source code
 Run `src/PocketMine.php` using your preferred PHP binary.
